@@ -62,11 +62,12 @@ def karar_oran(link):
     else:
         s = html.unescape(re.sub(r'<[^>]+>', ' ', metin(b)))
     s = re.sub(r'\s+', ' ', s)
-    # "gecikme zammı oranı ... aylık yüzde 3,7" / "%3,7"
-    for pat in [r'gecikme zamm[ıi][^.]{0,250}?(?:y[üu]zde|%)\s*([0-9]+(?:[,.][0-9]+)?)', r'(?:y[üu]zde|%)\s*([0-9]+(?:[,.][0-9]+)?)[^.]{0,120}gecikme zamm']:
-        m = re.search(pat, s, re.I)
-        if m:
-            v = float(m.group(1).replace(',', '.'))
+    gz = [m.start() for m in re.finditer(r'gecikme\s*zamm', s, re.I)]
+    oran = [(m.start(), m.group(1)) for m in re.finditer(r'(?:y[üuÜU]zde|%)\s*([0-9]+(?:[,.][0-9]+)?)', s, re.I)]
+    log('karar metni (ilk 400):', s[:400])
+    for pos, v in oran:
+        if any(0 <= pos - g <= 700 or 0 <= g - pos <= 200 for g in gz):
+            v = float(v.replace(',', '.'))
             if 0.1 <= v <= 20:
                 log('karar oranı: aylık %', v); return round(v / 100, 6)
     log('karar metninde oran bulunamadı'); return None
