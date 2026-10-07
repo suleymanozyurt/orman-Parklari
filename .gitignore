@@ -1,0 +1,4 @@
+# Şifresiz veri asla depoya girmez
+data/veri.json
+*.plain.json
+secret/

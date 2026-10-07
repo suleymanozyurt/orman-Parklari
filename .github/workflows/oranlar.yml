@@ -1,0 +1,40 @@
+name: Resmî oranları güncelle
+on:
+  schedule:
+    - cron: '35 7 * * *'     # her gün 10:35 (TSİ); TÜİK TÜFE'yi ayın 3'ünde 10:00'da açıklar
+  workflow_dispatch:
+    inputs:
+      gun:
+        description: 'Resmî Gazete taramasının bitiş günü (YYYY-AA-GG, boşsa bugün)'
+        required: false
+      geri:
+        description: 'Kaç gün geriye taransın'
+        required: false
+        default: '7'
+permissions:
+  contents: write
+concurrency: oranlar
+jobs:
+  guncelle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pypdf
+      - name: Oranları çek
+        env:
+          TUIK_API_KEY: ${{ secrets.TUIK_API_KEY }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.gun }}" ]; then ARGS="$ARGS --gun ${{ github.event.inputs.gun }}"; fi
+          if [ -n "${{ github.event.inputs.geri }}" ]; then ARGS="$ARGS --geri ${{ github.event.inputs.geri }}"; fi
+          python scripts/oran_guncelle.py $ARGS
+      - name: Değiştiyse kaydet
+        run: |
+          git config user.name "oran-guncelleme"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/oranlar.json
+          git diff --cached --quiet || git commit -m "Resmî oranlar güncellendi ($(date -u +%F))"
+          git pull --rebase origin main && git push
