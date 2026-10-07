@@ -1,5 +1,5 @@
 {
- "guncelleme": "2026-10-07T15:37:18+03:00",
+ "guncelleme": "2026-10-07T15:39:39+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
@@ -204,11 +204,11 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-07 15:37"
+  "son_kontrol": "2026-10-07 15:39"
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
-  "son_kontrol": "2026-10-07 15:37",
+  "son_kontrol": "2026-10-07 15:39",
   "durum": "13.11.2025 tarihli karar (aylık %3,7) ile güncel",
   "oranlar": [
    [
@@ -252,6 +252,7 @@
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
   "RG 2025-11-13 karar bulundu: –– 6183 Sayılı Amme Alacaklarının Tahsil Usulü Hakkında Kanunun 51 inci Maddesinin Birinci Fıkrasında Yer Alan Gecikme Zammı Oranının, Her A https://www.resmigazete.gov.tr/eskiler/2025/11/20251113-2.pdf",
+  "karar metni (ilk 400): \u000e \u0012\u0011 \" #\u0005 # \u0019$ #\"#\"\u0019 !\u001b!\u001b$ ! \u0015 $\b\u0007\u0017\u0017 \u0004\u0016\u0015\u0013 \u000f\u0010\u000e\u0015\u0016\u0003\u0016\u0005 \"\u0018\u0013\u0018\u001a$\u0006! \u0014\u001a$\u0010\"\u000f \u0016# \u0007\u0014 \b\u0014 \u0006\u0012\u0011\u0013\u0012 \u0003\u0016\u0018 \u0014\u000f\u0015\u000e\u0018\u0013\u0012\u0013\u0004\u0018 \u0017 \u0011\u0017 \b\u0017 \u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0018\u0004 \u0007\u0006 \u0003\u0005 \b \u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015\u0015 \u0014\u0010\u0015\u0018\u0007\u0018\u0016\u0016\u0012\u0006\u0005",
   "karar metninde oran bulunamadı",
   "TÜFE: TÜİK API anahtarı tanımlı değil (GitHub › Settings › Secrets › TUIK_API_KEY)"
  ]
