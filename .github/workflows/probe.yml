@@ -6,8 +6,8 @@ jobs:
     steps:
       - run: |
           set +e
-          echo "== search"; curl -sS -m 30 -X POST -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' -d '{"text":"Tüketici Fiyat Endeksi Eylül 2026","page":1}' https://veriportali.tuik.gov.tr/api/tr/data/search | head -c 2500; echo
-          echo "== auto"; curl -sS -m 30 -H 'X-Requested-With: XMLHttpRequest' "https://veriportali.tuik.gov.tr/api/tr/data/autocomplete?text=T%C3%BCketici" | head -c 1200; echo
-          echo "== nsiws noauth"; curl -sS -m 30 -o /dev/null -w "%{http_code}\n" "https://nsiws.tuik.gov.tr/rest/dataflow/TR/all/latest"
-          echo "== databrowser2"; curl -sS -m 30 -o db.html -w "%{http_code}\n" https://databrowser2.tuik.gov.tr/; head -c 600 db.html; echo
-          echo "== bulten old"; curl -sS -m 30 -o b.html -w "%{http_code} %{url_effective}\n" -L "https://data.tuik.gov.tr/Bulten/Index?p=Tuketici-Fiyat-Endeksi-Eylul-2026-58072"; head -c 300 b.html
+          curl -sS -m 30 https://databrowser2.tuik.gov.tr/ > db.html
+          echo "== scripts"; grep -o 'src="[^"]*"' db.html | head -20
+          curl -sS -m 30 https://databrowser2.tuik.gov.tr/utils.js | head -c 1500; echo
+          for p in settings.json api/config assets/settings.json config/settings.json; do echo "== $p"; curl -sS -m 20 -o x -w "%{http_code}\n" https://databrowser2.tuik.gov.tr/$p; head -c 800 x; echo; done
+          grep -o 'https\?://[a-zA-Z0-9./_-]*' db.html | sort -u | head -30
