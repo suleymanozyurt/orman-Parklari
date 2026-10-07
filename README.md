@@ -3,7 +3,7 @@
 İstanbul Orman İşletme Müdürlüğü, Emlak Şefliği için orman parkı kira takip uygulaması (313 sayılı Orman Parkları Tebliği).
 Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).
 
-**Adres:** https://suleymanozyurt.github.io/orman-parklari/
+**Adres:** https://suleymanozyurt.github.io/orman-Parklari/
 
 ## Nasıl çalışır
 - **Veriler şifrelidir.** `data/veri.enc` ve `data/teblig.enc` AES-256-GCM ile şifrelenmiştir; erişim parolasını bilmeyen içeriği göremez. Depo herkese açık olsa da kayıtlar okunamaz.

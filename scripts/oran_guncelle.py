@@ -9,7 +9,7 @@ Kullanım: python oran_guncelle.py [--gun YYYY-AA-GG] [--geri N]
 import json, os, re, sys, datetime as dt, urllib.request, urllib.parse, ssl, html, io
 
 YOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'oranlar.json')
-UA = {'User-Agent': 'Mozilla/5.0 (orman-parklari oran guncelleme; +https://github.com/suleymanozyurt/orman-parklari)'}
+UA = {'User-Agent': 'Mozilla/5.0 (orman-parklari oran guncelleme; +https://github.com/suleymanozyurt/orman-Parklari)'}
 LOG = []
 def log(*a):
     s = ' '.join(str(x) for x in a); LOG.append(s); print(s, flush=True)
