@@ -1,0 +1,15 @@
+name: probe (gecici)
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          curl -sS -m 30 -o vp.html -w "veriportali %{http_code}\n" https://veriportali.tuik.gov.tr/tr/press-releases
+          grep -o 'assets/[A-Za-z0-9_.-]*\.js' vp.html | sort -u > js.txt; cat js.txt
+          for f in $(cat js.txt); do curl -sS -m 60 "https://veriportali.tuik.gov.tr/$f" >> all.js; done
+          for f in $(grep -o 'assets/[A-Za-z0-9_.-]*\.js' all.js | sort -u); do curl -sS -m 60 "https://veriportali.tuik.gov.tr/$f" >> all2.js; done
+          cat all.js all2.js > a.js; ls -la a.js
+          grep -o '`/api/[^`]\{0,120\}`\|"/api/[^"]\{0,120\}"\|https://[a-z0-9.-]*tuik.gov.tr/[A-Za-z0-9/_?=.-]*' a.js | sort -u | head -80
+          grep -o '.\{200\}press.\{200\}' a.js | grep -i 'api\|fetch\|get(' | head -10
