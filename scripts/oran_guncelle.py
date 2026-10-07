@@ -43,33 +43,44 @@ def gz_tara(gun, geri):
             t = re.sub(r'\s+', ' ', t).strip()
             if GZ_RE.search(t) and ('6183' in t or 'Amme Alacaklar' in t or 'Tahsil Usul' in t):
                 link = urllib.parse.urljoin(url, m.group(1))
-                log('RG', d, 'karar bulundu:', t[:140], link)
-                oran = karar_oran(link)
+                log('RG', d, 'karar bulundu:', t, link)
+                oran = oran_metinden(t, 'başlık') or karar_oran(link)
                 if oran: bulunan.append((d.isoformat(), oran, t[:160], link))
     return bulunan
+
+def oran_metinden(s, ne):
+    s = re.sub(r'\s+', ' ', s)
+    gz = [m.start() for m in re.finditer(r'gecikme\s*zamm', s, re.I)]
+    for m in re.finditer(r'(?:y[üuÜU]zde|%)\s*([0-9]+(?:[,.][0-9]+)?)', s, re.I):
+        if any(0 <= m.start() - g <= 700 or 0 <= g - m.start() <= 200 for g in gz):
+            v = float(m.group(1).replace(',', '.'))
+            if 0.1 <= v <= 20:
+                log('oran (%s): aylık %%%s' % (ne, v)); return round(v / 100, 6)
+    return None
+
+def pdf_metin(b):
+    import subprocess, tempfile
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.pdf') as f:
+            f.write(b); f.flush()
+            return subprocess.run(['pdftotext', '-layout', f.name, '-'], capture_output=True, timeout=60).stdout.decode('utf-8', 'ignore')
+    except Exception as e:
+        log('pdftotext yok/hata', e)
+    try:
+        from pypdf import PdfReader
+        return ' '.join(p.extract_text() or '' for p in PdfReader(io.BytesIO(b)).pages)
+    except Exception as e:
+        log('pdf okunamadı', e); return ''
 
 def karar_oran(link):
     try:
         b, ct = get(link)
     except Exception as e:
         log('karar alınamadı', e); return None
-    if 'pdf' in ct.lower() or link.lower().endswith('.pdf'):
-        try:
-            from pypdf import PdfReader
-            s = ' '.join(p.extract_text() or '' for p in PdfReader(io.BytesIO(b)).pages)
-        except Exception as e:
-            log('pdf okunamadı', e); return None
-    else:
-        s = html.unescape(re.sub(r'<[^>]+>', ' ', metin(b)))
-    s = re.sub(r'\s+', ' ', s)
-    gz = [m.start() for m in re.finditer(r'gecikme\s*zamm', s, re.I)]
-    oran = [(m.start(), m.group(1)) for m in re.finditer(r'(?:y[üuÜU]zde|%)\s*([0-9]+(?:[,.][0-9]+)?)', s, re.I)]
-    log('karar metni (ilk 400):', s[:400])
-    for pos, v in oran:
-        if any(0 <= pos - g <= 700 or 0 <= g - pos <= 200 for g in gz):
-            v = float(v.replace(',', '.'))
-            if 0.1 <= v <= 20:
-                log('karar oranı: aylık %', v); return round(v / 100, 6)
+    s = pdf_metin(b) if ('pdf' in ct.lower() or link.lower().endswith('.pdf')) else html.unescape(re.sub(r'<[^>]+>', ' ', metin(b)))
+    log('karar metni (ilk 300):', re.sub(r'\s+', ' ', s)[:300])
+    v = oran_metinden(s, 'karar metni')
+    if v: return v
     log('karar metninde oran bulunamadı'); return None
 
 # ------------------------------------------------------------ TÜFE (TÜİK SDMX)
