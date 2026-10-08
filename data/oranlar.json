@@ -1,5 +1,5 @@
 {
- "guncelleme": "2026-10-07T15:42:06+03:00",
+ "guncelleme": "2026-10-08T17:52:32+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
@@ -204,11 +204,11 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-07 15:42"
+  "son_kontrol": "2026-10-08 17:52"
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
-  "son_kontrol": "2026-10-07 15:42",
+  "son_kontrol": "2026-10-08 17:52",
   "durum": "13.11.2025 tarihli karar (aylık %3,7) ile güncel",
   "oranlar": [
    [
@@ -251,8 +251,6 @@
  },
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
-  "RG 2025-11-13 karar bulundu: –– 6183 Sayılı Amme Alacaklarının Tahsil Usulü Hakkında Kanunun 51 inci Maddesinin Birinci Fıkrasında Yer Alan Gecikme Zammı Oranının, Her Ay İçin Ayrı Ayrı Uygulanmak Üzere %3,7 Olarak Belirlenmesi Hakkında Karar (Karar Sayısı: 10556) https://www.resmigazete.gov.tr/eskiler/2025/11/20251113-2.pdf",
-  "oran (başlık): aylık %3.7",
   "TÜFE: TÜİK API anahtarı tanımlı değil (GitHub › Settings › Secrets › TUIK_API_KEY)"
  ]
 }
