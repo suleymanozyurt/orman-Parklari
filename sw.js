@@ -1,6 +1,6 @@
 /* Çevrimdışı kabuk: uygulama dosyaları önbellekten, veriler her zaman ağdan (yoksa son kopya) */
-const V = 'op-v1';
-const SHELL = ['./', 'index.html', 'app.css?v=1', 'js/engine.js?v=1', 'js/kasa.js?v=1', 'js/app.js?v=1', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const V = 'op-v2';
+const SHELL = ['./', 'index.html', 'app.css?v=2', 'js/engine.js?v=2', 'js/kasa.js?v=2', 'js/ekler.js?v=2', 'js/app.js?v=2', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {

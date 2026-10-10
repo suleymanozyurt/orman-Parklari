@@ -2,7 +2,8 @@
 """Resmî oranları günceller -> data/oranlar.json
 1) Gecikme zammı (6183 s.K. m.51): Resmî Gazete günlük fihristinde ilgili Cumhurbaşkanı Kararı aranır; bulunursa yeni aylık oran,
    kararın yayım tarihinden itibaren tabloya eklenir.
-2) TÜFE (on iki aylık ortalamalara göre değişim): TÜİK SDMX veri servisi (TUIK_API_KEY gizli anahtarı ile).
+2) TÜFE (on iki aylık ortalamalara göre değişim): TÜİK Veri Portalı dağıtım servisi (anahtarsız); erişilemezse,
+   tanımlıysa TÜİK SDMX servisi (TUIK_API_KEY).
    Yeni ay ancak bulunan seri tablodaki bilinen aylarla birebir tutuyorsa kabul edilir (yanlış seri alınmasın diye).
 Kullanım: python oran_guncelle.py [--gun YYYY-AA-GG] [--geri N]
 """
@@ -142,6 +143,46 @@ def tufe_tuik(tablo):
                 return {ym: round(v / 100, 6) for ym, v in s.items()}, 'TÜİK veri servisi (%s) — %d bilinen ayla doğrulandı' % (fid, len(ortak))
     return None, 'TÜİK servisinde bilinen aylarla tutan seri bulunamadı'
 
+# ------------------------------------------------------------ TÜFE (TÜİK Veri Portalı dağıtım servisi — anahtarsız)
+# veriportali.tuik.gov.tr'nin veri tarayıcısı (databrowser2.tuik.gov.tr) JSON-stat verir. Veri seti DF_TUFE_SDMX_TT10 (2025=100),
+# DEGISIM=5: "on iki aylık ortalamalara göre değişim (%)". Seri, tablodaki bilinen aylarla birebir tutmadıkça kabul edilmez.
+DB2 = 'https://databrowser2.tuik.gov.tr/api/core/nodes/1/datasets/TR,DF_TUFE_SDMX_TT10,1.0/data'
+def tufe_portal(tablo, yil0=2025):
+    c = lambda i, v: {'id': i, 'filterValues': [v], 'type': 'CodeValues', 'period': 0}
+    body = [c('REF_AREA', 'TR'), c('FREQ', 'M'), c('SINIFLAMA_DUZEYI', 'TUFE'), c('DEGISIM', '5'), c('BASE_PER', '2025'),
+            c('COICOP_2018', '0'), c('INDICATOR', 'F_TFE'),
+            {'id': 'TIME_PERIOD', 'filterValues': [], 'type': 'TimeRange', 'period': 0,
+             'from': '%d-01-01T00:00:00' % yil0, 'to': '%d-12-31T00:00:00' % (dt.date.today().year + 1)}]
+    try:
+        b, _ = get(DB2, {'Accept': 'application/json', 'Content-Type': 'application/json'}, json.dumps(body).encode(), timeout=90)
+        j = json.loads(b)
+    except Exception as e:
+        return None, 'TÜİK veri portalına ulaşılamadı: %s' % e
+    try:
+        ids, size = j['id'], j['size']
+        if any(s != 1 for d, s in zip(ids, size) if d != 'TIME_PERIOD'):
+            return None, 'TÜİK veri portalı yanıtı beklenen yapıda değil'
+        lab = json.dumps(j['dimension'].get('DEGISIM', {}), ensure_ascii=False).lower()
+        if 'twelve' not in lab and 'on iki' not in lab:
+            return None, 'TÜİK veri portalında seri türü doğrulanamadı'
+        per = j['dimension']['TIME_PERIOD']['category']['index']
+        if isinstance(per, dict): per = sorted(per, key=lambda k: per[k])
+        out = {}
+        for k, v in j['value'].items():
+            if v in (None, ''): continue
+            y, m = map(int, per[int(k)].split('-')[:2])
+            out[(y, m)] = round(float(v) / 100, 6)
+    except Exception as e:
+        return None, 'TÜİK veri portalı yanıtı okunamadı: %s' % e
+    bilinen = {(int(y), i + 1): v for y, a in tablo.items() for i, v in enumerate(a) if v is not None}
+    ortak = [ym for ym in out if ym in bilinen]
+    if len(ortak) < 6:
+        return None, 'TÜİK veri portalı serisi bilinen aylarla karşılaştırılamadı (%d ortak ay)' % len(ortak)
+    bozuk = [ym for ym in ortak if abs(out[ym] - bilinen[ym]) > 0.00006]
+    if bozuk:
+        return None, 'TÜİK veri portalı serisi bilinen aylarla tutmadı: %s' % bozuk[:3]
+    return out, 'TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — %d bilinen ayla doğrulandı' % len(ortak)
+
 # ------------------------------------------------------------ ana
 def main():
     args = sys.argv[1:]
@@ -166,14 +207,19 @@ def main():
         log('GZ taraması hata:', e)
     # TÜFE
     tab = O['tufe']['degerler']
-    seri, durum = tufe_tuik(tab)
-    log('TÜFE:', durum)
+    seri, durum = tufe_portal(tab)
+    log('TÜFE (portal):', durum)
+    if not seri and os.environ.get('TUIK_API_KEY', '').strip():
+        seri, durum = tufe_tuik(tab)
+        log('TÜFE (SDMX):', durum)
     if seri:
         eklenen = 0
+        kayit = O['tufe'].setdefault('kayit', {})
         for (y, m), v in sorted(seri.items()):
             a = tab.setdefault(str(y), [None] * 12)
             if a[m - 1] is None and 0 < v < 3:
                 a[m - 1] = v; eklenen += 1; log('YENİ TÜFE', y, m, v)
+                kayit['%04d-%02d' % (y, m)] = {'alindi': simdi.strftime('%Y-%m-%d %H:%M'), 'kaynak': durum.split(' — ')[0]}
         sonay = max((int(y), i + 1) for y, a in tab.items() for i, v in enumerate(a) if v is not None)
         O['tufe']['son_ay'] = '%04d-%02d' % sonay
         O['tufe']['durum'] = 'otomatik: ' + durum

@@ -2,3 +2,5 @@
 data/veri.json
 *.plain.json
 secret/
+data/ekler.json
+scripts/__pycache__/

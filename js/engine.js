@@ -68,7 +68,10 @@
     const uyarilar = [];
     const parkByVkn = {};
     veri.parks.forEach((p) => { if (p.vkn_muh) parkByVkn[p.vkn_muh] = p.kisa; });
-    const rows = veri.muhasebe.map((x, i) => Object.assign({}, x, { id: i, park: parkByVkn[x.vkn] || 'Park dışı', item: false }));
+    // Programın oluşturduğu tahakkuk satırları (oto), aynı park ve yıl için muhasebe dökümünde gerçek tahakkuk varsa devre dışı kalır
+    const gercek = new Set(veri.muhasebe.filter((x) => !x.oto && x.kaynak === '120' && x.borc > 0 && (x.alacak_h || '').includes('600')).map((x) => x.vkn + '|' + E.year(x.tarih)));
+    const rows = veri.muhasebe.map((x, i) => Object.assign({}, x, { id: i, park: parkByVkn[x.vkn] || 'Park dışı', item: false }))
+      .filter((x) => !(x.oto && gercek.has(x.vkn + '|' + x.oto.split('|')[1])));
     const yeniden = new Set(rows.filter((x) => x.kaynak === '127' && hs(x.borc_h) === '127' && hs(x.alacak_h) === '127').map((x) => x.vkn));
     const items = [];
     for (const x of rows) {
@@ -229,6 +232,96 @@
     else durum = Math.abs(r2(muh - hesap)) <= 1 ? 'Uyumlu' : 'Fark var';
     return { zincir: z, donem: G, bas: d ? d.bas : null, tufe: d && G >= 2 ? d.tufe : null, tufeAy: d ? d.tufeAy : null, hesap, muh,
       fark: muh != null && hesap != null ? r2(muh - hesap) : null, durum };
+  };
+
+  // ---------- yıllık kira ve tahakkuk planı (Md. 31–33, 10/2) ----------
+  // Y takvim yılının yıllık kirası: Y yılının 31 Mart'ına kadar başlamış son dönemin bedeli (muhasebe uygulaması ve kira kontrolüyle aynı esas).
+  E.kiraYili = function (p, tufe, ekKira, Y) {
+    const z = E.zincir(p, tufe, ekKira);
+    const sinir = iso(Y, 3, 31);
+    const G = z.filter((x) => x.bas <= sinir);
+    if (!G.length) return null;
+    const d = G[G.length - 1];
+    return { donem: d.n, bas: d.bas, tufe: d.tufe, tufeAy: d.tufeAy, bedel: d.bedel, ek: d.ek, zincir: z, onceki: G.length > 1 ? G[G.length - 2] : null };
+  };
+  // TÜİK, ayın verisini izleyen ayın 3'ünde açıklar
+  E.tufeYayim = (ta) => (ta ? iso(ta[1] === 12 ? ta[0] + 1 : ta[0], ta[1] === 12 ? 1 : ta[1] + 1, 3) : null);
+  const bol = (top, n) => { const a = []; const b = r2(top / n); for (let i = 0; i < n - 1; i++) a.push(b); a.push(r2(top - b * (n - 1))); return a; };
+  E.bol = bol;
+  // Ödeme düzeni: önceki yılın muhasebe tahakkukları (vade günleri +1 yıl); yoksa Md. 31/32-3 kuralı; yönetici parkta 'taksit_vade' (AA-GG listesi) tanımlayabilir.
+  E.tahakkukPlan = function (veri, esl, p, tufe, Y, rapor) {
+    const out = { park: p.kisa, yil: Y, uyari: [] };
+    if (!p.soz_bas || !p.taban || p.ihale_b == null) { out.durum = 'Sözleşme bilgisi eksik'; out.kod = 'eksik'; return out; }
+    if (p.durum && p.durum !== 'Kirada') { out.durum = 'Park kirada değil (' + p.durum + ')'; out.kod = 'disi'; return out; }
+    if (p.soz_bit && iso(Y, 1, 1) > p.soz_bit) { out.durum = 'Sözleşme süresi dışında'; out.kod = 'disi'; return out; }
+    const ky = E.kiraYili(p, tufe, veri.ek_kira, Y);
+    if (!ky) { out.durum = 'Kira dönemi başlamamış'; out.kod = 'yok'; return out; }
+    Object.assign(out, { donem: ky.donem, bas: ky.bas, tufe: ky.tufe, tufeAy: ky.tufeAy });
+    if (ky.bedel == null) { out.durum = 'TÜFE bekleniyor'; out.kod = 'tufe'; out.yayim = E.tufeYayim(ky.tufeAy); return out; }
+    const kira = ky.bedel;
+    out.kira = kira; out.ilkDonem = ky.donem === 1;
+    // muhasebede bu yılın tahakkuku var mı
+    // yıllık kira tahakkuku: Y tahakkuku + aynı yıla ait ek tahakkuk kira farkları; kıst / dönem arası tahakkuklar ayrı gösterilir
+    const KIST = /k[ıi]st|\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}/i;
+    const muh = (it) => !(veri.muhasebe[it.row] || {}).oto;
+    const items = esl.items.filter((it) => it.park === p.kisa && it.grup === Y + ' tahakkuku' && muh(it));
+    const ekler = esl.items.filter((it) => it.park === p.kisa && it.grup === 'Ek tahakkuk' && it.tur === 'Kira' && muh(it) && E.year(it.duz || it.vade || it.olusma) === Y);
+    const kiraIt = items.filter((x) => x.tur === 'Kira').concat(ekler);
+    out.muhasebede = items.length > 0;
+    out.muhKira = r2(kiraIt.filter((x) => !KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
+    out.muhKist = r2(kiraIt.filter((x) => KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
+    out.otoVar = veri.muhasebe.some((x) => x.oto === p.kisa + '|' + Y);
+    // örnek düzen
+    let ornek = null;
+    for (let y = Y - 1; y >= Y - 6 && !ornek; y--) {
+      const it = esl.items.filter((x) => x.park === p.kisa && x.grup === y + ' tahakkuku' && muh(x));
+      if (it.some((x) => x.tur === 'Kira')) ornek = { yil: y, items: it };
+    }
+    let vadeler, kaynak;
+    const own = (p.taksit_vade || '').split(/[,;\s]+/).filter((s) => /^\d\d-\d\d$/.test(s));
+    if (own.length) { vadeler = own.map((s) => Y + '-' + s).sort(); kaynak = 'Parkta tanımlı ödeme günleri'; }
+    else if (ornek) {
+      const kv = Array.from(new Set(ornek.items.filter((x) => x.tur === 'Kira').map((x) => x.vade || x.duz).filter(Boolean))).sort();
+      vadeler = kv.map((v) => E.addMonths(v, (Y - ornek.yil) * 12)); kaynak = ornek.yil + ' tahakkukunun ödeme günleri (bir yıl ileri)';
+    } else {
+      const [, sm, sd] = P(p.soz_bas);
+      if (p.ihale_b <= 150000) { vadeler = [iso(Y, sm, lastDay(Y, sm))]; kaynak = 'Md. 32/3: sözleşme ayının sonunda tek seferde peşin'; }
+      else { vadeler = [0, 3, 6, 9].map((k) => { const [yy, mm] = mk(Y, sm + k, 1); return iso(yy, mm, Math.min(sd, lastDay(yy, mm))); }).filter((v) => E.year(v) === Y).sort();
+        kaynak = 'Md. 32/3: sözleşme ayından başlayarak üçer aylık dört eşit taksit'; }
+    }
+    if (!vadeler.length) vadeler = [iso(Y, 1, 31)];
+    const kTut = bol(kira, vadeler.length);
+    const agac = r2(kira * 0.05), kdv = r2((kira + agac) * 0.2);
+    out.vadeler = vadeler.map((v, i) => ({ vade: v, kira: kTut[i], agac: i === 0 ? agac : 0, kdv: i === 0 ? kdv : 0 }));
+    out.agac = agac; out.kdv = kdv; out.toplam = r2(kira + agac + kdv); out.kaynak = kaynak;
+    // güvence ve depozito (Md. 10/2): yıllık kira artış oranıyla güncellenir
+    const onc = ky.onceki && ky.onceki.bedel != null ? ky.onceki.bedel : null;
+    if (p.guv != null) { out.guv = r2(kira * p.guv); out.guvFark = onc != null ? r2(out.guv - onc * p.guv) : null; }
+    if (p.dep != null) { out.dep = r2(kira * p.dep); out.depFark = onc != null ? r2(out.dep - onc * p.dep) : null; }
+    // örnek hesap kodları
+    const hk = (tur) => { const x = ornek && ornek.items.find((i) => i.tur === tur); return x ? x.hesap : null; };
+    out.hesap = { kira: hk('Kira') || '120.99.01', kdv: hk('KDV') || hk('Vergi/fon') || '120.99.05', agac: hk('Ağaçlandırma') || hk('Vergi/fon') || '120.99.06' };
+    if (out.muhasebede) {
+      out.fark = r2(out.muhKira - kira);
+      out.durum = Math.abs(out.fark) <= 1 ? 'Muhasebede tahakkuk edildi' : 'Muhasebede farklı tutarla tahakkuk edildi';
+      out.kod = Math.abs(out.fark) <= 1 ? 'tamam' : 'fark';
+    } else if (out.otoVar) { out.durum = 'Program kaydıyla tahakkuk edildi'; out.kod = 'oto'; }
+    else if (rapor >= iso(Y, 1, 1)) { out.durum = 'Tahakkuk edilmeli'; out.kod = 'bekliyor'; }
+    else { out.durum = 'Hesaplandı, ' + Y + ' başında tahakkuk edilecek'; out.kod = 'plan'; }
+    return out;
+  };
+
+  // ---------- rakamı yazıyla (Türkçe) ----------
+  E.yaziyla = function (n, kurus) {
+    if (n == null || isNaN(n)) return '';
+    const B = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz'], O = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan'];
+    const U = ['', 'bin', 'milyon', 'milyar', 'trilyon'];
+    const uc = (x) => { const y = Math.floor(x / 100), o = Math.floor((x % 100) / 10), b = x % 10; return [y ? (y > 1 ? B[y] + ' ' : '') + 'yüz' : '', O[o], B[b]].filter(Boolean).join(' '); };
+    const tam = (x) => { if (x === 0) return 'sıfır'; const p = []; let i = 0; while (x > 0) { const g = x % 1000; if (g) p.unshift([(i === 1 && g === 1) ? '' : uc(g), U[i]].filter(Boolean).join(' ')); x = Math.floor(x / 1000); i++; } return p.join(' '); };
+    const t = Math.floor(r2(n) + 1e-9), k = Math.round((r2(n) - t) * 100);
+    let s = tam(t) + ' Türk Lirası';
+    if (kurus !== false && k) s += ' ' + tam(k) + ' kuruş';
+    return s;
   };
 
   // ---------- park özetleri ----------
