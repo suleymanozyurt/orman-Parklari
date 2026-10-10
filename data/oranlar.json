@@ -1,11 +1,11 @@
 {
- "guncelleme": "2026-10-10T16:57:16+03:00",
+ "guncelleme": "2026-10-10T21:59:35+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
   "kaynak_url": "https://veriportali.tuik.gov.tr/tr/press-releases",
   "son_ay": "2026-09",
-  "durum": "otomatik güncelleme yapılamadı: TÜİK API anahtarı tanımlı değil (GitHub › Settings › Secrets › TUIK_API_KEY)",
+  "durum": "otomatik: TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 21 bilinen ayla doğrulandı",
   "degerler": {
    "2013": [
     0.0862,
@@ -204,11 +204,12 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-10 16:57"
+  "son_kontrol": "2026-10-10 21:59",
+  "kayit": {}
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
-  "son_kontrol": "2026-10-10 16:57",
+  "son_kontrol": "2026-10-10 21:59",
   "durum": "13.11.2025 tarihli karar (aylık %3,7) ile güncel",
   "oranlar": [
    [
@@ -251,6 +252,6 @@
  },
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
-  "TÜFE: TÜİK API anahtarı tanımlı değil (GitHub › Settings › Secrets › TUIK_API_KEY)"
+  "TÜFE (portal): TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 21 bilinen ayla doğrulandı"
  ]
 }
