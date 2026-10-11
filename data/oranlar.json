@@ -1,5 +1,5 @@
 {
- "guncelleme": "2026-10-10T21:59:35+03:00",
+ "guncelleme": "2026-10-11T17:20:26+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
@@ -204,12 +204,12 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-10 21:59",
+  "son_kontrol": "2026-10-11 17:20",
   "kayit": {}
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
-  "son_kontrol": "2026-10-10 21:59",
+  "son_kontrol": "2026-10-11 17:20",
   "durum": "13.11.2025 tarihli karar (aylık %3,7) ile güncel",
   "oranlar": [
    [
