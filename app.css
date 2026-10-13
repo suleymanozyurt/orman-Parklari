@@ -434,13 +434,14 @@ th.mc{text-align:center;padding:10px 2px}
 .hside details{margin-top:8px}
 .hside summary{cursor:pointer;font-weight:600;font-size:13.5px}
 .leaflet-container a{color:#1F5E43}
-@media (max-width:900px){.hgrid{grid-template-columns:1fr}.hmap{height:60vh}}
+@media (max-width:900px){.hgrid{grid-template-columns:minmax(0,1fr)}.hmap{height:60vh}}
+.hgrid>*{min-width:0}.hside .sl{overflow:auto;max-width:100%}
 /* harita: plan tesisleri, bilgi kutusu, lejant */
 .hsub{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--mute);text-transform:uppercase;margin:14px 0 4px}
 .hdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
 .hleg2{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--ink2);margin:4px 0 8px}.hleg2 i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
 .htes tbody tr{cursor:pointer}.htes tbody tr:hover td{background:var(--line2)}.htes td{font-size:13px;padding:6px 5px}
-.hpop{max-width:calc(100vw - 100px);font-family:"Bahnschrift","Barlow",system-ui,sans-serif;color:#16221B;max-height:340px;overflow:auto}
+.hpop{max-width:calc(100vw - 100px);font-family:"Bahnschrift","Barlow",system-ui,sans-serif;color:#16221B;max-height:min(440px,52vh);overflow:auto}
 .hpop .hpt{font-weight:700;font-size:14px;border-left:5px solid #5AA9E6;padding:2px 0 2px 8px;margin:0 0 8px}
 .hpop table{border-collapse:collapse;width:100%;font-size:12px}.hpop th{text-align:left;vertical-align:top;color:#3F5046;font-weight:600;padding:4px 8px 4px 0;width:38%;white-space:normal;border-bottom:1px solid #EDF1EC}
 .hpop td{padding:4px 0;white-space:normal;border-bottom:1px solid #EDF1EC;font-size:12px;line-height:1.35}
@@ -449,3 +450,43 @@ th.mc{text-align:center;padding:10px 2px}
 .hleg summary{font-weight:700;cursor:pointer;margin-bottom:2px}.hleg span{display:block;line-height:1.55}.hleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}.hleg em{display:block;margin-top:4px;font-size:11px;color:#6F7E75;font-style:normal}
 .leaflet-control-layers label{font-size:12.5px}
 @media (max-width:700px){.hleg{max-width:170px;font-size:11px}}
+/* harita v2: park seçici, filtre paneli, envanter, araçlar */
+.htool{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:0 0 10px}
+.hsel{display:flex;flex-direction:column;gap:4px;min-width:0}.hsel label{font-size:12.5px;font-weight:600;color:var(--ink2)}
+.hselr{display:flex;gap:6px}.hsel .fld{min-width:0}#hPark{width:min(320px,62vw)}.hq{flex:1 1 200px}.hq .fld{width:100%}
+.hfil{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px}
+.hfr{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:4px 0}.hfr+.hfr{border-top:1px solid var(--line2)}
+.hfl{font-size:12.5px;font-weight:600;color:var(--mute);min-width:44px}.hfr select.fld{max-width:280px}
+details.hfr summary{cursor:pointer;font-size:13px;font-weight:600}.hsl{display:flex;flex-wrap:wrap;gap:4px 6px;padding:6px 0}
+.hchip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:3px 8px;border:1px solid var(--line);border-radius:14px;background:var(--soft);cursor:pointer;line-height:1.3}
+.hchip input{margin:0}.hchip i{display:inline-block;width:10px;height:10px;border-radius:3px;border:1px solid rgba(0,0,0,.25)}.hchip b{font-weight:600;color:var(--mute)}
+.hplc{border:0;background:none;padding:0;font-size:13.5px}.hplc b{color:var(--ink);font-weight:600}
+.hbtns{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 2px}
+.hbel{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--line2);font-size:13px;line-height:1.4}.hbel small{color:var(--mute);font-size:12px}.hbel .muted{font-size:12px}.hbel .badge{align-self:flex-start;font-size:11px;padding:2px 8px}
+.hbul{padding:7px 0;border-top:1px solid var(--line2);font-size:12.5px;line-height:1.45}
+.hps h3,.hside .panel h3{margin-top:0}.hside h3 small{font-weight:500;color:var(--mute);font-size:12px}
+.henvt{max-height:46vh;overflow:auto}.htes tr.on td{background:var(--okbg)!important}.htes tr.har td{color:var(--mute)}
+.hpop .hpt small{display:block;font-weight:500;font-size:11.5px;color:#6F7E75}
+.hpop .hbyok{color:#8A5A0B;font-style:italic}
+.hpop .hwarn{background:#FBF0D9;color:#8A5A0B;border-radius:6px;padding:5px 8px;font-size:11.5px;line-height:1.35;margin:0 0 6px}
+.hpop .hkoor{display:flex;flex-direction:column;gap:1px;margin:6px 0;font:11.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#3F5046}
+.hpop details{margin:4px 0}.hpop summary{cursor:pointer;font-size:12px;font-weight:600;color:#1F5E43}
+.hpop .hpb{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.hpop .hpb button,.hpop .hpb a{font:600 12px "Barlow",system-ui,sans-serif;border:1px solid #CBD5CC;background:#F4F6F3;color:#16221B;border-radius:7px;padding:5px 9px;cursor:pointer;text-decoration:none;line-height:1.2}
+.hpop .hpb button:hover,.hpop .hpb a:hover{background:#E4F1E7}
+.hpopw .leaflet-popup-content{margin:10px 12px}
+.htools a{display:flex!important;align-items:center;justify-content:center;color:#16221B}.htools svg{width:18px;height:18px}.htools a.on{background:#FFD34E}
+.hcoord{background:rgba(255,255,255,.88);border-radius:6px;padding:2px 7px;font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#16221B;max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcevr{background:#FBF0D9;color:#8A5A0B;border-radius:8px;padding:6px 9px;font:12px "Barlow",system-ui,sans-serif;max-width:230px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.holc{font-weight:700}
+.hwrap.hfull{position:fixed;inset:0;z-index:900;background:var(--mist);padding:0;margin:0}
+.hwrap.hfull .htool,.hwrap.hfull .hfil,.hwrap.hfull .hside{display:none}.hwrap.hfull .hgrid{display:block;height:100%}.hwrap.hfull .hmap{height:100vh;height:100dvh;border-radius:0;border:0}
+body.hfull-on{overflow:hidden}
+@media (max-width:900px){.hfr select.fld{max-width:100%}.hcoord{font-size:10px}.henvt{max-height:60vh}}
+@media (max-width:600px){.htool{gap:8px}.hselr{width:100%}#hPark{flex:1;width:auto}.hfbtn{width:100%}.hsel{width:100%}}
+.band{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:2000;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 24px);padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.band-guncel{background:var(--pine);color:#fff}.band-guncel button{background:#FFD34E;color:#16221B;border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
+.band-cevrimdisi{background:#FBF0D9;color:#8A5A0B;bottom:auto;top:calc(8px + env(safe-area-inset-top))}
+.henv2 td b{display:block;font-weight:600;font-size:13px}.henv2 td small{display:block;font-size:11.5px;color:var(--mute);line-height:1.35;margin-top:1px}.henv2 .hdot{width:8px;height:8px;margin:0 4px 0 0}.henv2 td.r{white-space:nowrap;vertical-align:top}
+@media (max-width:700px){.hmap.popacik .leaflet-left,.hmap.popacik .leaflet-bottom.leaflet-right .hcoord{display:none}}
+.henv2{width:100%;table-layout:auto}.henv2 td:first-child{white-space:normal}.henv2 td small{white-space:normal}
