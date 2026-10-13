@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc' };
+  const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const esc = (v) => (v == null ? '' : String(v)).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18,7 +18,8 @@
     chain: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
     book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5', gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2',
     clock: 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', build: 'M3 21V10l9-6 9 6v11M9 21v-6h6v6', doc: 'M8 3h8l4 4v14H4V3h4M8 12h8M8 16h5',
-    swap: 'M4 8h13l-3-3M20 16H7l3 3', x: 'M6 6l12 12M18 6 6 18', menu: 'M4 6h16M4 12h16M4 18h16', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5'
+    swap: 'M4 8h13l-3-3M20 16H7l3 3', x: 'M6 6l12 12M18 6 6 18', menu: 'M4 6h16M4 12h16M4 18h16', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5',
+    map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14', edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6'
   };
   const svg = (d, s, w) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"></path></svg>';
   const LOGO = (s) => '<svg width="' + s + '" height="' + s + '" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#174A37" stroke="#2C6A4D"></circle><path d="M20 7 12.5 18h4L11 26h6.5v6h5v-6H29l-5.5-8h4z" fill="#9CC27A"></path></svg>';
@@ -27,12 +28,12 @@
     { id: 'alacaklar', l: 'Alacaklar', s: 'Alacaklar', ic: IC.money }, { id: 'hesap', l: 'Hesaplama', s: 'Hesap', ic: IC.calc },
     { id: 'denetim', l: 'Denetim ve planlar', s: 'Denetim', ic: IC.check }, { id: 'ekler', l: 'Ekler ve defter', s: 'Ekler', ic: IC.file },
     { id: 'tahakkuk', l: 'Kira ve tahakkuk', s: 'Tahakkuk', ic: IC.clock }, { id: 'teblig', l: 'Tebliğ ve hesaplar', s: 'Tebliğ', ic: IC.doc },
-    { h: 'Kayıtlar' }, { id: 'parklar', l: 'Parklar', s: 'Parklar', ic: IC.list }, { id: 'zincir', l: 'Kira zinciri', s: 'Zincir', ic: IC.chain },
+    { id: 'harita', l: 'Harita', s: 'Harita', ic: IC.map }, { h: 'Kayıtlar' }, { id: 'parklar', l: 'Parklar', s: 'Parklar', ic: IC.list }, { id: 'eksik', l: 'Eksik veriler', s: 'Eksik', ic: IC.edit }, { id: 'zincir', l: 'Kira zinciri', s: 'Zincir', ic: IC.chain },
     { id: 'muhasebe', l: 'Muhasebe', s: 'Muhasebe', ic: IC.book }, { id: 'veriler', l: 'Veriler ve ayarlar', s: 'Veriler', ic: IC.gear }, { id: 'form', l: 'Ek formu', s: 'Form', ic: IC.file, gizli: true }];
 
   // ---------------- durum ----------------
   const S = { veri: null, oran: null, pw: null, rapor: null, owner: false, token: null, sha: null, dirty: 0, page: 'genel', park: null, ekB: null, form: null, tY: null, tQ: '', tMd: null,
-    af: 'acik', ap: 'Tüm parklar', tool: 'g', defterOnly: false, muhK: 'tümü', muhQ: '', csv: null, hesapS: null, zPark: null };
+    rol: {}, kullanici: null, dirKey: null, af: 'acik', ap: 'Tüm parklar', hP: null, eksikTum: false, tool: 'g', defterOnly: false, muhK: 'tümü', muhQ: '', csv: null, hesapS: null, zPark: null };
   function bugun() {
     const q = new URLSearchParams(location.search).get('tarih');
     if (q && /^\d{4}-\d\d-\d\d$/.test(q)) return q;
@@ -101,6 +102,8 @@
   async function basla() {
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
     S.token = ls.get('op_gh') || ss.get('op_gh') || null; S.kim = ls.get('op_kim') || ss.get('op_kim') || 'Yönetici';
+    S.kullanici = ls.get('op_kul') || ss.get('op_kul') || null;
+    try { S.rol = JSON.parse(ls.get('op_rol') || ss.get('op_rol') || 'null') || (S.token ? TUM_ROL : {}); } catch (e) { S.rol = S.token ? TUM_ROL : {}; }
     gateGoster('yukleniyor');
     try {
       const [vt, or] = await Promise.all([veriGetir(), oranGetir()]);
@@ -125,11 +128,13 @@
     g.innerHTML = '<form class="box" id="gform">' + LOGO(52) + '<h1>Orman Parkları</h1><p>İstanbul Orman İşletme Müdürlüğü · Emlak Şefliği. Kayıtlar şifrelidir; size verilen erişim parolasını girin.</p>' +
       '<input class="fld" id="gpw" type="password" autocomplete="current-password" placeholder="Erişim parolası" aria-label="Erişim parolası" required>' +
       '<label class="chk"><input type="checkbox" id="gkeep" checked> Bu cihazda hatırla</label>' +
-      '<button class="btn pri" type="submit">Aç</button><div class="err" id="gerr" role="alert"></div></form>';
+      '<button class="btn pri" type="submit">Aç</button><div class="err" id="gerr" role="alert"></div>' +
+      '<p class="muted" style="margin:6px 0 0;font-size:13px"><a href="#" id="gkul" style="text-decoration:underline">Kişisel hesabımla gir (kullanıcı adı ve parola)</a></p></form>';
     $('#gpw').focus();
+    $('#gkul').onclick = (e) => { e.preventDefault(); kulGirisFormu($('#gate .box'), true); };
     $('#gform').onsubmit = async (ev) => {
       ev.preventDefault(); const pw = $('#gpw').value; $('#gerr').textContent = 'Açılıyor…';
-      try { S.veri = await K.coz(S.enc, pw); S.pw = pw; if ($('#gkeep').checked) ls.set('op_pw', pw); await acildi(); }
+      try { S.veri = await K.coz(S.enc, pw); S.pw = pw; S.rol = {}; if ($('#gkeep').checked) ls.set('op_pw', pw); await acildi(); }
       catch (e) { $('#gerr').textContent = 'Parola yanlış. Tekrar deneyin.'; }
     };
   }
@@ -149,9 +154,19 @@
       S.owner = !!(j.permissions && j.permissions.push);
       if (!S.owner && !sessiz) toast('Bu anahtarın depoya yazma izni yok.', true);
     } catch (e) { S.owner = false; if (!sessiz) toast('Anahtar doğrulanamadı: ' + e.message, true); }
-    document.body.classList.toggle('is-owner', S.owner);
+    rolSinif();
     return S.owner;
   }
+  // ---- yetkiler: görüntüleme (herkes), veri düzenleme, muhasebe yükleme, yönetim ----
+  const ROL = { duzenle: 'Veri düzenleme', muhasebe: 'Muhasebe yükleme ve kayıt', yonetim: 'Yönetim (kullanıcılar, parola, oranlar)' };
+  const TUM_ROL = { duzenle: true, muhasebe: true, yonetim: true };
+  const yetki = (r) => !!(S.owner && S.rol && S.rol[r]);
+  function rolSinif() { document.body.classList.toggle('is-owner', !!S.owner); Object.keys(ROL).forEach((r) => document.body.classList.toggle('r-' + r, yetki(r))); }
+  // her işlemin gerektirdiği yetki (yetkisi olmayan kullanıcıda düğme çalışmaz)
+  const GEREK = { parkDuzenle: 'duzenle', defterEkle: 'duzenle', defterSil: 'duzenle', ekKiraEkle: 'duzenle', ekKiraSil: 'duzenle', denDuzenle: 'duzenle', kurumDuzenle: 'duzenle',
+    fDuzenle: 'duzenle', fSifirla: 'duzenle', haritaYukle: 'duzenle', haritaSil: 'duzenle', planDuz: 'duzenle',
+    csvYukle: 'muhasebe', kayitEkle: 'muhasebe', kayitSil: 'muhasebe', tahsilat: 'muhasebe', tahakkuk: 'muhasebe', tEt: 'muhasebe', tEtP: 'muhasebe', tGeri: 'muhasebe', vadeDuz: 'muhasebe', vadeSil: 'muhasebe',
+    gzGir: 'yonetim', gzSil: 'yonetim', tufeGir: 'yonetim', sifreDegis: 'yonetim', yPwDegis: 'yonetim', anahtarYenile: 'yonetim', yedekYukle: 'yonetim', kulEkle: 'yonetim', kulDuz: 'yonetim', kulSil: 'yonetim' };
   async function shaAl(yol) { try { return (await gh('/contents/' + yol + '?ref=' + CFG.branch)).sha; } catch (e) { return null; } }
   async function dosyaYaz(yol, txt, mesaj) {
     const sha = await shaAl(yol);
@@ -225,10 +240,10 @@
     const late = S.oz.filter((o) => o.vgec > 0).length;
     ['#cntAl', '#cntAl2'].forEach((s) => { const el = $(s); if (el) { el.textContent = late || ''; el.style.display = late ? '' : 'none'; } });
     const tf = S.oran.tufe, sonAy = sonTufeAyi();
-    const muhT = S.veri.meta.muhasebe_tarihi;
-    $('#sFoot').innerHTML = 'Rapor tarihi <b class="n">' + fd(S.rapor) + '</b><br>Muhasebe verisi <b class="n">' + fd(muhT) + '</b><br>TÜFE son veri <b>' + (sonAy ? AY[sonAy[1] - 1] + ' ' + sonAy[0] : '—') + '</b>' +
+    const dsn = E.dokumSon(S.veri);
+    $('#sFoot').innerHTML = 'Rapor tarihi <b class="n">' + fd(S.rapor) + '</b><br>Döküm son yevmiye: 120 <b class="n">' + fd(dsn['120']) + '</b> · 127 <b class="n">' + fd(dsn['127']) + '</b><br>TÜFE son veri <b>' + (sonAy ? AY[sonAy[1] - 1] + ' ' + sonAy[0] : '—') + '</b>' +
       (tufeGecikti() ? '<br><span class="warn">TÜFE güncellemesi bekleniyor</span>' : '') + '<br>GZ oranı <b>%' + (gzSon()[1] * 100).toLocaleString('tr-TR') + '</b> · ' + fd(gzSon()[0]) +
-      '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? 'Yönetici · düzenleme açık' : 'Görüntüleme') + '</div>';
+      '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div>';
     const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : 'Kaydedildi ✓';
   }
   const gzSon = () => S.gzO[S.gzO.length - 1];
@@ -252,8 +267,12 @@
       case 'yenile': yenile(); break;
       case 'kaydet': kaydet(); break;
       case 'giris': yoneticiGiris(); break;
-      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { ls.del('op_gh'); ss.del('op_gh'); ls.del('op_kim'); ss.del('op_kim'); S.token = null; S.owner = false; document.body.classList.remove('is-owner'); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Yönetici oturumu kapatıldı.'); } break;
-      default: if (AKSIYON[a]) AKSIYON[a](t, ev);
+      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { ['op_gh', 'op_kim', 'op_rol', 'op_kul'].forEach((k) => { ls.del(k); ss.del(k); }); S.token = null; S.owner = false; S.rol = {}; S.kullanici = null; S.dirKey = null; S.yPw = null; S.kim = 'Yönetici'; rolSinif(); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Oturum kapatıldı; görüntüleme modundasınız.'); } break;
+      default: if (AKSIYON[a]) {
+        const g = GEREK[a];
+        if (g && !yetki(g)) { if (!S.owner) yoneticiGiris(); else toast('Bu işlem için “' + ROL[g] + '” yetkisi gerekiyor. Yetkiyi yönetici verir.', true); return; }
+        AKSIYON[a](t, ev);
+      }
     }
   }
   function parkSec(k, go) {
@@ -307,7 +326,7 @@
       '<div class="frow"><button class="btn" data-a="pdf">PDF kaydet</button><button class="btn" data-a="csv">CSV indir</button><button class="btn" data-a="paylas">Paylaş</button><button class="btn" data-a="yenile">Verileri yenile</button>' +
       '<button class="btn pri own-only" data-a="kaydet">Değişiklikleri kaydet' + (S.dirty ? ' (' + S.dirty + ')' : '') + '</button>' +
       '<button class="btn view-only" data-a="giris">Yönetici girişi</button><button class="btn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
-      '<p class="muted" style="font-size:13px;margin:0">Rapor tarihi ' + fd(S.rapor) + ' · Muhasebe ' + fd(S.veri.meta.muhasebe_tarihi) + ' · ' + (S.owner ? 'Yönetici' : 'Görüntüleme') + '</p>');
+      '<p class="muted" style="font-size:13px;margin:0">Rapor tarihi ' + fd(S.rapor) + ' · Döküm son yevmiye 120: ' + fd(E.dokumSon(S.veri)['120']) + ', 127: ' + fd(E.dokumSon(S.veri)['127']) + ' · ' + (S.owner ? esc(S.kim) : 'Görüntüleme') + '</p>');
     $('#mPark').onchange = (e) => parkSec(e.target.value, 'park');
   }
   function aramaSheet() {
@@ -368,12 +387,12 @@
     const acik = sumOf(al, (a) => a.acik), nAcik = al.filter((a) => a.acik > 0).length;
     const D = S.veri.parks.map((p) => p.durum);
     const cnt = (s) => D.filter((d) => d === s).length;
-    const hero = '<section class="hero"><div><h1>' + (late.length ? 'Bugün ' + late.length + ' parkta vadesi geçmiş alacak var' : 'Vadesi geçmiş alacak yok') + '</h1>' +
-      '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için ödeme takibi gerekiyor. Park adına dokununca park dosyası açılır.' : 'Vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
+    const hero = '<section class="hero"><div><h1>' + (late.length ? 'Dökümlere göre ' + late.length + ' parkta vadesi geçmiş alacak görünüyor' : 'Dökümlerde vadesi geçmiş alacak görünmüyor') + '</h1>' +
+      '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için dökümde ödenmemiş kalem var; döküm tarihinden sonraki ödemeler muhasebeden teyit edilmeli. Park adına dokununca park dosyası açılır.' : 'Dökümdeki vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
       '<div class="chips">' + late.map((o) => '<a class="chip" href="#/park" data-a="park" data-k="' + esc(o.kisa) + '" data-go="park"><i></i>' + esc(o.kisa) + '</a>').join('') + '</div></div>' +
       '<div class="big"><span>Vadesi geçmiş alacak</span><strong class="n">' + tl(vgec) + ' TL</strong><div class="row"><div>Gecikme zammı ve KDV’si<b class="n">' + tl(gz) + '</b></div><div>En eski vade<b class="n">' + fd(enEski) + '</b></div></div></div>' +
       treeSvg(7, 31) + '</section>';
-    const kp = [['Bu yıl vadeli kira', tl(kira), 'Ek ve kıst tahakkuklar dahil', 'var(--ink)', 100, '#3F7D4E'],
+    const kp = [['Bu yıl vadeli kira', tl(kira), 'Dökümdeki ek tahakkuklar dahil', 'var(--ink)', 100, '#3F7D4E'],
       ['Tahsil edilen', tl(tah), 'Dökümdeki ' + tl(tum) + ' TL tahakkukun %' + (tum ? (tah / tum * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : 0) + '’i', '#1E6B3E', tum ? Math.round(tah / tum * 100) : 0, '#2F8A55'],
       ['Açık alacak', tl(acik), nAcik + ' kalem, 120.99 + 127', 'var(--ink)', tum ? Math.max(2, Math.round(acik / tum * 100)) : 0, '#C2412D'],
       ['Kiradaki park', cnt('Kirada') + ' / ' + D.length, cnt('Sona erdi') + ' sona erdi, ' + cnt('İhale edilecek') + ' ihale, ' + cnt('Davalık') + ' davalık', 'var(--ink)', Math.round(cnt('Kirada') / D.length * 100), '#9CC27A']];
@@ -407,12 +426,17 @@
     });
     // onaylanmış revize plan, ek kira tahakkuku yok
     (S.veri.plan || []).forEach((pl) => {
-      if (E.year(pl.onay) !== y) return;
-      const t = revizeTahakkuk(pl); if (t.var) return;
-      todo.push({ k: pl.park, red: false, tutar: tl(pl.ek), alt: 'yıllık ek kira', ne: pl.revize + ' ' + fd(pl.onay) + '’de onaylandı; kıst ek kira (' + tl(t.kist) + '), ağaçlandırma, KDV ve ek kesin teminat (' + tl(r2(pl.ek * .06)) + ') tahakkuk ettirilmeli (Md. 30/2, 9/2).' });
+      if (E.year(pl.onay) < y - 1) return;
+      const t = revizeDurumP(pl); if (t.kod === 'tamam') return;
+      const kirmizi = t.kod === 'yok';
+      todo.push({ k: pl.park, red: kirmizi, tutar: tl(t.ek), alt: 'yıllık ek kira (Md. 30/1)', ne: pl.revize + ' ' + fd(pl.onay) + '’de onaylandı. ' + t.durum + '. Tebliğe göre tahsil: ' + (t.tahsil ? fd(t.tahsil) : '—') + ' (' + t.tahsilNe + ') — ek kira ' + tl(t.ek) + ', ağaçlandırma ' + tl(t.agac) + ', KDV ' + tl(t.kdv) + ', ek kesin teminat ' + tl(t.tem) + ' (Md. 30/2, 9/2).' });
     });
-    Object.values(S.plan[y] || {}).forEach((t) => { if (t.kod === 'bekliyor') todo.push({ k: t.park, red: true, tutar: tl(t.kira), alt: y + ' yıllık kira', go: 'tahakkuk',
-      ne: y + ' yılı kira tahakkuku muhasebe dökümünde ve programda yok. Tebliğe göre yıllık kira ' + tl(t.kira) + ' TL (' + t.donem + '. dönem, başlangıç ' + fd(t.bas) + '); Kira ve tahakkuk sayfasından tahakkuk edilebilir.' }); });
+    Object.values(S.plan[y] || {}).forEach((t) => {
+      if (t.kod === 'bekliyor') todo.push({ k: t.park, red: true, tutar: tl(t.kira), alt: y + ' yıllık kira', go: 'tahakkuk',
+        ne: y + ' yılı kira tahakkuku incelenen 120.99 dökümünde (son yevmiye ' + fd(t.dokumSon) + ') tespit edilemedi. Tebliğe göre yıllık kira ' + tl(t.kira) + ' TL (' + t.donem + '. dönem, başlangıç ' + fd(t.bas) + '). Güncel kayıt muhasebeden teyit edilmeli.' });
+      else if (t.kod === 'kapsam') todo.push({ k: t.park, red: false, tutar: tl(t.kira), alt: y + ' yıllık kira', go: 'tahakkuk',
+        ne: y + ' kirası ' + fd(t.zaman) + ' itibarıyla tahakkuk edilmeli; yüklü döküm bu tarihi kapsamıyor (120 son yevmiye ' + fd(t.dokumSon) + '). Güncel döküm yüklenince kontrol edilir.' });
+    });
     const sy = Object.values(S.plan[y + 1] || {}), hz = sy.filter((t) => t.kod === 'plan'), bk = sy.filter((t) => t.kod === 'tufe');
     if (hz.length || bk.length) todo.push({ k: '', red: false, tutar: hz.length + ' / ' + (hz.length + bk.length), alt: (y + 1) + ' kirası hesaplanan', go: 'tahakkuk',
       ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park TÜFE bekliyor (en erken ' + fd(bk.map((t) => t.yayim).filter(Boolean).sort()[0]) + ', otomatik tamamlanır).' : '.') });
@@ -433,17 +457,27 @@
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     return banners() + hero + kpis + cal + '<div class="split">' + todoH + tlH + '</div>' + tilesH;
   };
+  // Alacak ve tahakkuk sonuçları yüklenen dökümlerin son yevmiye tarihine kadar geçerlidir; güncel borç durumu değildir.
+  function dokumNotu(kisa) {
+    const ds = E.dokumSon(S.veri), D = (S.veri.meta.dokumler || []);
+    const yk = D.filter((d) => d.kaynak !== 'yazi').map((d) => d.yukleme).filter(Boolean).sort().slice(-1)[0];
+    const t = 'Tutarlar muhasebe dökümlerine göredir: 120.99 son yevmiye <b>' + fd(ds['120']) + '</b>, 127 son yevmiye <b>' + fd(ds['127']) + '</b>' + (ds.ek ? ', yazı ekinden işlenen kayıtlar ' + fd(ds.ek) : '') + (yk ? ' (programa yükleme ' + fd(yk) + ')' : '') + '. ';
+    return kisa ? t : t + 'Bu tarihlerden sonraki tahakkuk ve tahsilatlar görünmez; sonuç güncel borç durumu değildir. Yeni tahakkuk ya da ödeme olduğunda güncel döküm yüklenmelidir (Muhasebe sayfası).';
+  }
   function banners() {
-    let h = '';
+    let h = '<div class="banner noprint">' + svg(IC.book, 18, 2) + '<div>' + dokumNotu() + '</div></div>';
     if (tufeGecikti()) { const s = sonTufeAyi(); h += '<div class="banner noprint">' + svg(IC.clock, 18, 2) + '<div><b>TÜFE güncellemesi bekleniyor.</b> Elde en son ' + (s ? AY[s[1] - 1] + ' ' + s[0] : '—') + ' verisi var. Otomatik güncelleme günde bir kez TÜİK’ten denenir' + (S.oran.tufe.durum ? ' (' + esc(S.oran.tufe.durum) + ')' : '') + '. Kira hesapları bu aya kadar doğrudur.</div></div>'; }
     if (S.esl.uyarilar.length) h += '<div class="banner">' + svg(IC.check, 18, 2) + '<div><b>Muhasebe eşleştirme uyarısı:</b> ' + S.esl.uyarilar.map(esc).join(' · ') + '</div></div>';
     return h;
   }
-  function revizeTahakkuk(pl) {
-    const gun = E.days(pl.kist_bas, E.year(pl.kist_bas) + '-12-31'), kist = r2(pl.ek * gun / 365);
-    const it = S.esl.items.filter((x) => x.park === pl.park && x.grup === 'Ek tahakkuk' && x.tur === 'Kira' && (Math.abs(x.tutar - kist) < 0.05 || Math.abs(x.tutar - kist / 2) < 0.05));
-    return { gun, kist, agac: r2(kist * .05), kdv: r2((kist + r2(kist * .05)) * .2), var: it.length > 0 };
+  // onay yılının kira taksit vadeleri: muhasebe tahakkuklarından (ek tahakkuklar hariç), yoksa tahakkuk planından
+  function yilVadeleri(park, Y) {
+    const v = Array.from(new Set(S.esl.items.filter((i) => i.park === park && i.tur === 'Kira' && i.grup !== 'Ek tahakkuk' && (i.duz || i.vade) && E.year(i.duz || i.vade) === Y).map((i) => i.duz || i.vade))).sort();
+    if (v.length) return { vadeler: v, kaynak: Y + ' muhasebe tahakkuk vadeleri' };
+    const p = S.pBy[park], pl = p ? E.tahakkukPlan(S.veri, S.esl, p, S.tufe, Y, S.rapor) : null;
+    return { vadeler: ((pl && pl.vadeler) || []).map((x) => x.vade), kaynak: (pl && pl.kaynak) || 'ödeme düzeni bilinmiyor' };
   }
+  function revizeDurumP(pl) { const yv = yilVadeleri(pl.park, E.year(pl.onay)); return Object.assign(E.revizeDurum(S.veri, S.esl, pl, yv.vadeler, S.rapor), { vadeKaynak: yv.kaynak, vadeler: yv.vadeler }); }
 
   // ---------- PARK DOSYASI ----------
   SAYFA.park = function () {
@@ -465,11 +499,12 @@
     const inst = '<section class="card"><div class="ch"><h2>' + y + ' kira taksitleri</h2><span class="muted" style="font-size:13px">Ödeme şekli: ' + esc(p.odeme || '—') + ' · Md. 32/3</span></div>' +
       (tks.length ? '<div class="inst" style="padding:0 22px 20px">' + tks.map((t, i) => { const d = ['Ödenmedi', 'Geç ödendi', 'Vadesi gelmedi', 'Ödendi'].find((x) => t.d.includes(x)); const c = ic[d] || ['open', '#DDE4DC'];
         return '<div class="ins ' + c[0] + '"><div class="d">' + (tks.length > 1 ? (i + 1) + '. taksit · ' : '') + 'vade ' + fd(t.esas) + '</div><b class="n">' + tl(t.t) + ' TL</b><div class="s">' + d + (t.o.length ? ' · ' + fd(t.o.sort().slice(-1)[0]) : '') + '</div><div class="bar" style="background:' + c[1] + '"></div></div>'; }).join('') + '</div>'
-        : '<div class="empty">' + y + ' yılı kira tahakkuku muhasebe dökümünde yok.</div>') + '</section>';
+        : '<div class="empty">' + y + ' yılı kira tahakkuku incelenen dökümde (120 son yevmiye ' + fd(E.dokumSon(S.veri)['120']) + ') tespit edilemedi.</div>') + '</section>';
     const yk = kk.muh != null ? kk.muh : kk.hesap;
     const kv = (a, b) => '<div class="kv"><span>' + a + '</span><span class="n">' + b + '</span></div>';
     const soz = '<section class="panel"><h3>Sözleşme</h3>' + kv('İhale usulü', esc(p.sekil || '—')) + kv('İhale tarihi', fd(p.ihale_t)) + kv('İhale bedeli (1. yıl kira)', p.ihale_b != null ? tl(p.ihale_b) : '—') +
-      kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '—') + kv('Saha teslimi', fd(p.teslim)) + kv('Kira dönem tabanı', fd(p.taban)) + kv('TÜFE kuralı', esc(p.kural || '—')) +
+      kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '—') + kv('Saha teslimi', fd(p.teslim)) + kv('Kira dönem tabanı', fd(p.taban)) + kv('TÜFE kuralı', esc(p.kural || '—')) + (p.yil_esas === 'Dönem başı' ? kv('Yıla düşen dönem', 'o yıl başlayan dönem') : '') +
+      (p.kok ? kv('Belgeli başlangıç', fd(p.kok.bas) + ' · ' + tl(p.kok.bedel) + '<br><span class="muted" style="font-size:12px">' + esc(p.kok.kaynak || '') + '</span>') : '') + (p.onceki_isletmeci ? kv('Önceki işletmeci', esc(p.onceki_isletmeci)) : '') +
       kv('Artış esası', esc(p.artis || '—')) + kv('Ödeme', esc(p.odeme || '—')) + kv('Gelişim ve yönetim planı', esc((p.plan || '—').slice(0, 60))) + '</section>';
     const tem = '<section class="panel"><h3>Teminat ve bağlı bedeller</h3>' + kv('Yıllık kira (esas)', yk != null ? tl(yk) : '—') + kv('Kesin teminat', p.kesin != null ? tl(p.kesin) : 'Kayıt yok') +
       kv('Güvence', p.guv == null ? 'Sözleşmede yok' : E.pct(p.guv, 0) + ' · ' + tl(r2(yk * p.guv))) + kv('Depozito', p.dep == null ? 'Sözleşmede yok' : E.pct(p.dep, 0) + ' · ' + tl(r2(yk * p.dep))) +
@@ -499,12 +534,12 @@
         '<tr style="font-weight:600">' + td('Toplam', '', 'lead') + '<td colspan="2"></td>' + td(tl(sumOf(A, (a) => a.tutar)), 'Tutar', 'n r') + '<td colspan="3"></td>' + td(tl(sumOf(A.filter((a) => !a.odeme), (a) => a.gztop)), 'GZ (açık)', 'n r') + '<td></td></tr></tbody></table></div>'
         : '<div class="empty">Muhasebe dökümünde bu parka ait kalem yok' + (p.vkn_muh ? '' : ' (muhasebe VKN’si tanımlı değil)') + '.</div>') + '</section>';
     const pY = (Y) => { const t = (S.plan[Y] || {})[p.kisa]; if (!t || t.kod === 'eksik' || t.kod === 'disi') return '';
-      return '<div class="plnb"><div class="t"><b>' + Y + '</b><span class="badge ' + ({ tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', tufe: 'b-amb' }[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span></div>' +
+      return '<div class="plnb"><div class="t"><b>' + Y + '</b><span class="badge ' + ({ tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', tufe: 'b-amb', kapsam: 'b-amb' }[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span></div>' +
         (t.kira != null ? '<div class="big2 n">' + tl(t.kira) + ' TL</div><div class="muted" style="font-size:13px">' + t.donem + '. dönem · ' + fd(t.bas) + (t.tufe != null ? ' · TÜFE ' + E.pct(t.tufe) : '') + '</div>' +
           '<div class="muted n" style="font-size:13px;margin-top:6px">' + t.vadeler.map((v) => fd(v.vade).slice(0, 5) + ' ' + tl(v.kira)).join(' · ') + '<br>Ağaçlandırma ' + tl(t.agac) + ' · KDV ' + tl(t.kdv) + '</div>' +
           (t.kod === 'fark' ? '<div class="red-t" style="font-size:13px;margin-top:4px">Muhasebe ' + tl(t.muhKira) + ' · fark ' + tl(t.fark) + '</div>' : '')
           : '<div class="muted" style="font-size:13.5px;margin-top:6px">' + (t.yayim ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + ' TÜFE’si ' + fd(t.yayim) + '’te açıklanınca otomatik hesaplanır.' : esc(t.durum)) + '</div>') +
-        '<div style="margin-top:8px"><button class="btn sm" data-a="tAyrP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Hesabı göster</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan') ? ' <button class="btn sm pri own-only" data-a="tEtP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Tahakkuk et</button>' : '') + '</div></div>'; };
+        '<div style="margin-top:8px"><button class="btn sm" data-a="tAyrP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Hesabı göster</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEtP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Tahakkuk et</button>' : '') + '</div></div>'; };
     const plH = pY(y) + pY(y + 1);
     const planK = plH ? '<section class="card"><div class="ch"><h2>Yıllık kira ve tahakkuk</h2><span class="muted" style="font-size:13px">Md. 31–33, 10/2 · ' + esc(p.artis || '') + ' · ' + esc(p.kural || '') + '</span></div><div class="plns">' + plH + '</div></section>' : '';
     const T = TAKVIM(p);
@@ -575,62 +610,120 @@
   };
 
   // ---------- HESAPLAMA ----------
-  const HS0 = () => ({ gt: 100000, gv: E.addMonths(S.rapor, -3), ge: S.rapor, gk: 'Kira', ek: 1000000, et: 9, em: 0, eo: S.rapor, it: 1000000, io: 10, ih: 1000000, is: 10,
-    dk: 1000000, dt: '0', fk: 1000000, fs: 60000, fe: 0 });
+  // Seçili parkın kayıtlarıyla (ya da serbest girişle) Tebliğ hesapları; her sonuçta formül ve dayanak gösterilir.
+  const HS0 = () => ({ gt: 100000, gv: E.addMonths(S.rapor, -3), ge: S.rapor, gk: 'Kira', ek: 1000000, ets: [{ t: 9, m: 0 }], eo: S.rapor, ev: '', it: 1000000, io: 10, ih: 1000000, is: 10,
+    dk: 1000000, dt: '0', fk: 1000000, fs: 60000, fe: 0, kY: E.year(S.rapor) });
+  function hsPark(p) {
+    const H = HS0(), y = E.year(S.rapor), pl = (S.plan[y] || {})[p.kisa] || {}, kk = S.ozBy[p.kisa].kk;
+    const kira = pl.kira != null ? pl.kira : (kk.hesap != null ? kk.hesap : (p.muh_kira || 0));
+    const ekKes = r2((S.veri.ek_kira || []).filter((e) => e.park === p.kisa).reduce((a, e) => a + e.tutar * 0.06, 0));
+    const yv = yilVadeleri(p.kisa, y);
+    return Object.assign(H, { ek: kira, ev: yv.vadeler.join(','), dk: kira, fk: kira, fs: p.kesin != null ? p.kesin : (p.ihale_b != null ? r2(p.ihale_b * 0.06) : 0), fe: ekKes,
+      it: p.ihale_b || 0, ih: p.ihale_b || 0, is: p.soz_bas && p.soz_bit ? Math.round(E.days(p.soz_bas, p.soz_bit) / 365.25) : 10, _p: p.kisa });
+  }
   SAYFA.hesap = function () {
-    S.hesapS = S.hesapS || HS0(); const H = S.hesapS;
-    const tools = [['g', 'Gecikme zammı', 'Md. 39 · 6183 s.K. m.51', IC.clock], ['e', 'Ek yapı ve tesis kirası', 'Md. 30 · kıst, teminat', IC.build], ['i', 'İhale ve sözleşme bedelleri', 'Md. 8–10, 31, 33', IC.doc],
-      ['d', 'Sözleşme devri', 'Md. 35 · %30 artış', IC.swap], ['f', 'Fesih hâlinde', 'Md. 39/2, 40', IC.x]];
-    const inp = (id, lab, v, type, extra) => '<div class="fl"><label for="h_' + id + '">' + lab + '</label><input id="h_' + id + '" data-h="' + id + '" type="' + (type || 'number') + '" step="0.01" value="' + esc(v) + '"' + (extra || '') + '></div>';
+    if (S.hP === undefined || S.hP === null) S.hP = S.park || '';
+    const p = S.hP ? S.pBy[S.hP] : null;
+    if (!S.hesapS || (S.hesapS._p || '') !== (p ? p.kisa : '')) S.hesapS = p ? hsPark(p) : HS0();
+    const H = S.hesapS, y = E.year(S.rapor);
+    const tools = [['k', 'Yıllık kira ve tahakkuk', 'Md. 31–33, 10 · zincir, taksit, teminat', IC.chain], ['g', 'Gecikme zammı', 'Md. 39 · 6183 s.K. m.51', IC.clock], ['e', 'Ek yapı ve tesis kirası', 'Md. 30, 9/2 · tahsil zamanı', IC.build],
+      ['i', 'İhale ve sözleşme bedelleri', 'Md. 8–10, 31, 33', IC.doc], ['d', 'Sözleşme devri', 'Md. 35 · %30 artış', IC.swap], ['f', 'Fesih hâlinde', 'Md. 39/2, 40', IC.x]];
+    if (!tools.some((t) => t[0] === S.tool)) S.tool = 'k';
+    const inp = (id, lab, v, type, extra) => '<div class="fl"><label for="h_' + id + '">' + lab + '</label><input id="h_' + id + '" data-h="' + id + '" type="' + (type === 'date' ? 'date' : 'text') + '"' + (type === 'date' ? '' : ' inputmode="decimal"') + ' value="' + esc(type === 'date' || typeof v !== 'number' ? v : String(v).replace('.', ',')) + '"' + (extra || '') + '></div>';
     const out = (a, b) => '<div class="out"><span>' + a + '</span><span>' + b + '</span></div>';
+    const fx = (t) => '<div class="fx">' + t + '</div>';
+    const parkSel = '<div class="hpark"><label for="hPark">Hesap için park</label><select id="hPark" class="fld"><option value="">Serbest hesap (değerleri siz girin)</option>' + S.veri.parks.map((x) => '<option' + (p && x.kisa === p.kisa ? ' selected' : '') + '>' + esc(x.kisa) + '</option>').join('') + '</select>' +
+      (p ? '<span class="muted" style="font-size:13px">Değerler ' + esc(p.kisa) + ' kayıtlarından geldi; değiştirebilirsiniz. Değişiklikler kayıtlara işlenmez.</span>' : '') + '</div>';
     let body = '';
-    if (S.tool === 'g') {
-      const dil = E.gzDilimler(H.gv, H.ge, S.gzO), gz = r2(H.gt * dil.reduce((s, d) => s + d.faktor, 0)), kdv = H.gk === 'Kira' ? r2(gz * S.oran.gz_kdv) : 0;
-      body = calc('Gecikme zammı', 'Tebliğ Md. 39/1 · 6183 s.K. m.51', inp('gt', 'Anapara (TL)', H.gt) + inp('gv', 'Vade tarihi', H.gv, 'date') + inp('ge', 'Ödeme ya da hesap tarihi', H.ge, 'date') +
+    if (S.tool === 'k') {
+      if (!p) body = calc('Yıllık kira ve tahakkuk', 'Md. 31–33, 10', '<p class="note">Bu hesap parka göre yapılır; yukarıdan park seçin.</p>', '');
+      else {
+        const Y = +H.kY || y, ky = E.kiraYili(p, S.tufe, S.veri.ek_kira, Y), pl = E.tahakkukPlan(S.veri, S.esl, p, S.tufe, Y, S.rapor);
+        const z = ky ? ky.zincir.filter((d) => d.n <= ky.donem + 1) : [];
+        const satir = (d, i) => { const prev = z[i - 1]; let f;
+          if (d.oncesi) f = 'Belgeli başlangıçtan önce — hesaplanmaz'; else if (d.belge) f = 'Belgeli dönem kirası: ' + esc(d.belge); else if (d.n === 1) f = 'İhale bedeli (Md. 31/1)';
+          else if (d.bedel == null) f = (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] + ' TÜFE’si ' + fd(E.tufeYayim(d.tufeAy)) + '’te açıklanacak' : '—');
+          else f = '(' + tl(prev.bedel) + (prev.ek ? ' + ' + tl(prev.ek) : '') + ') × (1 + ' + E.pct(d.tufe) + ') = ' + tl(d.bedel);
+          return '<tr' + (d.n === (ky && ky.donem) ? ' style="background:#F1F8F3"' : '') + '><td>' + d.n + '</td><td class="n">' + fd(d.bas) + '</td><td>' + (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] : '—') + '</td><td class="n" style="white-space:normal">' + f + '</td><td class="r n"><b>' + tl(d.bedel) + '</b></td></tr>'; };
+        const yilSec = '<div class="fl"><label for="h_kY">Yıl</label><select id="h_kY" data-h="kY">' + [y - 1, y, y + 1].map((v) => '<option' + (v === Y ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>';
+        const kural = (p.rejim === 'Eski' ? 'Sözleşmesi Tebliğ öncesi (Geçici Md. 8): sözleşmedeki artış esası. ' : 'Md. 32/1–2: sözleşme ayında yayımlanan TÜFE (12 aylık ort.). ') + 'Kayıt: ' + esc(p.artis || '—') + ' · ' + esc(p.kural || '—') + (p.yil_esas === 'Dönem başı' ? ' · yıl, dönemin başladığı yıl' : ' · yıl, 31 Mart’a kadar başlayan dönem');
+        body = calc('Yıllık kira ve tahakkuk · ' + p.kisa, 'Md. 31–33, 10', yilSec + '<p class="note" style="margin:0">' + kural + '</p>',
+          '<div class="sl"><table><thead><tr><th>Dönem</th><th>Başlangıç</th><th>TÜFE ayı</th><th>Hesap</th><th class="r">Dönem kirası</th></tr></thead><tbody>' + z.map(satir).join('') + '</tbody></table></div>' +
+          (pl.kira != null ? out(Y + ' yıllık kira', tl(pl.kira)) + fx('Ağaçlandırma = ' + tl(pl.kira) + ' × %5 = ' + tl(pl.agac) + ' (Md. 33)') + fx('KDV = (' + tl(pl.kira) + ' + ' + tl(pl.agac) + ') × %20 = ' + tl(pl.kdv)) +
+            '<div class="tot"><span>' + Y + ' toplam</span><b>' + tl(pl.toplam) + '</b></div>' + out('Ödeme günleri', esc(pl.kaynak)) +
+            '<div class="sl"><table><thead><tr><th>Vade</th><th class="r">Kira</th><th class="r">Ağaç.</th><th class="r">KDV</th></tr></thead><tbody>' + pl.vadeler.map((v) => '<tr><td class="n">' + fd(v.vade) + '</td><td class="r n">' + tl(v.kira) + '</td><td class="r n">' + (v.agac ? tl(v.agac) : '–') + '</td><td class="r n">' + (v.kdv ? tl(v.kdv) : '–') + '</td></tr>').join('') + '</tbody></table></div>' +
+            (pl.guv != null ? out('Güvence (kira × ' + E.pct(p.guv, 0) + ', Md. 10/1)', tl(pl.guv) + (pl.guvFark != null ? ' · artış ' + tl(pl.guvFark) : '')) : '') + (pl.dep != null ? out('Depozito (kira × ' + E.pct(p.dep, 0) + ', Md. 10/2)', tl(pl.dep) + (pl.depFark != null ? ' · artış ' + tl(pl.depFark) : '')) : '') +
+            out('Muhasebe', pl.muhasebede ? tl(pl.muhKira) + (pl.kod === 'fark' ? ' · fark ' + tl(pl.fark) : ' · uyumlu') : esc(pl.durum))
+            : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ' — ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si ' + fd(pl.yayim) + '’te açıklanınca kendiliğinden hesaplanır.' : '') + '</div>') +
+          '<p class="note">TÜFE değerleri her gün TÜİK’ten otomatik alınır (Veriler sayfası). Takvim yılına düşen dönem: ' + (p.yil_esas === 'Dönem başı' ? 'o yıl başlayan dönem.' : 'o yılın 31 Mart’ına kadar başlamış dönem (muhasebe uygulaması).') + '</p>');
+      }
+    } else if (S.tool === 'g') {
+      const dil = E.gzDilimler(H.gv, H.ge, S.gzO), gz = r2(H.gt * dil.reduce((s2, d) => s2 + d.faktor, 0)), kdv = H.gk === 'Kira' ? r2(gz * S.oran.gz_kdv) : 0;
+      const A = p ? S.al.filter((a) => a.park === p.kisa && !a.odeme && a.esas && a.esas < S.rapor) : [];
+      const parkT = p ? '<div class="sl"><table><thead><tr><th>Esas vade</th><th>Tür</th><th class="r">Tutar</th><th class="r">Gün</th><th class="r">GZ</th><th class="r">KDV</th><th></th></tr></thead><tbody>' +
+        (A.length ? A.map((a) => '<tr><td class="n">' + fd(a.esas) + '</td><td>' + esc(a.tur) + '</td><td class="r n">' + tl(a.tutar) + '</td><td class="r">' + a.gun + '</td><td class="r n">' + tl(a.gz) + '</td><td class="r n">' + tl(a.gzkdv) + '</td><td><button class="btn sm" data-a="kalemBilgi" data-kalem="' + a.kalem + '" data-odeme="">Dilimler</button></td></tr>').join('') +
+          '<tr style="font-weight:600"><td colspan="2">Toplam</td><td class="r n">' + tl(sumOf(A, (a) => a.tutar)) + '</td><td></td><td class="r n">' + tl(sumOf(A, (a) => a.gz)) + '</td><td class="r n">' + tl(sumOf(A, (a) => a.gzkdv)) + '</td><td></td></tr>' : '<tr><td colspan="7">Dökümde vadesi geçmiş ödenmemiş kalem yok.</td></tr>') +
+        '</tbody></table></div><p class="note">' + dokumNotu(true) + 'Gecikme zammı ' + fd(S.rapor) + ' tarihine kadar hesaplanır.</p>' : '';
+      body = calc('Gecikme zammı' + (p ? ' · ' + p.kisa : ''), 'Tebliğ Md. 39/1 · 6183 s.K. m.51', inp('gt', 'Anapara (TL)', H.gt) + inp('gv', 'Vade tarihi', H.gv, 'date') + inp('ge', 'Ödeme ya da hesap tarihi', H.ge, 'date') +
         '<div class="fl"><label for="h_gk">Kalem türü</label><select id="h_gk" data-h="gk"><option value="Kira"' + (H.gk === 'Kira' ? ' selected' : '') + '>Kira (GZ’ye %20 KDV)</option><option value="Diğer"' + (H.gk !== 'Kira' ? ' selected' : '') + '>KDV, ağaçlandırma, vergi/fon</option></select></div>' +
         '<p class="note" style="margin:0">Kesin teminat, güvence ve depozitoya gecikme zammı uygulanmaz (Md. 9–10).</p>',
+        (p ? '<h3 style="margin:0 0 6px;font-size:15px">' + esc(p.kisa) + ' · vadesi geçmiş kalemler</h3>' + parkT + '<h3 style="margin:14px 0 6px;font-size:15px">Tek tutar hesabı</h3>' : '') +
         out('Gecikme süresi', Math.max(0, E.days(H.gv, H.ge)) + ' gün') + out('Gecikme zammı', tl(gz)) + out('KDV’si', tl(kdv)) + '<div class="tot"><span>Toplam gecikme</span><b>' + tl(r2(gz + kdv)) + '</b></div>' +
-        (dil.length ? '<div class="sl"><table><thead><tr><th>Dilim</th><th class="r">Oran</th><th class="r">Tam ay</th><th class="r">Gün</th><th class="r">Tutar</th></tr></thead><tbody>' +
-          dil.map((d) => '<tr><td class="n">' + fd(d.bas) + ' – ' + fd(d.bit) + '</td><td class="r">' + E.pct(d.oran, 1) + '</td><td class="r">' + d.ay + '</td><td class="r">' + d.gun + '</td><td class="r n">' + tl(r2(H.gt * d.faktor)) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
-        '<p class="note">Süre oran değişikliği tarihinde bölünür; her dilimde aylık oran × (tam ay + gün ÷ 30). Hesap yöntemi Müdürlüğün 27.09.2026 tarihli borç çalışmasındaki tutarlarla kuruşu kuruşuna karşılaştırılarak doğrulandı.Güncel oran: aylık ' + E.pct(gzSon()[1], 1) + ' (' + fd(gzSon()[0]) + ').</p>');
+        (dil.length ? '<div class="sl"><table><thead><tr><th>Dilim</th><th class="r">Oran</th><th class="r">Tam ay</th><th class="r">Gün</th><th>Hesap</th><th class="r">Tutar</th></tr></thead><tbody>' +
+          dil.map((d) => '<tr><td class="n">' + fd(d.bas) + ' – ' + fd(d.bit) + '</td><td class="r">' + E.pct(d.oran, 1) + '</td><td class="r">' + d.ay + '</td><td class="r">' + d.gun + '</td><td class="n" style="font-size:12.5px">' + tl(H.gt) + ' × ' + E.pct(d.oran, 1) + ' × (' + d.ay + ' + ' + d.gun + '/30)</td><td class="r n">' + tl(r2(H.gt * d.faktor)) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+        '<p class="note">Süre oran değişikliği tarihinde bölünür; her dilimde tutar × aylık oran × (tam ay + gün ÷ 30). Oranlar Resmî Gazete’den her gün otomatik denetlenir. Güncel oran: aylık ' + E.pct(gzSon()[1], 1) + ' (' + fd(gzSon()[0]) + ').</p>');
     } else if (S.tool === 'e') {
-      const k = E.KATSAYI[H.et] || E.KATSAYI[0], r = E.ekTesis(H.ek, k[1], H.em, H.eo);
-      body = calc('Ek yapı ve tesis kirası', 'Md. 30/1–2, Md. 9/2, Md. 33', inp('ek', 'Cari yıl kira bedeli', H.ek) +
-        '<div class="fl"><label for="h_et">Tesis türü ve katsayısı</label><select id="h_et" data-h="et">' + E.KATSAYI.map((x, i) => '<option value="' + i + '"' + (i === +H.et ? ' selected' : '') + '>' + esc(x[0]) + ' (' + x[1].toLocaleString('tr-TR') + ')</option>').join('') + '</select></div>' +
-        inp('em', 'Onay yılı maliyeti (birim fiyat × alan)', H.em) + inp('eo', 'Revize plan onay tarihi', H.eo, 'date'),
-        out('Katsayı bedeli', tl(r.kb)) + out('Maliyetin %2’si', tl(r.m2)) + out('Yıllık ek kira (yüksek olan)', tl(r.ek)) + out('Kıst (' + r.gun + ' gün ÷ 365)', tl(r.kist)) + out('Ağaçlandırma, kıst üzerinden %5', tl(r.agac)) +
-        out('KDV, kıst + ağaçlandırma üzerinden %20', tl(r.kdv)) + out('Ek kesin teminat, yıllık ek kiranın %6’sı', tl(r.tem)) + '<div class="tot"><span>Bu yıl tahsil edilecek</span><b>' + tl(r.top) + '</b></div>' + out('Gelecek dönem kira tabanı', tl(r.taban)) +
-        '<p class="note">Md. 30/1’e göre yıllık ek kira cari yıl kirasına eklenir ve izleyen yıllar bu toplam üzerinden hesaplanır. Bölge onay yazılarında cari yıl için onay tarihinden yıl sonuna kadar kıst (gün ÷ 365) tahsil edilmektedir; tam yıl tutarı da yukarıda gösterilir. Tahsil zamanı: onayı izleyen ilk taksitle; son taksit geçmişse onay ayı sonuna kadar peşin (Md. 30/2).</p>');
+      const V = String(H.ev || '').split(/[,;\s]+/).filter((x) => /^\d{4}-\d\d-\d\d$/.test(x));
+      const rows = (H.ets || []).map((x) => { const k = E.KATSAYI[x.t] || E.KATSAYI[0]; return Object.assign({ ad: k[0], kat: k[1] }, E.ekTesis(H.ek, k[1], x.m, H.eo, V)); });
+      const ek = r2(rows.reduce((a, r) => a + r.ek, 0)), agac = r2(ek * 0.05), kdv = r2((ek + agac) * 0.2), tem = r2(ek * 0.06), th = E.ekTahsil(H.eo, V);
+      const plns = p ? (S.veri.plan || []).filter((x) => x.park === p.kisa).map((x) => { const r = revizeDurumP(x);
+        return '<div class="quote" style="margin-top:8px"><b>' + esc(x.revize) + ' · onay ' + fd(x.onay) + '</b><br>Yıllık ek kira ' + tl(r.ek) + ' · ağaç. ' + tl(r.agac) + ' · KDV ' + tl(r.kdv) + ' · ek kesin teminat ' + tl(r.tem) + '<br>Tahsil: ' + (r.tahsil ? fd(r.tahsil) : '—') + ' — ' + esc(r.tahsilNe) + ' (vadeler: ' + esc(r.vadeKaynak) + ')<br>' + esc(r.durum) + '.</div>'; }).join('') : '';
+      body = calc('Ek yapı ve tesis kirası' + (p ? ' · ' + p.kisa : ''), 'Md. 30/1–2, Md. 9/2, Md. 33', inp('ek', 'Cari yıl kira bedeli (revize onay yılı)', H.ek) + inp('eo', 'Revize plan onay tarihi', H.eo, 'date') + inp('ev', 'Onay yılı kira taksit vadeleri (YYYY-AA-GG, virgülle)', H.ev, 'text') +
+        (H.ets || []).map((x, i) => '<div class="frow2" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div class="fl"><label>Tesis ' + (i + 1) + ' türü</label><select data-h="et_' + i + '">' + E.KATSAYI.map((k, j) => '<option value="' + j + '"' + (j === +x.t ? ' selected' : '') + '>' + esc(k[0]) + ' (' + k[1].toLocaleString('tr-TR') + ')</option>').join('') + '</select></div>' +
+          '<div class="fl"><label>Onay yılı maliyeti (TL)</label><input data-h="em_' + i + '" inputmode="decimal" value="' + esc(String(x.m).replace('.', ',')) + '"></div><button class="btn sm" data-a="etSil" data-i="' + i + '" aria-label="Satırı sil">×</button></div>').join('') +
+        '<button class="btn sm" data-a="etEkle">Tesis ekle</button>',
+        '<div class="sl"><table><thead><tr><th>Tesis</th><th>Katsayı bedeli</th><th>Maliyet × %2</th><th class="r">Esas (yüksek olan)</th></tr></thead><tbody>' + rows.map((r) => '<tr><td>' + esc(r.ad) + '</td><td class="n">' + tl(H.ek) + ' × ' + r.kat.toLocaleString('tr-TR') + ' = ' + tl(r.kb) + '</td><td class="n">' + tl(r.m2) + '</td><td class="r n"><b>' + tl(r.ek) + '</b></td></tr>').join('') + '</tbody></table></div>' +
+        out('Yıllık ek kira (Md. 30/1)', tl(ek)) + fx('Ağaçlandırma = ' + tl(ek) + ' × %5 = ' + tl(agac)) + fx('KDV = (' + tl(ek) + ' + ' + tl(agac) + ') × %20 = ' + tl(kdv)) + fx('Ek kesin teminat = ' + tl(ek) + ' × %6 = ' + tl(tem) + ' (Md. 9/2)') +
+        '<div class="tot"><span>Tahsil edilecek toplam</span><b>' + tl(r2(ek + agac + kdv + tem)) + '</b></div>' + out('Tahsil zamanı (Md. 30/2)', (th.tarih ? fd(th.tarih) + ' · ' : '') + esc(th.ne)) + out('Sonraki dönem kira tabanı', tl(r2(H.ek + ek)) + ' (cari kira + ek kira)') +
+        '<p class="note">Md. 30/1: her tesis için cari yıl kirası × katsayı ile onay yılı birim fiyatlarıyla maliyetin %2’sinden yüksek olanı alınır; toplam cari yıl kirasına eklenir ve izleyen yıllar bu bedel üzerinden hesaplanır. Md. 30/2: bedel, KDV, ağaçlandırma ve kesin teminatla birlikte onayı izleyen ilk taksitle; son taksit geçmişse onay ayı sonuna kadar peşin tahsil edilir. Tebliğ gün/365 kıstlaştırma öngörmez; tutar tam yıllıktır.</p>' +
+        (plns ? '<h3 style="margin:14px 0 4px;font-size:15px">' + esc(p.kisa) + ' revize planları</h3>' + plns : ''));
     } else if (S.tool === 'i') {
       const r = E.ihale(H.it, H.io, H.ih, H.is);
-      body = calc('İhale ve sözleşme bedelleri', 'Md. 8, 9, 10, 31, 33', inp('it', 'Tahmin edilen yıllık bedel', H.it) + inp('io', 'Geçici teminat oranı (%10–30)', H.io) + inp('ih', 'İhale bedeli (teklif)', H.ih) + inp('is', 'Kira süresi (yıl)', H.is),
-        out('Geçici teminat', r.gec == null ? 'Oran %10–30 arasında olmalı' : tl(r.gec)) + out('Kesin teminat (%6)', tl(r.kes)) + out('Güvence (%25)', tl(r.guv)) + out('Depozito (%10)', tl(r.dep)) +
-        out('İlk yıl ağaçlandırma (%5)', tl(r.agac)) + out('İlk yıl KDV (%20)', tl(r.kdv)) + out('İlk yıl ödeme şekli', r.od) + '<div class="tot"><span>Sözleşme bedeli</span><b>' + tl(r.soz) + '</b></div>' +
-        '<p class="note">Güvence ve depozito oranları sözleşmeye göre değişebilir (eski sözleşmelerde %30 / %20).</p>');
+      body = calc('İhale ve sözleşme bedelleri' + (p ? ' · ' + p.kisa : ''), 'Md. 8, 9, 10, 31, 33', inp('it', 'Tahmin edilen yıllık bedel', H.it) + inp('io', 'Geçici teminat oranı (%10–30)', H.io) + inp('ih', 'İhale bedeli (teklif)', H.ih) + inp('is', 'Kira süresi (yıl)', H.is),
+        out('Geçici teminat', r.gec == null ? 'Oran %10–30 arasında olmalı' : tl(r.gec)) + fx('Tahmin edilen bedel × oran (Md. 8/1)') + out('Kesin teminat', tl(r.kes)) + fx(tl(H.ih) + ' × %6 (Md. 9/1)') + out('Güvence (%25)', tl(r.guv)) + out('Depozito (%10)', tl(r.dep)) +
+        out('İlk yıl ağaçlandırma (%5)', tl(r.agac)) + out('İlk yıl KDV (%20)', tl(r.kdv)) + out('İlk yıl ödeme şekli', r.od) + '<div class="tot"><span>Sözleşme bedeli (ihale × süre)</span><b>' + tl(r.soz) + '</b></div>' +
+        '<p class="note">Güvence ve depozito oranları Md. 10’dadır; Tebliğ öncesi sözleşmelerde sözleşmedeki oranlar geçerlidir (Geçici Md. 8)' + (p && (p.guv != null || p.dep != null) ? ' — ' + esc(p.kisa) + ' kaydı: güvence ' + E.pct(p.guv, 0) + ', depozito ' + E.pct(p.dep, 0) : '') + '.</p>');
     } else if (S.tool === 'd') {
       const r = E.devir(H.dk, H.dt);
-      body = calc('Sözleşme devri', 'Md. 35/3–6, 35/9', inp('dk', 'O yılın kira bedeli', H.dk) +
+      body = calc('Sözleşme devri' + (p ? ' · ' + p.kisa : ''), 'Md. 35/3–6, 35/9', inp('dk', 'O yılın kira bedeli', H.dk) +
         '<div class="fl"><label for="h_dt">Devir türü</label><select id="h_dt" data-h="dt"><option value="0"' + (H.dt === '0' ? ' selected' : '') + '>Genel devir (%30 artış)</option><option value="1"' + (H.dt === '1' ? ' selected' : '') + '>Unvan, tür, %51 hisse (artış yok)</option><option value="2"' + (H.dt === '2' ? ' selected' : '') + '>Ölüm, miras (artış yok)</option></select></div>',
-        out('Artış', tl(r.art)) + out('Artışın ağaçlandırması (%5)', tl(r.ag)) + out('Artışın KDV’si (%20)', tl(r.kdv)) + '<div class="tot"><span>Yeni yıllık kira</span><b>' + tl(r.yeni) + '</b></div>' +
-        '<p class="note">Kapalı teklifle ihale edilen parklarda, GM izniyle; devir tarihinde borç olmamalı. Sözleşmeden itibaren üç yıl dolmadan ve son altı ayda devredilemez (Md. 35/1–4).</p>');
+        out('Artış', tl(r.art)) + fx(tl(H.dk) + ' × %30') + out('Artışın ağaçlandırması (%5)', tl(r.ag)) + out('Artışın KDV’si (%20)', tl(r.kdv)) + '<div class="tot"><span>Yeni yıllık kira</span><b>' + tl(r.yeni) + '</b></div>' +
+        '<p class="note">Kapalı teklifle ihale edilen parklarda, GM izniyle; devir tarihinde borç olmamalı. Sözleşmeden itibaren üç yıl dolmadan ve son altı ayda devredilemez (Md. 35/1–4).' + (p ? ' ' + esc(p.kisa) + ': ihale usulü ' + esc(p.sekil || '—') + ', açık alacak ' + tl(S.ozBy[p.kisa].acik) + ' (döküme göre).' : '') + '</p>');
     } else {
       const r = E.fesih(H.fk, H.fs, H.fe);
-      body = calc('Fesih hâlinde', 'Md. 39/2, 40/2–3', inp('fk', 'Cari yıl kira bedeli', H.fk) + inp('fs', 'Kesin teminat', H.fs) + inp('fe', 'Ek kesin teminat (ek tesis, Md. 9/2)', H.fe),
+      body = calc('Fesih hâlinde' + (p ? ' · ' + p.kisa : ''), 'Md. 39/2, 40/2–3', inp('fk', 'Cari yıl kira bedeli', H.fk) + inp('fs', 'Kesin teminat', H.fs) + inp('fe', 'Ek kesin teminat (ek tesis, Md. 9/2)', H.fe),
         out('Gelir kaydedilecek teminatlar', tl(r.kesO)) + out('Tazminat, cari yıl kirası', tl(r.taz)) + '<div class="tot"><span>İdareye geçecek toplam</span><b>' + tl(r.top) + '</b></div>' +
-        '<p class="note">Vadesi üzerinden iki yıl geçmiş ödenmemiş kira varsa fesih hakkı doğar (Md. 39/2). Ödenmemiş kira ve gecikme zammı ayrıca takip edilir.</p>');
+        '<p class="note">Vadesi üzerinden iki yıl geçmiş ödenmemiş kira varsa fesih hakkı doğar (Md. 39/2)' + (p && S.ozBy[p.kisa].enEski ? '; ' + esc(p.kisa) + ' en eski ödenmemiş vade ' + fd(S.ozBy[p.kisa].enEski) + ', eşik ' + fd(E.addMonths(S.ozBy[p.kisa].enEski, 24)) : '') + '. Ödenmemiş kira ve gecikme zammı ayrıca takip edilir.</p>');
     }
-    return '<div class="pagehead"><div><h1>Hesaplama</h1><p>Sarı alanlara yazdıkça sonuç hesaplanır; bu sayfadaki girişler kayıtlara işlenmez. Oranlar Veriler sayfasındaki resmî değerlerdir.</p></div></div>' +
+    return '<div class="pagehead"><div><h1>Hesaplama</h1><p>Hesaplar seçilen parkın kayıtlarıyla açılır; alanları değiştirdikçe sonuç yeniden hesaplanır. Bu sayfadaki girişler kayıtlara işlenmez. TÜFE ve gecikme zammı oranları resmî kaynaklardan otomatik gelir.</p></div></div>' + parkSel +
       '<div class="tools"><nav class="tlist">' + tools.map((t) => '<button class="' + (S.tool === t[0] ? 'on' : '') + '" data-a="tool" data-v="' + t[0] + '"><span class="ti" style="color:#2F6B45">' + svg(t[3]) + '</span><span><b>' + t[1] + '</b><small>' + t[2] + '</small></span></button>').join('') +
-      '<button data-a="hsifir" style="margin-top:6px"><span class="ti">↺</span><span><b>Örnek değerlere dön</b><small>Girişleri sıfırla</small></span></button></nav>' + body + '</div>';
+      '<button data-a="hsifir" style="margin-top:6px"><span class="ti">↺</span><span><b>Değerleri sıfırla</b><small>' + (p ? 'Parkın kayıtlı değerlerine dön' : 'Örnek değerlere dön') + '</small></span></button></nav>' + body + '</div>';
   };
   function calc(t, s, inp, res) { return '<section class="calc"><div class="hd"><h2>' + t + '</h2><span>' + s + '</span></div><div class="bd"><div class="cin">' + inp + '</div><div class="res">' + res + '</div></div></section>'; }
   AKSIYON.tool = (t) => { S.tool = t.dataset.v; sayfaCiz(); };
-  AKSIYON.hsifir = () => { S.hesapS = HS0(); sayfaCiz(); };
+  AKSIYON.hsifir = () => { const p = S.hP ? S.pBy[S.hP] : null; S.hesapS = p ? hsPark(p) : HS0(); sayfaCiz(); };
+  AKSIYON.etEkle = () => { S.hesapS.ets.push({ t: 9, m: 0 }); sayfaCiz(); };
+  AKSIYON.etSil = (t) => { S.hesapS.ets.splice(+t.dataset.i, 1); if (!S.hesapS.ets.length) S.hesapS.ets.push({ t: 9, m: 0 }); sayfaCiz(); };
   AFTER.hesap = () => {
+    const ps = $('#hPark'); if (ps) ps.onchange = (e) => { S.hP = e.target.value; if (S.hP) S.park = S.hP; S.hesapS = null; sayfaCiz(); };
     $$('[data-h]').forEach((el) => el.addEventListener('change', (e) => {
-      const k = e.target.dataset.h, v = e.target.value;
-      S.hesapS[k] = (e.target.type === 'number') ? (parseFloat(v) || 0) : (k === 'et' ? +v : v);
-      const id = e.target.id; sayfaCiz(); const n = document.getElementById(id); if (n) n.focus();
+      const k = e.target.dataset.h, v = e.target.value, H = S.hesapS;
+      if (/^et_\d+$/.test(k)) H.ets[+k.slice(3)].t = +v;
+      else if (/^em_\d+$/.test(k)) H.ets[+k.slice(3)].m = sayiOku(v) || 0;
+      else if (['gv', 'ge', 'eo', 'ev', 'gk', 'dt'].includes(k)) H[k] = v;
+      else if (k === 'kY') H.kY = +v;
+      else H[k] = isNaN(sayiOku(v)) ? 0 : sayiOku(v);
+      const id = e.target.id; sayfaCiz(); const n = id && document.getElementById(id); if (n) n.focus();
     }));
   };
 
@@ -643,11 +736,14 @@
     const sm = [[D.length, 'park denetlendi', 'var(--ink)'], [cnt(C[0], /^Uyulmamakta/), 'parkta ödeme planına uyulmuyor', 'var(--red)'], [cnt(C[4], /^Uyulmamakta/), 'parkta şartname veya sözleşmeye aykırılık', 'var(--red)'],
       [cnt(C[1], /^Yok/), 'parkta onaylı plan yok', 'var(--ambt)'], [cnt(C[2], /^Bakımsız/), 'parkta tesisler bakımsız', 'var(--ambt)']];
     const son = D.map((d) => d.tarih).sort().slice(-1)[0];
-    const plans = (S.veri.plan || []).map((pl) => { const r = revizeTahakkuk(pl);
-      return '<div class="plan"><div class="t"><div><b>' + esc(pl.park) + '</b><small>' + esc(pl.revize) + ' · ' + esc((pl.sayi || '').split('-').slice(-1)[0]) + '</small></div><span class="v ' + (r.var ? 'v-ok' : 'v-no') + '">' + (r.var ? 'Tahakkuk edildi' : 'Tahakkuk bekleniyor') + '</span></div>' +
-        '<div class="big2 n">' + tl(pl.ek) + ' TL</div><div class="muted" style="font-size:13px">yıllık ek kira · onay ' + fd(pl.onay) + '</div><div style="margin-top:12px">' +
-        '<div class="kv"><span>Kıst (' + r.gun + ' gün)</span><span class="n">' + tl(r.kist) + '</span></div><div class="kv"><span>Ağaçlandırma %5</span><span class="n">' + tl(r.agac) + '</span></div><div class="kv"><span>KDV %20</span><span class="n">' + tl(r.kdv) + '</span></div>' +
-        '<div class="kv"><span>Ek kesin teminat %6</span><span class="n">' + tl(r2(pl.ek * .06)) + '</span></div></div><p class="muted" style="font-size:13px;margin:10px 0 0;line-height:1.45">' + esc(pl.aciklama) + '</p></div>'; }).join('');
+    const RV = { tamam: ['v-ok', 'Tahakkuk edildi'], fark: ['v-mid', 'Muhasebe kaydı farklı'], yok: ['v-no', 'Dökümde tespit edilemedi'], kapsam: ['v-mid', 'Döküm kapsamıyor'], bekliyor: ['v-mid', 'Tahsil zamanı gelmedi'] };
+    const plans = (S.veri.plan || []).map((pl) => { const r = revizeDurumP(pl), b = RV[r.kod] || ['v-mid', r.kod];
+      return '<div class="plan"><div class="t"><div><b>' + esc(pl.park) + '</b><small>' + esc(pl.revize) + ' · ' + esc((pl.sayi || '').split('-').slice(-1)[0]) + '</small></div><span class="v ' + b[0] + '">' + b[1] + '</span></div>' +
+        '<div class="big2 n">' + tl(r.ek) + ' TL</div><div class="muted" style="font-size:13px">yıllık ek kira (Md. 30/1) · onay ' + fd(pl.onay) + '</div><div style="margin-top:12px">' +
+        '<div class="kv"><span>Ağaçlandırma (ek kira × %5)</span><span class="n">' + tl(r.agac) + '</span></div><div class="kv"><span>KDV ((ek kira + ağaç.) × %20)</span><span class="n">' + tl(r.kdv) + '</span></div>' +
+        '<div class="kv"><span>Ek kesin teminat (ek kira × %6, Md. 9/2)</span><span class="n">' + tl(r.tem) + '</span></div><div class="kv"><span>Tahsil (Md. 30/2)</span><span class="n">' + (r.tahsil ? fd(r.tahsil) : '—') + '</span></div>' +
+        '<div class="kv"><span>Muhasebe kaydı</span><span class="n">' + (r.kayit.length ? tl(r.muh) + ' (' + r.kayit.map((k) => 'yev. ' + k.yev).filter((v, i, a) => a.indexOf(v) === i).join(', ') + ')' : 'yok') + '</span></div></div>' +
+        '<p style="font-size:13px;margin:10px 0 0;line-height:1.45;color:var(--ink2)">' + esc(r.durum) + '.</p><p class="muted" style="font-size:12.5px;margin:6px 0 0;line-height:1.45">' + esc(pl.aciklama) + (pl.belgeler ? ' Belgeler: ' + esc(pl.belgeler) : '') + '</p></div>'; }).join('');
     S.csv = { name: 'denetim', head: ['Park', 'Dönem', 'Tarih'].concat(C).concat(['Genel kanaat']), rows: D.map((d) => [d.park, d.donem, fd(d.tarih)].concat(C.map((k) => d[k])).concat([d['Genel kanaat']])) };
     const tk = (S.veri.takip || []).slice().sort((a, b) => ((b.tarih || '') > (a.tarih || '') ? 1 : -1));
     return '<div class="pagehead"><div><h1>Denetim ve planlar</h1><p>' + (son ? E.year(son) + ' yılı ' + (D[0] ? esc(D[0].donem.split(' (')[0].split('/ ')[1] || '') : '') + ' Ek-10 denetim raporları ' + fd(son) + '’da imzalandı. ' : '') + 'Komisyon yılda iki kez denetler (Md. 42/3); temizlik ve bakım her ay denetlenir (Md. 42/7).</p></div></div>' +
@@ -658,7 +754,7 @@
         ['Ödeme planı', 'Onaylı plan', 'Tesis bakımı', 'Saha temizliği', 'Şartname ve sözleşme'].map((h, i) => td('<span class="v ' + cls(d[C[i]]) + '">' + esc(sh(d[C[i]])) + '</span>', h, '', ' style="text-align:center"')).join('') +
         td(esc(d.ozet || d['Genel kanaat']), 'Kanaat', 'wide', ' style="white-space:normal;font-size:13.5px;color:var(--ink2);max-width:380px"') +
         td('<button class="btn sm" data-a="formAc" data-e="R10" data-k="' + esc(d.park) + '">Raporu aç</button>', '', 'noprint') + '</tr>').join('') + '</tbody></table></div></section>' +
-      '<section class="card"><div class="ch"><h2>Revize planlar ve ek tesis kirası</h2><span class="muted" style="font-size:13px">Kıst = yıllık ek kira × gün ÷ 365 (Bölge uygulaması) · Md. 30/1–2</span></div><div class="plans">' + plans + '</div></section>' +
+      '<section class="card"><div class="ch"><h2>Revize planlar ve ek tesis kirası</h2><span class="muted" style="font-size:13px">Md. 30/1: tam yıllık ek kira; Md. 30/2: onayı izleyen ilk taksitle tahsil. Tebliğ gün/365 kıst öngörmez.</span></div><div class="plans">' + plans + '</div></section>' +
       '<section class="card"><div class="ch"><h2>Tespit yazışmaları</h2></div><div class="tline">' + tk.map((y) => { const c = y.yon === 'Giden' ? '#1F5E43' : '#8A5A0B';
         return '<div class="ev"><div class="dt n">' + fd(y.tarih) + '</div><div class="dot" style="background:' + c + '"></div><div><b>' + esc(y.park) + '</b> <span class="v" style="background:#EEF2EE;color:' + c + ';margin-left:6px">' + esc(y.yon) + '</span><p><b style="font-size:14px">' + esc(y.konu) + '</b><br>' + esc(y.ozet) + '<br><span class="muted" style="font-size:12.5px">' + esc(y.sayi) + '</span></p></div></div>'; }).join('') + '</div></section>';
   };
@@ -717,7 +813,7 @@
     ['Md. 10/1–2', 'Güvence ve depozito', 'Güvence yıllık kiranın %25’i, depozito %10’u; her yıl kira artış oranıyla güncellenir.'],
     ['Md. 13/1', 'Belgelerin gönderilmesi', 'Sözleşme, şartname ve teslim tutanağı 15 gün içinde GM’ye; sona erme veya fesihte geri teslim tutanağı 15 gün içinde.'],
     ['Md. 27/1', 'Saha teslimi', 'Sözleşmeden sonra en geç 5 iş günü içinde Ek-9 tutanağıyla.'],
-    ['Md. 30/1–2', 'Ek yapı ve tesis kirası', 'Cari yıl kirası × tesis katsayısı; maliyetin %2’sinden az olamaz, cari yıl kirasına eklenir. Onayı izleyen ilk taksitle; son taksit geçmişse onay ayı sonuna kadar peşin. Cari yıl için Bölge onay yazılarında kıst (gün ÷ 365) uygulanır.'],
+    ['Md. 30/1–2', 'Ek yapı ve tesis kirası', 'Cari yıl kirası × tesis katsayısı; maliyetin %2’sinden az olamaz, cari yıl kirasına eklenir. Onayı izleyen ilk taksitle; son taksit geçmişse onay ayı sonuna kadar peşin (KDV, ağaçlandırma ve ek kesin teminatla birlikte). Tebliğ gün/365 kıstlaştırma öngörmez.'],
     ['Md. 31/1', 'İlk yıl kirası', 'İhale bedeli; 150.000 TL’ye kadar sözleşmede tek seferde peşin. Üzerindekiler peşin veya üçte biri tebliğden itibaren 15 gün içinde, kalanı iki eşit taksit.'],
     ['Md. 32/1–3', 'Yıllık artış', 'Sözleşme ayında yayımlanan TÜFE (12 aylık ortalamalara göre) oranında. 150.000 TL üzeri peşin veya üçer aylık dört eşit taksit; KDV ve diğer bedeller 1. taksitle.'],
     ['Md. 33/1', 'Ağaçlandırma bedeli', 'Her yıl yıllık kiranın %5’i; taksitli ödemede ilk taksitle peşin.'],
@@ -801,6 +897,174 @@
       '</tbody></table></div></section>';
   };
 
+  // ---------- EKSİK VERİLER ----------
+  // Park kaydındaki her alan tek yerde tutulur; burada girilen değer park dosyası, ekler (Ek-1…18), kira zinciri, tahakkuk ve hesaplara kendiliğinden yansır.
+  const EKF = [['Konum', [['ilce', 'İlçe'], ['mahalle', 'Köy / mahalle'], ['mevki', 'Mevkii'], ['bolme', 'Bölme no'], ['alan', 'Alan (ha)', 'number']]],
+    ['İşletmeci', [['isletmeci', 'İşletmeci', null, 1], ['vkn', 'Vergi / T.C. no', null, 1], ['vkn_muh', 'Muhasebe vergi no', null, 1], ['yetkili', 'Yetkili', null, 1], ['adres', 'Tebligat adresi', null, 1], ['tel', 'Telefon', null, 1], ['eposta', 'E-posta', null, 1]]],
+    ['Sözleşme', [['ihale_t', 'İhale tarihi', 'date', 1], ['ihale_b', 'İhale bedeli', 'number', 1], ['soz_bas', 'Sözleşme başı', 'date', 1], ['soz_bit', 'Sözleşme sonu', 'date', 1], ['teslim', 'Saha teslimi', 'date', 1], ['kesin', 'Kesin teminat', 'number', 1], ['guv', 'Güvence (%)', 'pct', 1], ['dep', 'Depozito (%)', 'pct', 1]]],
+    ['Plan ve harita', [['gyp_onay', 'GYP onay tarihi', 'date', 1], ['harita', 'Sınır koordinatı', 'harita']]]];
+  const EKAL = {}; EKF.forEach((g) => g[1].forEach((f) => { EKAL[f[0]] = f; }));
+  const kiradaMi = (p) => p.durum === 'Kirada';
+  function ekDurum(p, f) {
+    const [k, , tip, kiraIst] = f;
+    const v = tip === 'harita' ? (p.harita && p.harita.sinir && p.harita.sinir.length ? 'var' : '') : p[k];
+    const dolu = v != null && v !== '' && v !== '—';
+    if (dolu) return { s: (p.celiski || {})[k] ? 'celiski' : 'dolu', v, not: ((p.kaynaklar || {})[k] || {}).kaynak || '', cel: (p.celiski || {})[k] || '' };
+    if ((p.bulunamadi || {})[k]) return { s: 'yok', v: '', not: p.bulunamadi[k] };
+    if (kiraIst && !kiradaMi(p)) return { s: 'uyg', v: '', not: 'Park kirada değil (' + (p.durum || '') + ')' };
+    return { s: 'eksik', v: '', not: '' };
+  }
+  const ekGoster = (p, f, d) => { const tip = f[2]; if (d.s === 'eksik') return '<span class="ek-e">eksik</span>'; if (d.s === 'yok') return '<span class="ek-y">belgede yok</span>'; if (d.s === 'uyg') return '<span class="muted">—</span>';
+    const v = tip === 'date' ? fd(d.v) : tip === 'number' ? tl(d.v) : tip === 'pct' ? E.pct(d.v, 0) : tip === 'harita' ? (p.harita.alan_ha != null ? p.harita.alan_ha.toLocaleString('tr-TR') + ' ha' : 'var') : String(d.v);
+    return esc(v.length > 34 ? v.slice(0, 32) + '…' : v); };
+  SAYFA.eksik = function () {
+    const P = S.veri.parks, say = { eksik: 0, yok: 0, celiski: 0 };
+    const satirlar = P.map((p) => { let ne = 0; const h = EKF.map((g) => g[1].map((f) => { const d = ekDurum(p, f); if (say[d.s] != null) say[d.s]++; if (d.s === 'eksik' || d.s === 'yok' || d.s === 'celiski') ne++;
+      const title = (d.not ? 'Kaynak/not: ' + d.not : '') + (d.cel ? (d.not ? ' · ' : '') + 'Çelişki: ' + d.cel : '');
+      return '<td class="ek-c ek-' + d.s + '" data-l="' + esc(f[1]) + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><button class="ekb" data-a="' + (f[2] === 'harita' ? 'eksikHarita' : 'eksikDuz') + '" data-k="' + esc(p.kisa) + '" data-f="' + f[0] + '">' + ekGoster(p, f, d) + '</button></td>'; }).join('')).join('');
+      return { ne, h: '<tr>' + td('<a class="pk" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.durum || '') + '</small></a>', '', 'lead') + h + '</tr>' }; });
+    const L = S.eksikTum ? satirlar : satirlar.filter((x) => x.ne);
+    const ek = [];
+    P.forEach((p) => EKF.forEach((g) => g[1].forEach((f) => { const d = ekDurum(p, f); if (d.s === 'eksik' || d.s === 'yok' || d.s === 'celiski') ek.push([p.kisa, f[1], { eksik: 'Eksik', yok: 'Belgede bulunamadı', celiski: 'Belgeler çelişkili' }[d.s], d.not || d.cel]); })));
+    S.csv = { name: 'eksik_veriler', head: ['Park', 'Alan', 'Durum', 'Not'], rows: ek };
+    return '<div class="pagehead"><div><h1>Eksik veriler</h1><p>Park kayıtlarındaki boş, belgede bulunamayan ve çelişkili alanlar. Hücreye dokunup değeri ve kaynağını girin; girilen değer park dosyasına, Tebliğ eklerine, kira zincirine, tahakkuka ve hesaplara kendiliğinden yansır. Belgede bulunamayan alan “belgede yok” notuyla işaretlenir; tahminle doldurulmaz.</p></div>' +
+      '<div class="seg"><button class="' + (S.eksikTum ? '' : 'on') + '" data-a="eksikTum" data-v="0">Eksiği olan parklar</button><button class="' + (S.eksikTum ? 'on' : '') + '" data-a="eksikTum" data-v="1">Tüm parklar</button></div></div>' +
+      '<section class="sumrow"><div class="sm"><b class="n" style="color:var(--red)">' + say.eksik + '</b><span>alan boş</span></div><div class="sm"><b class="n" style="color:var(--ambt)">' + say.yok + '</b><span>alan belgede bulunamadı</span></div><div class="sm"><b class="n" style="color:var(--ambt)">' + say.celiski + '</b><span>alanda belgeler çelişkili</span></div></section>' +
+      '<section class="card"><div class="scroll"><table class="rt ekt" style="min-width:1500px"><thead><tr><th rowspan="2">Park</th>' + EKF.map((g) => '<th colspan="' + g[1].length + '" style="text-align:center">' + g[0] + '</th>').join('') + '</tr><tr>' + EKF.map((g) => g[1].map((f) => '<th>' + f[1] + '</th>').join('')).join('') + '</tr></thead><tbody>' +
+      L.map((x) => x.h).join('') + '</tbody></table>' + (L.length ? '' : '<div class="empty">Eksik alan yok.</div>') + '</div>' +
+      '<p class="muted" style="margin:10px 22px 16px;font-size:13px"><span class="ek-e">eksik</span> boş · <span class="ek-y">belgede yok</span> incelenen belgelerde bulunamadı (üzerine gelince not) · sarı çerçeveli hücre: belgeler çelişkili · gri: park kirada olmadığı için gerekmiyor. Düzenleme “veri düzenleme” yetkisiyle yapılır; her değişiklik kim tarafından yapıldığıyla işlem geçmişine yazılır.</p></section>';
+  };
+  AKSIYON.eksikTum = (t) => { S.eksikTum = t.dataset.v === '1'; sayfaCiz(); };
+  AKSIYON.eksikHarita = (t) => { S.park = t.dataset.k; location.hash = '#/harita'; };
+  AKSIYON.eksikDuz = (t) => {
+    const p = S.pBy[t.dataset.k], f = EKAL[t.dataset.f]; if (!p || !f) return;
+    const k = f[0], tip = f[2], d = ekDurum(p, f), yz = yetki('duzenle');
+    const cur = tip === 'pct' ? (p[k] == null ? '' : r2(p[k] * 100)) : p[k];
+    modal(p.kisa + ' · ' + f[1], (d.not ? '<div class="quote">' + esc(d.s === 'yok' ? 'Belgede bulunamadı: ' : 'Kaynak: ') + esc(d.not) + '</div>' : '') + (d.cel ? '<div class="alert amb">Çelişki: ' + esc(d.cel) + '</div>' : '') +
+      (yz ? fi('ed_v', f[1], cur, tip === 'date' ? 'date' : (tip === 'number' || tip === 'pct' ? 'number' : null)) + fi('ed_k', 'Kaynak belge (tarih, sayı, sayfa)', ((p.kaynaklar || {})[k] || {}).kaynak || '') +
+        '<label class="chk"><input type="checkbox" id="ed_y"' + (d.s === 'yok' ? ' checked' : '') + '> Belgelerde bulunamadı olarak işaretle (değer boş kalır)</label>' + fi('ed_n', 'Bulunamadı notu (hangi belgelere bakıldı)', (p.bulunamadi || {})[k] || '') + '<div class="err" id="edErr"></div>'
+        : '<div class="kv"><span>Değer</span><span>' + (d.v ? esc(tip === 'date' ? fd(d.v) : tip === 'pct' ? E.pct(d.v, 0) : String(d.v)) : '—') + '</span></div><p class="muted" style="margin:0;font-size:13px">Değiştirmek için veri düzenleme yetkili hesapla girin.</p>'),
+      yz ? '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="edOk">Kaydet</button>' : '<button class="btn pri" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Kapat</button>');
+    if (!yz) return;
+    $('#edOk').onclick = () => {
+      const er = (m) => { $('#edErr').textContent = m; };
+      const yok = $('#ed_y').checked, kayn = gv('ed_k'), nt = gv('ed_n');
+      let v = gv('ed_v', tip === 'number' || tip === 'pct' ? 'number' : null);
+      if (yok && (v == null || v === '')) { if (!nt) return er('Hangi belgelere bakıldığını not edin.'); p.bulunamadi = p.bulunamadi || {}; p.bulunamadi[k] = nt; if (p.kaynaklar) delete p.kaynaklar[k]; modalKapat(); degisti(p.kisa + ' · ' + f[1] + ': belgede bulunamadı olarak işaretlendi', p.kisa); return; }
+      if (v == null || v === '') return er('Değer girin ya da “bulunamadı” işaretleyin.');
+      if ((tip === 'number' || tip === 'pct') && isNaN(v)) return er('Sayı biçimi hatalı.');
+      if (k === 'vkn' && !/^\d{10,11}$/.test(v)) return er('Vergi no 10, T.C. kimlik no 11 haneli olmalı.');
+      if (k === 'eposta' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return er('E-posta biçimi hatalı.');
+      if (!kayn) return er('Kaynak belgeyi yazın (ör. “Sözleşme 12.11.2013, s. 3”).');
+      if (tip === 'pct') v = r2(v) / 100;
+      const eski = p[k]; p[k] = v; p.kaynaklar = p.kaynaklar || {}; p.kaynaklar[k] = { kaynak: kayn, kim: S.kim, t: bugun() };
+      if (p.bulunamadi) delete p.bulunamadi[k]; if (p.celiski) delete p.celiski[k];
+      if (k === 'soz_bas' && !p.taban) p.taban = v;
+      modalKapat(); degisti(p.kisa + ' · ' + f[1] + ': ' + (eski == null || eski === '' ? '' : String(eski) + ' → ') + String(tip === 'pct' ? r2(v * 100) + '%' : v) + ' (kaynak: ' + kayn + ')', p.kisa);
+    };
+  };
+
+  // ---------- HARİTA ----------
+  // Sınır ve tesis koordinatları WGS84’e dönüştürülmüş olarak saklanır; asıl koordinat (ITRF96/ED50) ve sistemi kayıtta durur.
+  const T84 = '+towgs84=-84.1,-101.8,-129.7,0,0,0.468,1.05';
+  const KS = { 'ITRF96 TM 3° DOM 27': '+proj=tmerc +lat_0=0 +lon_0=27 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs', 'ITRF96 TM 3° DOM 30': '+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs',
+    'ITRF96 TM 3° DOM 33': '+proj=tmerc +lat_0=0 +lon_0=33 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs', 'ED50 TM 3° DOM 27': '+proj=tmerc +lat_0=0 +lon_0=27 +k=1 +x_0=500000 +y_0=0 +ellps=intl ' + T84 + ' +units=m +no_defs',
+    'ED50 TM 3° DOM 30': '+proj=tmerc +lat_0=0 +lon_0=30 +k=1 +x_0=500000 +y_0=0 +ellps=intl ' + T84 + ' +units=m +no_defs', 'ED50 UTM 6° (zon 35, DOM 27)': '+proj=utm +zone=35 +ellps=intl ' + T84 + ' +units=m +no_defs',
+    'ED50 UTM 6° (zon 36, DOM 33)': '+proj=utm +zone=36 +ellps=intl ' + T84 + ' +units=m +no_defs', 'WGS84 enlem boylam (derece)': 'WGS84' };
+  const IST = (la, lo) => la > 40.75 && la < 41.7 && lo > 27.9 && lo < 30.0;
+  async function haritaYukle() { await Promise.all([betik('vendor/leaflet/leaflet.js'), betik('vendor/proj4.js')]); if (!$('#lfcss')) { const l = document.createElement('link'); l.id = 'lfcss'; l.rel = 'stylesheet'; l.href = 'vendor/leaflet/leaflet.css'; document.head.appendChild(l); } }
+  // düzlem alan (ha): noktalar ITRF96 TM30’a izdüşürülüp çokgen alanı (İstanbul için yeterli; kadastro düzlem alanı esası)
+  function alanHa(ring) { const pr = proj4('WGS84', KS['ITRF96 TM 3° DOM 30']); const P = ring.map((q) => pr.forward([q[1], q[0]])); let a = 0; for (let i = 0; i < P.length; i++) { const j = (i + 1) % P.length; a += P[i][0] * P[j][1] - P[j][0] * P[i][1]; } return Math.abs(a) / 2 / 10000; }
+  function alanKontrol(p) { const h = p.harita; if (!h || h.alan_ha == null || !p.alan) return null; const f = (h.alan_ha - p.alan) / p.alan; return { f, ok: Math.abs(f) <= 0.02 }; }
+  SAYFA.harita = function () {
+    const P = S.veri.parks, p = S.pBy[S.park];
+    const satir = (x) => { const h = x.harita, k = alanKontrol(x);
+      return '<button class="hrow' + (x.kisa === S.park ? ' on' : '') + '" data-a="hSec" data-k="' + esc(x.kisa) + '"><b>' + esc(x.kisa) + '</b><span>' + (h ? (h.sinir || []).reduce((a, r) => a + r.length, 0) + ' sınır noktası' + (h.tesis ? ' · ' + h.tesis.length + ' tesis' : '') + ' · ' +
+        (k ? (k.ok ? '<i class="ok-t">alan kayıtla uyumlu (' + (k.f * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + '%)</i>' : '<i class="red-t">alan ' + h.alan_ha.toLocaleString('tr-TR') + ' ha, kayıt ' + x.alan.toLocaleString('tr-TR') + ' ha</i>') : (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : '')) : '<i class="amb-t">koordinat yok</i>') + '</span></button>'; };
+    const h = p && p.harita;
+    const info = p ? '<section class="panel"><h3>' + esc(p.kisa) + '</h3>' + (h ? '<div class="kv"><span>Kaynak</span><span style="white-space:normal">' + esc(h.kaynak || '') + '</span></div><div class="kv"><span>Koordinat sistemi</span><span style="white-space:normal">' + esc(h.crs || '') + '</span></div>' +
+      '<div class="kv"><span>Haritadan alan</span><span class="n">' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : '—') + '</span></div><div class="kv"><span>Kayıtlı alan</span><span class="n">' + (p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : '—') + '</span></div>' +
+      (alanKontrol(p) && !alanKontrol(p).ok ? '<div class="alert amb">Sınır alanı kayıttaki alandan farklı; katman eski sınırı gösteriyor olabilir. Güncel sınır koordinatlarını yükleyin.</div>' : '') + (h.kontrol ? '<div class="quote">' + esc(h.kontrol) + '</div>' : '') +
+      (h.sinir_tm ? '<details><summary>Sınır koordinat listesi (' + h.sinir_tm.length + ')</summary><div class="sl"><table><thead><tr><th>Nokta</th><th class="r">Y</th><th class="r">X</th></tr></thead><tbody>' + h.sinir_tm.map((q) => '<tr><td>' + esc(q[0]) + '</td><td class="r n">' + (+q[1]).toFixed(3) + '</td><td class="r n">' + (+q[2]).toFixed(3) + '</td></tr>').join('') + '</tbody></table></div></details>' : '') +
+      (h.tesis ? '<details><summary>Tesisler (' + h.tesis.length + ')</summary><div class="sl"><table><thead><tr><th>Kod</th><th>Ad</th><th>Durum</th></tr></thead><tbody>' + h.tesis.map((q) => '<tr><td>' + esc(q[0]) + '</td><td>' + esc(q[3] || '') + '</td><td style="font-size:12px">' + esc(q[4] || '') + '</td></tr>').join('') + '</tbody></table></div></details>' : '') +
+      (h.kim ? '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Yükleyen ' + esc(h.kim) + ' · ' + fd(h.t) + '</p>' : '')
+      : '<div class="empty">Bu park için sınır koordinatı yok.</div>') +
+      '<div class="duz-only" style="padding:10px 0 2px"><button class="btn sm pri" data-a="haritaYukle">Koordinat yükle</button>' + (h ? ' <button class="btn sm red" data-a="haritaSil">Haritayı sil</button>' : '') + '</div></section>' : '';
+    return '<div class="pagehead"><div><h1>Harita</h1><p>Park sınırları ve tesisler. Koordinat sistemi her kayıtta belirtilir ve WGS84’e dönüştürülerek gösterilir (ITRF96 TM 3°: EPSG:5254 vb.; ED50: EPSG:1784 parametreleri). Sınırdan hesaplanan alan kayıttaki alanla karşılaştırılır.</p></div></div>' +
+      '<div class="hgrid"><div><div id="hmap" class="hmap"><div class="empty"><span class="spin"></span> Harita yükleniyor…</div></div></div><div class="hside"><section class="card hlist">' + P.map(satir).join('') + '</section>' + info + '</div></div>';
+  };
+  AKSIYON.hSec = (t) => { S.park = t.dataset.k; sayfaCiz(); };
+  AFTER.harita = async () => {
+    try { await haritaYukle(); } catch (e) { $('#hmap').innerHTML = '<div class="alert red">Harita kütüphanesi yüklenemedi: ' + esc(e.message) + '</div>'; return; }
+    if (S.page !== 'harita') return;
+    const el = $('#hmap'); el.innerHTML = '';
+    const m = L.map(el, { zoomControl: true });
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    const uydu = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri World Imagery' });
+    uydu.addTo(m); L.control.layers({ 'Uydu': uydu, 'Harita': osm }).addTo(m); L.control.scale({ imperial: false }).addTo(m);
+    let secili = null; const hepsi = [];
+    S.veri.parks.forEach((p) => { const h = p.harita; if (!h || !h.sinir) return; const k = alanKontrol(p), sec = p.kisa === S.park;
+      const pol = L.polygon(h.sinir, { color: sec ? '#FFD34E' : (k && !k.ok ? '#E07A3A' : '#5BD18B'), weight: sec ? 3 : 2, fillOpacity: sec ? 0.12 : 0.06 }).addTo(m);
+      pol.bindPopup('<b>' + esc(p.ad || p.kisa) + '</b><br>' + esc(p.isletmeci || p.durum || '') + '<br>Alan: ' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : '—') + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha)' : '') + '<br><a href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park dosyası</a>');
+      pol.on('click', () => { if (S.park !== p.kisa) { S.park = p.kisa; const sc = m.getCenter(), z = m.getZoom(); S._hv = [sc, z]; sayfaCiz(); } });
+      hepsi.push(pol); if (sec) secili = pol;
+      if (sec && h.tesis) h.tesis.forEach((q) => L.circleMarker([q[1], q[2]], { radius: 4, color: /planlan/i.test(q[4] || '') ? '#FFD34E' : '#fff', weight: 1.5, fillColor: '#1F5E43', fillOpacity: 0.9 }).bindTooltip(esc(q[0] + (q[3] ? ' · ' + q[3] : ''))).addTo(m));
+    });
+    el.addEventListener('click', tikla);
+    if (S._hv) { m.setView(S._hv[0], S._hv[1]); S._hv = null; if (secili) m.fitBounds(secili.getBounds(), { maxZoom: 17, padding: [20, 20] }); }
+    else if (secili) m.fitBounds(secili.getBounds(), { maxZoom: 17, padding: [20, 20] });
+    else if (hepsi.length) m.fitBounds(L.featureGroup(hepsi).getBounds(), { padding: [20, 20] }); else m.setView([41.15, 28.85], 10);
+  };
+  AKSIYON.haritaSil = (t) => { const p = S.pBy[S.park]; if (!p || !p.harita || !confirm(p.kisa + ' sınır ve tesis koordinatları silinsin mi?')) return; delete p.harita; degisti(p.kisa + ' haritası silindi', p.kisa); };
+  AKSIYON.haritaYukle = async () => {
+    const p = S.pBy[S.park]; if (!p) return;
+    try { await haritaYukle(); } catch (e) { toast(e.message, true); return; }
+    modal('Koordinat yükle · ' + p.kisa, fi('hk_t', 'Ne yükleniyor', 'Sınır', null, ['Sınır', 'Tesis']) + fi('hk_c', 'Koordinat sistemi', 'ITRF96 TM 3° DOM 30', null, Object.keys(KS)) +
+      fi('hk_v', 'Koordinatlar — her satır: nokta (ya da tesis kodu)  Y  X   [WGS84 için: ad enlem boylam]; Excel’den kopyalayıp yapıştırabilirsiniz', '', 'area') +
+      '<div class="f"><label for="hk_f">ya da KML / KMZ dosyası (WGS84)</label><input class="fld" id="hk_f" type="file" accept=".kml,.kmz"></div>' + fi('hk_k', 'Kaynak belge (ör. “II. Revize GYP sınır koordinatları, Bölge onayı 16.09.2026”)', '') +
+      '<div id="hk_on" class="muted" style="font-size:13.5px"></div>', '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn" id="hkDen">Önizle ve denetle</button><button class="btn pri" id="hkOk" disabled>Kaydet</button>');
+    let sonuc = null;
+    const coz = (crs, satir) => { const pr = crs === 'WGS84' ? null : proj4(crs, 'WGS84'); return satir.map((r) => { if (!pr) return [r[0], r[1], r[2]]; const q = pr.forward([r[1], r[2]]); return [r[0], q[1], q[0]]; }); };
+    const oku = () => { const t = ($('#hk_v').value || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean); const out = [];
+      t.forEach((l, i) => { const a = l.split(/[\t;]+|\s{2,}|\s+(?=-?\d)/).map((x) => x.trim()).filter(Boolean); const nums = a.filter((x) => /^-?\d+([.,]\d+)?$/.test(x.replace(/\s/g, ''))).map((x) => +x.replace(',', '.'));
+        if (nums.length < 2) return; const ad = a.find((x) => !/^-?\d+([.,]\d+)?$/.test(x)) || (nums.length >= 3 ? String(nums.shift()) : String(i + 1)); const n2 = nums.slice(-2); out.push([ad, n2[0], n2[1]]); }); return out; };
+    const den = async () => {
+      const crsAd = gv('hk_c'), tur = gv('hk_t'); let ham = oku(), kmlP = null;
+      const f = $('#hk_f').files[0];
+      if (f) { let txt; if (/\.kmz$/i.test(f.name)) { await betik('vendor/jszip.min.js'); const z = await JSZip.loadAsync(await f.arrayBuffer()); const kn = Object.keys(z.files).find((n) => /\.kml$/i.test(n)); txt = await z.file(kn).async('string'); } else txt = await f.text();
+        const d = new DOMParser().parseFromString(txt, 'text/xml'); kmlP = [];
+        Array.from(d.getElementsByTagName('Placemark')).forEach((pm) => { const ad = (pm.getElementsByTagName('name')[0] || {}).textContent || ''; Array.from(pm.getElementsByTagName('coordinates')).forEach((c) => {
+          const pts = c.textContent.trim().split(/\s+/).map((s2) => s2.split(',').map(Number)).filter((a) => a.length >= 2 && !isNaN(a[0])); kmlP.push({ ad, pts: pts.map((a) => [a[1], a[0]]) }); }); }); }
+      let sinir = null, tesis = null, tm = null;
+      if (kmlP) {
+        if (tur === 'Sınır') { const pol = kmlP.filter((x) => x.pts.length >= 3).sort((a, b) => b.pts.length - a.pts.length); sinir = pol.length ? [pol[0].pts] : null; }
+        else tesis = kmlP.map((x) => { const n = x.pts.length; const la = x.pts.reduce((a, q) => a + q[0], 0) / n, lo = x.pts.reduce((a, q) => a + q[1], 0) / n; return [x.ad, +la.toFixed(7), +lo.toFixed(7), '', '']; });
+      } else {
+        if (!ham.length) { $('#hk_on').innerHTML = '<span class="red-t">Koordinat okunamadı.</span>'; return; }
+        const w = coz(KS[crsAd], ham); tm = ham;
+        if (tur === 'Sınır') sinir = [w.map((q) => [+q[1].toFixed(7), +q[2].toFixed(7)])]; else tesis = w.map((q) => [q[0], +q[1].toFixed(7), +q[2].toFixed(7), '', '']);
+      }
+      const pts = sinir ? sinir[0] : (tesis || []).map((q) => [q[1], q[2]]);
+      const dis = pts.filter((q) => !IST(q[0], q[1])).length;
+      let oneri = '';
+      if (dis && ham.length && !kmlP) { const uy = Object.keys(KS).filter((k) => k !== crsAd && KS[k] !== 'WGS84').filter((k) => coz(KS[k], ham).every((q) => IST(q[1], q[2]))); if (uy.length) oneri = ' Uygun düşen sistem(ler): ' + uy.join(', ') + '.'; }
+      const al = sinir ? alanHa(sinir[0]) : null;
+      sonuc = { tur, sinir, tesis, tm, crs: kmlP ? 'WGS84 (KML/KMZ)' : crsAd, alan: al };
+      $('#hk_on').innerHTML = (sinir ? sinir[0].length + ' sınır noktası · alan <b>' + al.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ha</b>' + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha, fark %' + ((al - p.alan) / p.alan * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ')' : '') : (tesis || []).length + ' tesis noktası') +
+        (dis ? '<br><span class="red-t">' + dis + ' nokta İstanbul dışına düşüyor: koordinat sistemi ya da Y/X sırası yanlış olabilir.' + oneri + '</span>' : '<br><span class="ok-t">Bütün noktalar İstanbul sınırları içinde.</span>');
+      $('#hkOk').disabled = !!dis || !(sinir || (tesis && tesis.length));
+    };
+    $('#hkDen').onclick = () => den().catch((e) => { $('#hk_on').innerHTML = '<span class="red-t">' + esc(e.message) + '</span>'; });
+    $('#hkOk').onclick = () => {
+      if (!sonuc) return; const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
+      const h = p.harita = p.harita || {};
+      if (sonuc.sinir) { h.sinir = sonuc.sinir; h.alan_ha = r2(sonuc.alan); h.kaynak = kayn; h.crs = sonuc.crs; h.sinir_tm = sonuc.tm || null; h.kontrol = 'Program içinde ' + sonuc.crs + ' → WGS84 dönüştürüldü; düzlem alan ' + h.alan_ha.toLocaleString('tr-TR') + ' ha.'; }
+      else { h.tesis = sonuc.tesis; h.tesis_tm = sonuc.tm || null; h.tesis_kaynak = kayn; if (!h.crs) h.crs = sonuc.crs; }
+      h.kim = S.kim; h.t = bugun();
+      modalKapat(); degisti(p.kisa + ' ' + (sonuc.sinir ? 'sınır' : 'tesis') + ' koordinatları yüklendi (' + sonuc.crs + '; kaynak: ' + kayn + ')', p.kisa);
+    };
+  };
+
   // ---------- KİRA ZİNCİRİ ----------
   SAYFA.zincir = function () {
     const P = S.veri.parks.filter((p) => p.taban && p.ihale_b != null);
@@ -819,7 +1083,8 @@
       (z ? '<section class="card"><div class="ch"><h2>Dönem zinciri · ' + esc(S.zPark) + '</h2><span class="muted" style="font-size:13px">Taban ' + fd(S.pBy[S.zPark].taban) + ' · ' + esc(S.pBy[S.zPark].kural) + '</span>' +
         '<button class="btn sm own-only" data-a="ekKiraEkle" data-k="' + esc(S.zPark) + '">Ek kira ekle</button></div><div class="scroll"><table class="rt"><thead><tr><th>Dönem</th><th>Başlangıç</th><th>Uygulanan TÜFE</th><th class="r">Oran</th><th class="r">Eklenen ek tesis kirası</th><th class="r">Dönem kirası</th></tr></thead><tbody>' +
         z.zincir.map((d) => '<tr' + (d.n === z.donem ? ' style="background:#F1F8F3"' : '') + '>' + td(d.n + '. dönem' + (d.n === z.donem ? ' · karşılaştırılan' : ''), '', 'lead') + td(fd(d.bas), 'Başlangıç', 'n') +
-          td(d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] : 'İhale bedeli', 'TÜFE ayı') + td(d.tufe != null ? E.pct(d.tufe) : (d.n === 1 ? '–' : 'yayımlanmadı'), 'Oran', 'r') + td(d.ek ? tl(d.ek) : '–', 'Ek kira', 'n r') + td('<b>' + tl(d.bedel) + '</b>', 'Dönem kirası', 'n r') + '</tr>').join('') +
+          td(d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] : 'İhale bedeli', 'TÜFE ayı') + td(d.tufe != null ? E.pct(d.tufe) : (d.n === 1 ? '–' : 'yayımlanmadı'), 'Oran', 'r') + td(d.ek ? tl(d.ek) : '–', 'Ek kira', 'n r') +
+          td(d.oncesi ? '<span class="muted" style="font-size:12.5px">belgeli başlangıçtan önce</span>' : '<b>' + tl(d.bedel) + '</b>' + (d.belge ? '<br><span class="muted" style="font-size:12px">belge: ' + esc(d.belge) + '</span>' : ''), 'Dönem kirası', 'n r') + '</tr>').join('') +
         '</tbody></table></div></section>' : '');
   };
   AKSIYON.zsec = (t, ev) => { ev.preventDefault(); S.zPark = t.dataset.k; S.park = t.dataset.k; sayfaCiz(); };
@@ -832,8 +1097,14 @@
       .sort((a, b) => (a.kaynak < b.kaynak ? -1 : a.kaynak > b.kaynak ? 1 : a.tarih < b.tarih ? -1 : a.tarih > b.tarih ? 1 : a.yev - b.yev));
     S.csv = { name: 'muhasebe', head: ['Hesap', 'Yev. no', 'Yev. tarihi', 'Hesap no', 'Vergi no', 'Müşteri', 'Vade', 'Nedeni', 'Açıklama', 'Borç', 'Alacak', 'Borç hs.', 'Alacak hs.', 'Park', 'Not'],
       rows: L.map((x) => [x.kaynak, x.yev, fd(x.tarih), x.hesap, x.vkn, x.musteri, fd(x.vade), x.neden, x.aciklama, x.borc, x.alacak, x.borc_h, x.alacak_h, x.park, x.not_]) };
-    return '<div class="pagehead"><div><h1>Muhasebe</h1><p>120.99 ve 127 hesap dökümleri (veri tarihi ' + fd(S.veri.meta.muhasebe_tarihi) + '). Tahakkuklar alacak kalemi olur; her tahsilat fişi önce aynı hesap ve vadeli kaleme, sonra en eski vadeye dağıtılır.</p></div>' +
-      '<div class="own-only" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-a="csvYukle">Yeni döküm yükle (CSV)</button><button class="btn" data-a="kayitEkle">Elle kayıt ekle</button></div></div>' +
+    const D = S.veri.meta.dokumler || [], dsn = E.dokumSon(S.veri);
+    const dokT = '<section class="card"><div class="ch"><h2>Yüklenen dökümler</h2><span class="muted" style="font-size:13px">Döküm tarihi, son yevmiye tarihi ve programa yükleme tarihi ayrı tutulur</span></div><div class="scroll"><table class="rt"><thead><tr><th>Kaynak</th><th>Dosya / belge</th><th>Döküm tarihi</th><th>İlk – son yevmiye</th><th class="r">Satır</th><th>Programa yükleme</th><th>Not</th></tr></thead><tbody>' +
+      D.map((d) => '<tr>' + td('<b>' + esc(d.kaynak === 'yazi' ? 'Yazı eki' : d.kaynak === '120' ? '120.99' : '127') + '</b>', '', 'lead') + td(esc(d.dosya || ''), 'Dosya', 'wide', ' style="white-space:normal;font-size:13px;max-width:320px"') +
+        td(fd(d.dokum_tarihi), 'Döküm tarihi', 'n') + td(fd(d.ilk_yevmiye) + ' – <b>' + fd(d.son_yevmiye) + '</b>', 'Yevmiye', 'n') + td(d.satir || '', 'Satır', 'n r') + td(fd(d.yukleme) + (d.yukleyen ? '<br><span class="muted" style="font-size:12px">' + esc(d.yukleyen) + '</span>' : ''), 'Yükleme', 'n') +
+        td(esc(d.dokum_not || '') + (d.mukerrer ? ' · ' + d.mukerrer + ' mükerrer elle kayıt çıkarıldı' : ''), 'Not', 'wide', ' style="white-space:normal;font-size:12.5px;color:var(--mute);max-width:320px"') + '</tr>').join('') +
+      '</tbody></table></div><p class="muted" style="margin:8px 22px 16px;font-size:13px">Programdaki son yevmiye: 120.99 ' + fd(dsn['120']) + ', 127 ' + fd(dsn['127']) + '. Alacak ve gecikme zammı sonuçları bu tarihlere kadarki kayıtları yansıtır; sonraki tahakkuk ve tahsilatlar için yeni döküm yüklenmelidir.</p></section>';
+    return '<div class="pagehead"><div><h1>Muhasebe</h1><p>120.99 ve 127 hesap dökümleri. Tahakkuklar alacak kalemi olur; her tahsilat fişi önce aynı hesap ve vadeli kaleme, sonra en eski vadeye dağıtılır.</p></div>' +
+      '<div class="muh-only" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-a="csvYukle">Yeni döküm yükle (CSV / Excel)</button><button class="btn" data-a="kayitEkle">Elle kayıt ekle</button></div></div>' + dokT +
       '<section class="kpis"><div class="kpi"><span>120.99 bakiyesi</span><strong class="n">' + tl(bal('120')) + '</strong><em>Borç − alacak</em></div><div class="kpi"><span>127 bakiyesi</span><strong class="n">' + tl(bal('127')) + '</strong><em>Borç − alacak (park dışı dahil)</em></div>' +
       '<div class="kpi"><span>Satır sayısı</span><strong class="n">' + rows.length + '</strong><em>' + rows.filter((x) => x.park === 'Park dışı').length + ' satır park dışı · ' + rows.filter((x) => x.ek).length + ' elle eklenen</em></div><div class="kpi"><span>Alacak kalemi</span><strong class="n">' + S.esl.items.length + '</strong><em>' + S.esl.parcalar.length + ' parça (ödeme bölünmeleriyle)</em></div></section>' +
       '<section class="card"><div class="ch" style="gap:12px"><h2>Döküm satırları</h2><div class="filters"><div class="seg">' + [['tümü', 'Tümü'], ['120', '120.99'], ['127', '127'], ['elle', 'Elle eklenen']].map((s) => '<button class="' + (S.muhK === s[0] ? 'on' : '') + '" data-a="muhK" data-v="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>' +
@@ -875,8 +1146,17 @@
       '<div class="kv"><span>GitHub deposu</span><span>' + CFG.owner + '/' + CFG.repo + '</span></div><div class="kv"><span>Son kayıt</span><span>' + esc(S.veri.meta.kaydedildi ? new Date(S.veri.meta.kaydedildi).toLocaleString('tr-TR') : '—') + '</span></div>' +
       '<div class="kv"><span>Oturum</span><span>' + esc(S.kim || 'Yönetici') + '</span></div>' +
       '<div class="chiprow"><button class="btn" data-a="sifreDegis">Erişim parolasını değiştir</button><button class="btn" data-a="yPwDegis">Yönetici parolasını değiştir</button><button class="btn" data-a="anahtarYenile">GitHub anahtarını yenile</button>' +
-      '<button class="btn" data-a="kurumDuzenle">Kurum bilgileri</button><button class="btn" data-a="yedekIndir">Veri yedeğini indir (JSON)</button><button class="btn" data-a="yedekYukle">Yedekten geri yükle</button><button class="btn" data-a="muhTarih">Muhasebe veri tarihini değiştir</button></div>' +
-      '<p class="muted" style="margin:0;font-size:13px">Yetki düzeyleri: erişim parolası yalnız görüntüleme sağlar; yönetici parolası depodaki şifreli GitHub anahtarını açar ve kaydetmeye izin verir. Her kayıt git geçmişinde sürüm olarak saklanır.</p></div></section>';
+      '<button class="btn" data-a="kurumDuzenle">Kurum bilgileri</button><button class="btn" data-a="yedekIndir">Veri yedeğini indir (JSON)</button><button class="btn" data-a="yedekYukle">Yedekten geri yükle</button></div>' +
+      '<p class="muted" style="margin:0;font-size:13px">Erişim parolası yalnız görüntüleme sağlar. Kişisel hesaplar aşağıdaki “Kullanıcılar ve yetkiler” bölümünden yönetilir. Her kayıt git geçmişinde sürüm olarak saklanır.</p></div></section>';
+    const KL = S.kulListe;
+    const kulH = '<section class="card yon-only"><div class="ch"><h2>Kullanıcılar ve yetkiler</h2><div class="chiprow">' + (KL ? '<button class="btn sm pri" data-a="kulEkle">Kullanıcı ekle</button><button class="btn sm" data-a="kulYenile">Kayıtları yenile</button>' : '<button class="btn sm pri" data-a="kulListe">Kullanıcıları göster</button>') + '</div></div>' +
+      (KL ? (KL.length ? '<div class="scroll"><table class="rt"><thead><tr><th>Ad soyad</th><th>Kullanıcı adı</th><th>Görüntüleme</th><th>Veri düzenleme</th><th>Muhasebe</th><th>Yönetim</th><th>Ekleyen</th><th class="noprint"></th></tr></thead><tbody>' +
+        KL.map((x) => '<tr>' + td('<b>' + esc(x.ad) + '</b>', '', 'lead') + td(esc(x.kullanici), 'Kullanıcı') + td('✓', 'Görüntüleme') + ['duzenle', 'muhasebe', 'yonetim'].map((r) => td(x.roller[r] ? '✓' : '—', ROL[r])).join('') +
+          td(esc((x.ekleyen || '') + (x.t ? ' · ' + new Date(x.t).toLocaleDateString('tr-TR') : '')), 'Ekleyen', 'muted') +
+          td('<button class="btn sm" data-a="kulDuz" data-id="' + x.id + '">Düzenle</button> <button class="btn sm red" data-a="kulSil" data-id="' + x.id + '">Sil</button>', '', 'noprint') + '</tr>').join('') + '</tbody></table></div>'
+        : '<div class="empty">Henüz kişisel hesap yok.</div>') : '') +
+      '<p class="muted" style="margin:6px 22px 18px;font-size:13px;line-height:1.5">Her kişi kendi kullanıcı adı ve parolasıyla girer; yaptığı her değişiklik işlem geçmişine ve git sürüm geçmişine adıyla yazılır. Yetkiler: <b>görüntüleme</b> (herkes), <b>veri düzenleme</b> (park, form, defter, plan, harita), <b>muhasebe</b> (döküm yükleme, tahakkuk, tahsilat, vade), <b>yönetim</b> (kullanıcılar, parolalar, oranlar, yedek). ' +
+      'Program sunucusuz çalıştığı için yetkiler program içinde uygulanır; yazma yetkili hesaplar depoya aynı GitHub anahtarıyla yazar. Bir kişinin erişimi tamamen kesilecekse hesabı silinir, ardından erişim parolası ve GitHub anahtarı yenilenir (hesaplar kendiliğinden güncellenir).</p></section>';
     const G = (S.veri.gecmis || []).slice().reverse().slice(0, 300);
     const gecH = '<section class="card"><div class="ch"><h2>İşlem geçmişi</h2><span class="muted" style="font-size:13px">' + (S.veri.gecmis || []).length + ' kayıt · son kayıt ' + esc(S.veri.meta.kaydedildi ? new Date(S.veri.meta.kaydedildi).toLocaleString('tr-TR') + ' (' + (S.veri.meta.kaydeden || '') + ')' : '—') + '</span></div>' +
       (G.length ? '<div class="scroll"><table class="rt"><thead><tr><th>Zaman</th><th>Kim</th><th>Park</th><th>İşlem</th></tr></thead><tbody>' + G.map((g) => '<tr>' + td(new Date(g.t).toLocaleString('tr-TR'), '', 'lead n muted') + td(esc(g.kim || ''), 'Kim') + td(esc(g.park || '—'), 'Park') + td(esc(g.is), 'İşlem', 'wide', ' style="white-space:normal"') + '</tr>').join('') + '</tbody></table></div>'
@@ -888,7 +1168,7 @@
       '<p style="margin:0 0 8px">TÜFE ve gecikme zammı oranları her gün resmî kaynaklardan otomatik denetlenir (TÜİK veri servisi, Resmî Gazete). Kayıtlar şifreli tutulur; yalnız erişim parolasını bilen açabilir, yalnız yönetici değiştirebilir.</p>' +
       '<p style="margin:0">Kaynak belgeler: ' + esc(S.veri.meta.kaynak) + '.</p></div></section>';
     S.csv = { name: 'tufe', head: ['Yıl'].concat(AY), rows: yrs.map((y) => [y].concat((T[y] || []).map((v) => (v == null ? '' : r2(v * 10000) / 100)))) };
-    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, işlem geçmişi ve program ayarları.</p></div></div>' + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + gecH + temaH;
+    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, kullanıcılar, işlem geçmişi ve program ayarları.</p></div></div>' + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + kulH + gecH + temaH;
   };
 
   // =============== YÖNETİCİ İŞLEMLERİ (formlar) ===============
@@ -904,13 +1184,15 @@
   }
   function oturumAc(tok, kim, kalici) {
     S.token = tok; S.kim = kim || 'Yönetici';
-    (kalici ? ls : ss).set('op_gh', tok); (kalici ? ls : ss).set('op_kim', S.kim);
+    const D = kalici ? ls : ss;
+    if (tok) D.set('op_gh', tok); D.set('op_kim', S.kim); D.set('op_rol', JSON.stringify(S.rol || {})); if (S.kullanici) D.set('op_kul', S.kullanici); else { ls.del('op_kul'); ss.del('op_kul'); }
+    rolSinif();
   }
   function yoneticiGiris() {
     modal('Yönetici girişi', '<p style="margin:0;color:var(--ink2);line-height:1.5">Düzenleme ve kaydetme için <b>yönetici parolasını</b> girin. Erişim parolası yalnız görüntüleme içindir.</p>' +
       '<div class="f"><label for="ypw">Yönetici parolası</label><input class="fld" id="ypw" type="password" autocomplete="current-password"></div>' +
       '<label class="chk"><input type="checkbox" id="ykeep" checked> Bu cihazda açık kalsın</label><div class="err" id="yerr" role="alert"></div>' +
-      '<p class="muted" style="margin:0;font-size:13px"><a href="#" data-a="kurulum" style="text-decoration:underline">İlk kurulum / parolamı unuttum / anahtarı yenile</a></p>',
+      '<p class="muted" style="margin:0;font-size:13px"><a href="#" data-a="kulGirisAc" style="text-decoration:underline">Kişisel hesabımla gir</a> · <a href="#" data-a="kurulum" style="text-decoration:underline">İlk kurulum / parolamı unuttum / anahtarı yenile</a></p>',
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="yOk">Giriş</button>');
     const go = async () => {
       const pw = $('#ypw').value; if (!pw) return;
@@ -921,6 +1203,7 @@
       let o; try { o = await K.coz(txt, pw); } catch (e) { $('#yerr').textContent = 'Yönetici parolası yanlış.'; return; }
       S.token = o.token; const ok = await yetkiKontrol(true);
       if (!ok) { S.token = null; $('#yerr').innerHTML = 'Parola doğru, ancak kayıtlı GitHub anahtarı artık geçerli değil (süresi dolmuş veya iptal edilmiş). <a href="#" data-a="kurulum" data-m="yenile" style="text-decoration:underline">Anahtarı yenileyin</a>.'; return; }
+      S.rol = TUM_ROL; S.kullanici = null; S.dirKey = o.dirKey || null;
       oturumAc(o.token, o.kim, $('#ykeep').checked); S.yPw = pw;
       if (!S.dirty) S.sha = await shaAl(CFG.veri);
       modalKapat(); kabukDurum(); sayfaCiz(); toast('Yönetici girişi yapıldı (' + S.kim + '). Düzenleme düğmeleri açıldı.');
@@ -947,11 +1230,102 @@
       if (!ok) { S.token = null; er.textContent = 'Bu anahtarın ' + CFG.repo + ' deposuna yazma izni yok. Depo seçimini ve “Contents: Read and write” iznini kontrol edin.'; return; }
       try { await dosyaYaz(CFG.yonetici, await K.sifrele({ token: tok, kim, t: new Date().toISOString() }, p1), 'Yönetici anahtarı güncellendi (' + kim + ')'); }
       catch (e) { er.textContent = 'Yönetici kaydı yazılamadı: ' + e.message; return; }
-      oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await shaAl(CFG.veri);
+      S.rol = TUM_ROL; S.kullanici = null; oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await shaAl(CFG.veri);
+      if (mod === 'yenile') { try { await kulYenidenSar({ token: tok }); } catch (e) { toast('Kullanıcı kayıtlarındaki anahtar güncellenemedi: ' + e.message + ' (Veriler › Kullanıcılar › Kayıtları yenile).', true); } }
       modalKapat(); kabukDurum(); sayfaCiz(); toast('Kurulum tamam. Bundan sonra yönetici girişi için yalnız parola yeterli.');
     };
   }
   AKSIYON.kurulum = (t, ev) => { ev.preventDefault(); kurulum(t.dataset.m); };
+
+  // ---------------- kişi bazında kullanıcılar (data/kullanicilar.enc) ----------------
+  // Dosya: { v, dir, u: { id: { w, d } } }. id = SHA-256(kullanıcı adı); w = kişinin parolasıyla şifreli kişisel anahtar (uk);
+  // d = uk ile şifreli { ad, kullanici, roller, pw (erişim parolası), token (yazma yetkisi varsa), dirKey (yönetim yetkisi varsa) };
+  // dir = dizin anahtarıyla şifreli kullanıcı listesi (yalnız yönetim yetkisi olanlar açar). Parolalar hiçbir yerde açık tutulmaz.
+  async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); }
+  const kulId = (ad) => sha('op|' + String(ad || '').trim().toLocaleLowerCase('tr-TR'));
+  const rasgele = () => K.b64(crypto.getRandomValues(new Uint8Array(32)));
+  async function kulDosya() {
+    try {
+      const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + CFG.kullanicilar + '?ref=' + CFG.branch + '&t=' + Date.now(), { headers: { Accept: 'application/vnd.github.raw+json' }, cache: 'no-store' });
+      if (r.ok) return JSON.parse(await r.text()); if (r.status === 404) return null;
+    } catch (e) { /* ağ */ }
+    try { const r = await fetch(CFG.kullanicilar + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) return JSON.parse(await r.text()); if (r.status === 404) return null; } catch (e) {}
+    return null;
+  }
+  async function kulAc(ad, pw) {
+    const U = await kulDosya(); if (!U || !U.u) throw new Error('Henüz kişisel hesap tanımlanmamış.');
+    const e = U.u[await kulId(ad)]; if (!e) throw new Error('Kullanıcı adı ya da parola yanlış.');
+    let uk; try { uk = (await K.coz(e.w, pw)).uk; } catch (x) { throw new Error('Kullanıcı adı ya da parola yanlış.'); }
+    return { d: await K.coz(e.d, uk), uk, U, e };
+  }
+  function kulGirisFormu(kutu, gate) {
+    const h = '<h1 style="margin:0">Kişisel hesap</h1><p>Yöneticinin size verdiği kullanıcı adı ve parolayla girin. Yetkileriniz (görüntüleme, düzenleme, muhasebe, yönetim) hesabınıza göre açılır.</p>' +
+      '<input class="fld" id="kgAd" autocomplete="username" placeholder="Kullanıcı adı" aria-label="Kullanıcı adı">' +
+      '<input class="fld" id="kgPw" type="password" autocomplete="current-password" placeholder="Parola" aria-label="Parola">' +
+      '<label class="chk"><input type="checkbox" id="kgKeep" checked> Bu cihazda hatırla</label><button class="btn pri" id="kgOk">Giriş</button><div class="err" id="kgErr" role="alert"></div>';
+    if (gate) kutu.innerHTML = LOGO(48) + h; else modal('Kişisel hesapla giriş', h);
+    const go = async (ev) => {
+      if (ev) ev.preventDefault();
+      const ad = $('#kgAd').value.trim(), pw = $('#kgPw').value; if (!ad || !pw) return;
+      $('#kgErr').textContent = 'Denetleniyor…';
+      try {
+        const { d } = await kulAc(ad, pw);
+        if (!S.veri || S.pw !== d.pw) { S.veri = await K.coz(S.enc, d.pw); S.pw = d.pw; }
+        S.rol = Object.assign({}, d.roller || {}); S.kullanici = d.kullanici; S.dirKey = d.dirKey || null; S.uPw = pw; S.yPw = null;
+        const yaz = Object.keys(ROL).some((r) => S.rol[r]);
+        S.token = yaz ? d.token : null; S.owner = false;
+        const keep = $('#kgKeep').checked; if (keep) ls.set('op_pw', d.pw);
+        oturumAc(S.token, d.ad, keep);
+        if (S.token) { const ok = await yetkiKontrol(true); if (!ok) toast('Hesabınızdaki GitHub anahtarı geçersiz; yöneticiden kayıtları yenilemesini isteyin. Şimdilik görüntüleme modundasınız.', true); }
+        rolSinif();
+        if (gate) await acildi(); else { modalKapat(); if (!S.dirty) S.sha = await shaAl(CFG.veri); kabukDurum(); sayfaCiz(); }
+        toast('Hoş geldiniz, ' + d.ad + '.');
+      } catch (e) { $('#kgErr').textContent = e.message; }
+    };
+    $('#kgOk').onclick = go; $('#kgPw').onkeydown = (e) => { if (e.key === 'Enter') go(e); }; $('#kgAd').focus();
+  }
+  AKSIYON.kulGirisAc = (t, ev) => { if (ev) ev.preventDefault(); kulGirisFormu(null, false); };
+  // parola soran küçük pencere (Promise)
+  function parolaSor(baslik, aciklama) {
+    return new Promise((res) => {
+      modal(baslik, (aciklama ? '<p class="muted" style="margin:0">' + esc(aciklama) + '</p>' : '') + fi('psPw', 'Parola', '', 'password'),
+        '<button class="btn" id="psNo">Vazgeç</button><button class="btn pri" id="psOk">Tamam</button>');
+      $('#psOk').onclick = () => { const v = $('#psPw').value; modalKapat(); res(v || null); };
+      $('#psNo').onclick = () => { modalKapat(); res(null); };
+      $('#psPw').onkeydown = (e) => { if (e.key === 'Enter') $('#psOk').click(); };
+    });
+  }
+  // dizin anahtarı: yönetim yetkili kişisel hesapta hesaptan, kurulum (yönetici parolası) hesabında yonetici.enc'ten
+  async function dizinAnahtari() {
+    if (S.dirKey) return S.dirKey;
+    if (S.kullanici) {
+      const pw = S.uPw || await parolaSor('Kullanıcı yönetimi', 'Devam etmek için kendi parolanızı girin.'); if (!pw) throw new Error('Parola girilmedi');
+      const { d } = await kulAc(S.kullanici, pw); S.uPw = pw; if (!d.dirKey) throw new Error('Hesabınızda yönetim yetkisi yok'); S.dirKey = d.dirKey; return S.dirKey;
+    }
+    const pw = S.yPw || await parolaSor('Kullanıcı yönetimi', 'Devam etmek için yönetici parolasını girin.'); if (!pw) throw new Error('Parola girilmedi');
+    const txt = await yoneticiDosya(); let o; try { o = await K.coz(txt, pw); } catch (e) { throw new Error('Yönetici parolası yanlış'); }
+    S.yPw = pw;
+    if (o.dirKey) { S.dirKey = o.dirKey; return S.dirKey; }
+    const dk = rasgele();
+    await dosyaYaz(CFG.yonetici, await K.sifrele(Object.assign({}, o, { dirKey: dk }), pw), 'Kullanıcı dizini anahtarı oluşturuldu (' + S.kim + ')');
+    S.dirKey = dk; return dk;
+  }
+  async function dizinAc() {
+    const dk = await dizinAnahtari(); const U = (await kulDosya()) || { v: 1, u: {} };
+    let list = []; if (U.dir) { try { list = await K.coz(U.dir, dk); } catch (e) { throw new Error('Kullanıcı dizini bu anahtarla açılamadı'); } }
+    return { U, list, dk };
+  }
+  async function dizinYaz(U, list, dk, mesaj) { U.v = 1; U.dir = await K.sifrele(list, dk); U.u = U.u || {}; await dosyaYaz(CFG.kullanicilar, JSON.stringify(U), mesaj); S.kulListe = list; }
+  const yazar = (r) => !!(r && (r.duzenle || r.muhasebe || r.yonetim));
+  async function kulPaket(x, ek) { const o = Object.assign({ pw: S.pw, token: S.token, dirKey: S.dirKey }, ek || {});
+    return { ad: x.ad, kullanici: x.kullanici, roller: x.roller, pw: o.pw, token: yazar(x.roller) ? o.token : null, dirKey: x.roller.yonetim ? o.dirKey : null }; }
+  // erişim parolası ya da GitHub anahtarı değişince bütün kişisel hesapların içeriği yeniden şifrelenir
+  async function kulYenidenSar(ek) {
+    const U0 = await kulDosya(); if (!U0 || !U0.dir) return 0;
+    const { U, list, dk } = await dizinAc(); let n = 0;
+    for (const x of list) { if (!U.u[x.id]) continue; U.u[x.id].d = await K.sifrele(await kulPaket(x, ek), x.uk); n++; }
+    await dizinYaz(U, list, dk, 'Kullanıcı kayıtları yenilendi (' + S.kim + ')'); return n;
+  }
   const fi = (id, lab, v, type, opts, extra) => (type === 'number' && typeof v === 'number' ? (v = String(v).replace('.', ',')) : 0, '') + '<div class="f"><label for="' + id + '">' + lab + '</label>' + (opts ? '<select class="fld" id="' + id + '">' + opts.map((o) => '<option' + (String(o) === String(v == null ? '' : v) ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>'
     : type === 'area' ? '<textarea class="fld" id="' + id + '">' + esc(v || '') + '</textarea>' : '<input class="fld" id="' + id + '" type="' + (type === 'number' ? 'text' : (type || 'text')) + '"' + (type === 'number' ? ' inputmode="decimal" autocomplete="off"' : '') + ' value="' + esc(v == null ? '' : v) + '"' + (extra || '') + '>') + '</div>';
   const sayiOku = (v) => { v = String(v).replace(/[\s₺]|TL/g, ''); if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.'); else if (/^-?\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, ''); const n = parseFloat(v); return isNaN(n) ? NaN : n; };
@@ -980,6 +1354,8 @@
       '<div class="frow">' + fi('pk_sb', 'Sözleşme tarihi', p.soz_bas, 'date') + fi('pk_se', 'Sözleşme bitişi', p.soz_bit, 'date') + '</div><div class="frow">' + fi('pk_tsl', 'Saha teslimi (Ek-9)', p.teslim, 'date') + fi('pk_tab', 'Kira dönem tabanı (boşsa sözleşme tarihi)', p.taban, 'date') + '</div>' +
       '<div class="frow">' + fi('pk_gm', 'Belgelerin GM’ye gönderimi (Md. 13)', p.gm_gonderim, 'date') + fi('pk_gt', 'Geri teslim tutanağı gönderimi', p.geri_teslim, 'date') + '</div>' +
       H('Kira, teminat ve ödeme') + '<div class="frow">' + fi('pk_art', 'Artış esası', p.artis, null, ['Yıldönümü', 'Takvim yılı']) + fi('pk_kur', 'TÜFE kuralı', p.kural, null, ['Yayımlanan (önceki ay)', 'Yıldönümü ayı', 'Aralık (önceki yıl)']) + '</div>' +
+      '<div class="frow">' + fi('pk_ye', 'Takvim yılına düşen dönem', p.yil_esas || '31 Mart esası', null, ['31 Mart esası', 'Dönem başı']) + fi('pk_kb', 'Belgeli başlangıç dönemi (boşsa ihale bedelinden)', p.kok && p.kok.bas, 'date') + '</div>' +
+      '<div class="frow">' + fi('pk_kbb', 'Belgeli dönem kirası (TL)', p.kok && p.kok.bedel, 'number') + fi('pk_kbk', 'Belgeli başlangıcın kaynağı', p.kok && p.kok.kaynak) + '</div>' +
       '<div class="frow">' + fi('pk_od', 'Ödeme şekli', p.odeme, null, ['', 'Peşin', '4 taksit', '1/3 peşin + 2 taksit'].concat(p.odeme && !['Peşin', '4 taksit', '1/3 peşin + 2 taksit'].includes(p.odeme) ? [p.odeme] : [])) + fi('pk_tv', 'Ödeme günleri (AA-GG, virgülle; boşsa önceki yıl / Md. 32-3)', p.taksit_vade) + '</div>' +
       '<div class="frow">' + fi('pk_kes', 'Kesin teminat (TL; boşsa ihale × %6)', p.kesin, 'number') + fi('pk_gir', 'Giriş ücreti (varsa)', p.giris) + '</div>' +
       '<div class="frow">' + fi('pk_guv', 'Güvence (%)', pct(p.guv), 'number') + fi('pk_dep', 'Depozito (%)', pct(p.dep), 'number') + '</div>' +
@@ -1001,6 +1377,7 @@
       if (q.sb && q.se && q.rej === '313' && q.se > E.addMonths(q.sb, 240)) return er('Md. 36: sözleşme süresi 20 yılı aşamaz (bitiş en geç ' + fd(E.addMonths(q.sb, 240)) + ').');
       if (q.iht && q.sb && q.iht > q.sb) return er('İhale tarihi sözleşme tarihinden sonra olamaz.');
       if (q.ihb != null && !(q.ihb > 0)) return er('İhale bedeli sıfırdan büyük olmalı.');
+      if (gv('pk_kb') && (gv('pk_kbb', 'number') == null || !gv('pk_kbk'))) return er('Belgeli başlangıç için dönem kirası ve kaynak belge gerekli.');
       const tv = gv('pk_tv'); if (tv && !tv.split(/[,;\s]+/).filter(Boolean).every((x) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(x))) return er('Ödeme günleri AA-GG biçiminde olmalı (ör. 01-30, 04-30).');
       const vk = gv('pk_vkn'); if (vk && !/^\d{10,11}$/.test(vk)) return er('Vergi no 10, T.C. kimlik no 11 haneli olmalı.');
       const vm = gv('pk_vknm'); if (vm && S.veri.parks.some((x) => x !== p && x.vkn_muh === vm)) return er('Bu muhasebe vergi numarası başka bir parka tanımlı; kayıtlar karışır.');
@@ -1011,7 +1388,8 @@
         uzaklik: gv('pk_uz') || '', imar: gv('pk_imar') || '', tapu: gv('pk_tapu') || '', koordinat: gv('pk_koor') || '',
         isletmeci: gv('pk_isl'), vkn: vk || '', vkn_muh: vm || '', yetkili: gv('pk_yet') || '', yetkili_tc: gv('pk_ytc') || '', adres: gv('pk_adr') || '', tel: gv('pk_tel') || '', faks: gv('pk_faks') || '', eposta: gv('pk_ep') || '',
         sekil: gv('pk_sekil'), ihale_t: q.iht, ihale_b: ihb, rejim: rej, soz_bas: q.sb, soz_bit: q.se, teslim: q.tsl, taban: gv('pk_tab') || q.sb, gm_gonderim: gv('pk_gm'), geri_teslim: gv('pk_gt'),
-        artis: gv('pk_art'), kural: gv('pk_kur'), odeme: gv('pk_od') || (ihb != null ? (ihb <= 150000 ? 'Peşin' : '4 taksit') : ''), taksit_vade: tv || '',
+        artis: gv('pk_art'), kural: gv('pk_kur'), yil_esas: gv('pk_ye') === 'Dönem başı' ? 'Dönem başı' : '',
+        kok: gv('pk_kb') && gv('pk_kbb', 'number') != null ? { bas: gv('pk_kb'), bedel: r2(gv('pk_kbb', 'number')), kaynak: gv('pk_kbk') || '' } : null, odeme: gv('pk_od') || (ihb != null ? (ihb <= 150000 ? 'Peşin' : '4 taksit') : ''), taksit_vade: tv || '',
         kesin: gv('pk_kes', 'number') != null ? gv('pk_kes', 'number') : (ihb != null && yeni ? r2(ihb * 0.06) : (yeni ? null : p.kesin)), giris: gv('pk_gir') || '',
         guv: gv('pk_guv', 'number') == null ? null : gv('pk_guv', 'number') / 100, dep: gv('pk_dep', 'number') == null ? null : gv('pk_dep', 'number') / 100,
         muh_kira: gv('pk_mk', 'number'), muh_kira_not: gv('pk_mkn') || '', plan: gv('pk_plan'), gyp_onay: gv('pk_gyp'), proje_t: gv('pk_prj'), yatirim: gv('pk_yat', 'number'), yatirim_bitti: gv('pk_ybt') === 'Evet',
@@ -1115,26 +1493,43 @@
       modalKapat(); degisti('Muhasebe satırı eklendi'); };
   };
   AKSIYON.csvYukle = () => {
-    if (!S.owner) return yoneticiGiris();
-    modal('Yeni muhasebe dökümü', '<p style="margin:0;line-height:1.5">Muhasebe sisteminden alınan <b>120.99</b> ve/veya <b>127</b> hesap dökümünü (noktalı virgül ayraçlı CSV) seçin. Seçilen hesabın eski döküm satırları yenisiyle değişir; elle eklenen satırlar korunur.</p>' +
-      '<div class="frow">' + fi('cv_k', 'Hesap', '120', null, ['120', '127']) + fi('cv_t', 'Döküm (veri) tarihi', S.rapor, 'date') + '</div><div class="f"><label for="cv_f">CSV dosyası</label><input class="fld" id="cv_f" type="file" accept=".csv,text/csv"></div><div id="cv_on" class="muted" style="font-size:13.5px"></div>',
+    modal('Yeni muhasebe dökümü', '<p style="margin:0;line-height:1.5">Muhasebe sisteminden alınan <b>120.99</b> ya da <b>127</b> hesap dökümünü (CSV ya da Excel) seçin. Seçilen hesabın eski döküm satırları yenisiyle değişir. Elle eklenmiş satırlardan dökümde birebir karşılığı olanlar (aynı yevmiye no ve tarihi, hesap, vergi no, vade, borç, alacak) mükerrer olmaması için kaldırılır; karşılığı olmayan elle kayıtlar korunur.</p>' +
+      '<div class="frow">' + fi('cv_k', 'Hesap', '120', null, ['120', '127']) + fi('cv_t', 'Döküm tarihi (muhasebeden alındığı gün)', '', 'date') + '</div><div class="f"><label for="cv_f">Döküm dosyası</label><input class="fld" id="cv_f" type="file" accept=".csv,.xlsx,text/csv"></div><div id="cv_on" class="muted" style="font-size:13.5px"></div>',
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="cvOk" disabled>Yükle ve eşleştir</button>');
-    let rows = null;
+    let rows = null, dosya = '';
     $('#cv_f').onchange = async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      const buf = await f.arrayBuffer(); let txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1254').decode(buf);
-      rows = E.csvOku(txt, gv('cv_k'));
-      const b = sumOf(rows, (x) => x.borc - x.alacak);
-      $('#cv_on').innerHTML = rows.length ? rows.length + ' satır okundu · bakiye ' + tl(b) + ' · ilk satır yev. ' + rows[0].yev + ' (' + fd(rows[0].tarih) + ')' : '<span class="red-t">Satır okunamadı; dosya biçimini kontrol edin.</span>';
-      $('#cvOk').disabled = !rows.length;
+      const f = e.target.files[0]; if (!f) return; dosya = f.name; $('#cv_on').textContent = 'Okunuyor…';
+      try {
+        const buf = await f.arrayBuffer();
+        if (/\.xlsx$/i.test(f.name)) { await betik('vendor/exceljs.min.js'); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf); const ws = wb.worksheets[0], M = [];
+          ws.eachRow({ includeEmpty: false }, (r) => { const a = []; for (let c = 1; c <= 19; c++) { let v = r.getCell(c).value; if (v && typeof v === 'object' && !(v instanceof Date)) v = v.result != null ? v.result : (v.text != null ? v.text : (v.richText ? v.richText.map((t) => t.text).join('') : '')); a.push(v); } M.push(a); });
+          rows = E.dokumSatir(M.slice(1), gv('cv_k'));
+        } else { let txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1254').decode(buf); rows = E.csvOku(txt, gv('cv_k')); }
+      } catch (er) { rows = null; $('#cv_on').innerHTML = '<span class="red-t">Dosya okunamadı: ' + esc(er.message) + '</span>'; return; }
+      const k = gv('cv_k'); rows.forEach((x) => { x.kaynak = k; });
+      const b = sumOf(rows, (x) => x.borc - x.alacak), ys = rows.map((x) => x.tarih).filter(Boolean).sort(), bil = E.muhBirlestir(S.veri.muhasebe, rows, k);
+      const hs = Array.from(new Set(rows.map((x) => (x.hesap || '').split('.')[0]))).join(', ');
+      $('#cv_on').innerHTML = rows.length ? rows.length + ' satır · hesap ' + esc(hs) + ' · yevmiye ' + fd(ys[0]) + ' – <b>' + fd(ys[ys.length - 1]) + '</b> · bakiye ' + tl(b) +
+        (hs && hs !== k ? '<br><span class="red-t">Dosyadaki hesap (' + esc(hs) + ') seçilen hesapla (' + k + ') uyuşmuyor.</span>' : '') +
+        '<br>Mükerrer olacak elle kayıt: <b>' + bil.mukerrer.length + '</b>' + (bil.otoDus ? ' · muhasebede karşılığı gelen program tahakkuku: ' + bil.otoDus : '') +
+        (bil.geri ? '<br><span class="red-t">Bu dökümün son yevmiyesi (' + fd(bil.yeniSon) + ') programdakinden (' + fd(bil.eskiSon) + ') eski. Yüklerseniz daha yeni kayıtlar kaybolur.</span>' : '')
+        : '<span class="red-t">Satır okunamadı; dosya biçimini kontrol edin.</span>';
+      $('#cvOk').disabled = !rows.length || (hs && hs !== k);
     };
-    $('#cvOk').onclick = () => { const k = gv('cv_k'); if (!rows || !rows.length) return; rows.forEach((x) => { x.kaynak = k; });
-      S.veri.muhasebe = S.veri.muhasebe.filter((x) => x.kaynak !== k || x.ek).concat(rows); S.veri.meta.muhasebe_tarihi = gv('cv_t') || S.rapor;
-      const gercek = new Set(rows.filter((x) => x.kaynak === '120' && x.borc > 0 && (x.alacak_h || '').includes('600')).map((x) => x.vkn + '|' + E.year(x.tarih)));
-      const once = S.veri.muhasebe.length; S.veri.muhasebe = S.veri.muhasebe.filter((x) => !(x.oto && gercek.has(x.vkn + '|' + x.oto.split('|')[1])));
-      const dus = once - S.veri.muhasebe.length;
-      modalKapat(); degisti(k + ' dökümü yüklendi ve eşleştirildi (' + rows.length + ' satır' + (dus ? '; muhasebede karşılığı gelen ' + dus + ' program tahakkuku satırı kaldırıldı' : '') + ')'); };
+    $('#cvOk').onclick = () => {
+      const k = gv('cv_k'); if (!rows || !rows.length) return;
+      const bil = E.muhBirlestir(S.veri.muhasebe, rows, k);
+      if (bil.geri && !confirm('Yüklenen döküm programdakinden eski. Yine de yüklensin mi?')) return;
+      S.veri.muhasebe = bil.muhasebe;
+      const ys = rows.map((x) => x.tarih).filter(Boolean).sort();
+      S.veri.meta.dokumler = (S.veri.meta.dokumler || []).filter((d) => d.kaynak !== k).concat([{ kaynak: k, dosya, dokum_tarihi: gv('cv_t') || null, dokum_not: gv('cv_t') ? '' : 'Döküm tarihi girilmedi',
+        ilk_yevmiye: ys[0], son_yevmiye: ys[ys.length - 1], satir: rows.length, yukleme: bugun(), yukleyen: S.kim, mukerrer: bil.mukerrer.length }]);
+      modalKapat(); degisti(k + ' dökümü yüklendi: ' + dosya + ', ' + rows.length + ' satır, son yevmiye ' + fd(ys[ys.length - 1]) + (bil.mukerrer.length ? '; ' + bil.mukerrer.length + ' mükerrer elle kayıt çıkarıldı' : '') + (bil.otoDus ? '; muhasebede karşılığı gelen ' + bil.otoDus + ' program tahakkuku satırı kaldırıldı' : ''));
+    };
   };
+  // gerektiğinde dış betik yükle (vendor klasöründen)
+  const BETIK = {};
+  function betik(src) { if (!BETIK[src]) BETIK[src] = new Promise((res, rej) => { const e = document.createElement('script'); e.src = src; e.onload = res; e.onerror = () => rej(new Error(src + ' yüklenemedi')); document.head.appendChild(e); }); return BETIK[src]; }
   AKSIYON.tufeGir = () => {
     const s = sonTufeAyi(); let y = s ? s[0] : E.year(S.rapor), m = s ? s[1] + 1 : 1; if (m > 12) { m = 1; y++; }
     modal('TÜFE değeri (geçici)', '<p class="muted" style="margin:0">TÜİK bülteninde “on iki aylık ortalamalara göre” yazan oranı girin. Resmî veri otomatik geldiğinde bu değerin yerine geçer.</p><div class="frow">' +
@@ -1170,7 +1565,8 @@
         const ekj = await K.coz(await getText(CFG.ekler + '?t=' + Date.now(), true), S.pw);
         await dosyaYaz(CFG.ekler, await K.sifrele(ekj, a), 'Ek şablonları yeni parolayla şifrelendi');
       } catch (e) { toast('Şifreli dosyalar güncellenemedi: ' + e.message, true); return; }
-      S.pw = a; S.tebligUrl = null; if (ls.get('op_pw')) ls.set('op_pw', a); modalKapat(); degisti('Erişim parolası değiştirildi'); await kaydet(); };
+      S.pw = a; S.tebligUrl = null; if (ls.get('op_pw')) ls.set('op_pw', a); modalKapat(); degisti('Erişim parolası değiştirildi'); await kaydet();
+      try { const n = await kulYenidenSar(); if (n) toast(n + ' kişisel hesap yeni parolaya göre güncellendi.'); } catch (e) { toast('Kişisel hesaplar güncellenemedi: ' + e.message + ' — Veriler › Kullanıcılar › Kayıtları yenile.', true); } };
   };
   AKSIYON.yPwDegis = () => {
     if (!S.owner) return yoneticiGiris();
@@ -1198,9 +1594,45 @@
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button>');
     $('#yd_f').onchange = async (e) => { try { const j = JSON.parse(await e.target.files[0].text()); if (!j.parks || !j.muhasebe) throw new Error('Geçersiz yedek'); S.veri = j; modalKapat(); degisti('Yedek yüklendi'); } catch (er) { toast(er.message, true); } };
   };
-  AKSIYON.muhTarih = () => {
-    modal('Muhasebe veri tarihi', fi('mt', 'Döküm tarihi', S.veri.meta.muhasebe_tarihi, 'date'), '<button class="btn pri" id="mtOk">Uygula</button>');
-    $('#mtOk').onclick = () => { S.veri.meta.muhasebe_tarihi = gv('mt') || S.veri.meta.muhasebe_tarihi; modalKapat(); degisti('Tarih güncellendi'); };
+  // ---- kullanıcı yönetimi ----
+  AKSIYON.kulListe = async () => { try { const { list } = await dizinAc(); S.kulListe = list; sayfaCiz(); } catch (e) { toast('Kullanıcılar açılamadı: ' + e.message, true); } };
+  AKSIYON.kulYenile = async () => { try { const n = await kulYenidenSar(); toast(n + ' hesap güncel erişim parolası ve anahtarla yeniden şifrelendi.'); sayfaCiz(); } catch (e) { toast('Yenilenemedi: ' + e.message, true); } };
+  AKSIYON.kulEkle = () => kulForm(null);
+  AKSIYON.kulDuz = (t) => kulForm((S.kulListe || []).find((x) => x.id === t.dataset.id));
+  function kulForm(x) {
+    const yeni = !x, r = (x && x.roller) || {};
+    const cb = (k) => '<label class="chk"><input type="checkbox" id="ku_r_' + k + '"' + (r[k] ? ' checked' : '') + '> ' + ROL[k] + '</label>';
+    modal(yeni ? 'Kullanıcı ekle' : x.ad + ' · kullanıcı', fi('kf_ad', 'Ad soyad', x && x.ad) + fi('kf_ku', 'Kullanıcı adı (girişte yazılır)', x && x.kullanici, null, null, yeni ? '' : ' disabled') +
+      fi('kf_pw', yeni ? 'İlk parola (en az 10 karakter; kişiye ayrıca iletin)' : 'Yeni parola (boş bırakılırsa değişmez)', '', 'password') +
+      '<div class="f"><label>Yetkiler</label><label class="chk"><input type="checkbox" checked disabled> Görüntüleme</label>' + cb('duzenle') + cb('muhasebe') + cb('yonetim') + '</div><div class="err" id="kfErr"></div>',
+      '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="kfOk">Kaydet</button>');
+    $('#kfOk').onclick = async () => {
+      const er = (m) => { $('#kfErr').textContent = m; };
+      const ad = gv('kf_ad'), ku = yeni ? gv('kf_ku') : x.kullanici, pw = $('#kf_pw').value;
+      const roller = { duzenle: $('#ku_r_duzenle').checked, muhasebe: $('#ku_r_muhasebe').checked, yonetim: $('#ku_r_yonetim').checked };
+      if (!ad || !ku) return er('Ad ve kullanıcı adı gerekli.'); if (!/^[\wçğıöşüÇĞİÖŞÜ.\-]{3,40}$/.test(ku)) return er('Kullanıcı adı 3–40 karakter; harf, rakam, nokta, tire.');
+      if ((yeni || pw) && pw.length < 10) return er('Parola en az 10 karakter olmalı.'); if (pw && (pw === S.pw)) return er('Parola erişim parolasıyla aynı olamaz.');
+      if (yazar(roller) && !S.token) return er('Yazma yetkisi verebilmek için bu oturumda geçerli GitHub anahtarı olmalı.');
+      er('Kaydediliyor…');
+      try {
+        const { U, list, dk } = await dizinAc(); const id = yeni ? await kulId(ku) : x.id;
+        if (yeni && (U.u[id] || list.some((y) => y.id === id))) return er('Bu kullanıcı adı zaten var.');
+        const kay = yeni ? { id, kullanici: ku, uk: rasgele(), ekleyen: S.kim, t: new Date().toISOString() } : list.find((y) => y.id === id);
+        Object.assign(kay, { ad, roller, guncelleyen: S.kim, gt: new Date().toISOString() });
+        U.u[id] = U.u[id] || {};
+        if (pw) U.u[id].w = await K.sifrele({ uk: kay.uk }, pw);
+        U.u[id].d = await K.sifrele(await kulPaket(kay), kay.uk);
+        if (yeni) list.push(kay);
+        const rt = Object.keys(ROL).filter((k) => roller[k]).map((k) => ROL[k]).join(', ') || 'yalnız görüntüleme';
+        await dizinYaz(U, list, dk, (yeni ? 'Kullanıcı eklendi: ' : 'Kullanıcı güncellendi: ') + ad + ' (' + S.kim + ')');
+        modalKapat(); degisti((yeni ? 'Kullanıcı eklendi: ' : 'Kullanıcı yetkileri/parolası güncellendi: ') + ad + ' — ' + rt);
+      } catch (e) { er('Kaydedilemedi: ' + e.message); }
+    };
+  }
+  AKSIYON.kulSil = async (t) => {
+    const x = (S.kulListe || []).find((y) => y.id === t.dataset.id); if (!x || !confirm(x.ad + ' hesabı silinsin mi? Kişi artık kendi parolasıyla giremez.')) return;
+    try { const { U, list, dk } = await dizinAc(); delete U.u[x.id]; const L = list.filter((y) => y.id !== x.id); await dizinYaz(U, L, dk, 'Kullanıcı silindi: ' + x.ad + ' (' + S.kim + ')'); degisti('Kullanıcı silindi: ' + x.ad); }
+    catch (e) { toast('Silinemedi: ' + e.message, true); }
   };
 
   // Tebliğ PDF'i de şifreli tutulur; tarayıcıda çözülüp istenen sayfada açılır
@@ -1362,7 +1794,7 @@
     const Y = S.tY, L = S.veri.parks.map((p) => S.plan[Y][p.kisa]).filter((t) => t.kod !== 'eksik' && t.kod !== 'disi');
     const say = (k) => L.filter((t) => t.kod === k).length;
     const top = sumOf(L.filter((t) => t.kira != null), (t) => t.kira);
-    const durumC = { tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', plan: 'b-gray', tufe: 'b-amb', yok: 'b-gray' };
+    const durumC = { tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', plan: 'b-gray', tufe: 'b-amb', yok: 'b-gray', kapsam: 'b-amb' };
     S.csv = { name: 'tahakkuk_' + Y, head: ['Park', 'Dönem', 'Dönem başı', 'TÜFE ayı', 'TÜFE', 'Yıllık kira (Tebliğ)', 'Ağaçlandırma', 'KDV', 'Toplam', 'Muhasebe', 'Fark', 'Vadeler', 'Güvence', 'Depozito', 'Durum'],
       rows: L.map((t) => [t.park, t.donem, fd(t.bas), t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] : '', t.tufe, t.kira, t.agac, t.kdv, t.toplam, t.muhasebede ? t.muhKira : '', t.fark, (t.vadeler || []).map((v) => fd(v.vade) + ' ' + tl(v.kira)).join(' | '), t.guv, t.dep, t.durum]) };
     const satir = (t) => '<tr>' + td('<a href="#/park" data-a="park" data-k="' + esc(t.park) + '" data-go="park" style="font-weight:600">' + esc(t.park) + '</a>', '', 'lead') +
@@ -1373,13 +1805,13 @@
       td((t.vadeler || []).map((v) => '<span class="n">' + fd(v.vade).slice(0, 5) + ' · ' + tl(v.kira) + '</span>').join('<br>') || '—', 'Taksitler', 'n', ' style="white-space:nowrap"') +
       td(t.muhasebede ? tl(t.muhKira) + (t.kod === 'fark' ? '<br><span class="red-t">fark ' + tl(t.fark) + '</span>' : '') + (t.muhKist ? '<br><span class="muted" style="font-size:12px">+ kıst/dönem arası ' + tl(t.muhKist) + '</span>' : '') : '—', 'Muhasebe', 'n r') +
       td('<span class="badge ' + (durumC[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span>', 'Durum') +
-      td('<button class="btn sm" data-a="tAyr" data-k="' + esc(t.park) + '">Hesap</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan') ? ' <button class="btn sm pri own-only" data-a="tEt" data-k="' + esc(t.park) + '">Tahakkuk et</button>' : '') +
+      td('<button class="btn sm" data-a="tAyr" data-k="' + esc(t.park) + '">Hesap</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEt" data-k="' + esc(t.park) + '">Tahakkuk et</button>' : '') +
         (t.kod === 'oto' ? ' <button class="btn sm red own-only" data-a="tGeri" data-k="' + esc(t.park) + '">Geri al</button>' : ''), '', 'noprint') + '</tr>';
-    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>Yıllık kira Tebliğ Md. 31–32 zincirinden hesaplanır: dönem kirası = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE). Takvim yılının kirası, o yılın 31 Mart’ına kadar başlamış dönemin kirasıdır. Ödeme günleri önceki yılın tahakkukundan, yoksa Md. 32/3’ten alınır; ağaçlandırma %5 (Md. 33), KDV %20 ilk taksitle. TÜFE açıklanmadıkça tutar hesaplanmaz; açıklandığı gün otomatik tamamlanır.</p></div>' +
+    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>Yıllık kira Tebliğ Md. 31–32 zincirinden hesaplanır: dönem kirası = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE). Takvim yılının kirası, o yılın 31 Mart’ına kadar başlamış dönemin kirasıdır (dönem başı esaslı parklarda o yıl başlayan dönem). “Dökümde tespit edilemedi” yalnız yüklü döküme göredir; döküm tarihinden sonraki kayıtlar muhasebeden teyit edilir. Ödeme günleri önceki yılın tahakkukundan, yoksa Md. 32/3’ten alınır; ağaçlandırma %5 (Md. 33), KDV %20 ilk taksitle. TÜFE açıklanmadıkça tutar hesaplanmaz; açıklandığı gün otomatik tamamlanır.</p></div>' +
       '<div class="seg">' + [y0, y0 + 1].map((v) => '<button class="' + (v === Y ? 'on' : '') + '" data-a="tYil" data-v="' + v + '">' + v + '</button>').join('') + '</div></div>' +
       '<section class="kpis"><div class="kpi"><span>' + Y + ' yıllık kira (hesaplanan)</span><strong class="n">' + tl(top) + '</strong><em>' + L.filter((t) => t.kira != null).length + ' park</em></div>' +
       '<div class="kpi"><span>Tahakkuk edilmiş</span><strong class="n">' + (say('tamam') + say('fark') + say('oto')) + '</strong><em>' + say('fark') + ' parkta Tebliğ hesabından farklı</em></div>' +
-      '<div class="kpi"><span>Tahakkuk edilmesi gereken</span><strong class="n" style="color:' + (say('bekliyor') ? 'var(--red)' : 'var(--ink)') + '">' + say('bekliyor') + '</strong><em>' + (Y > y0 ? Y + ' başında ' + say('plan') + ' park hazır' : 'vadesi gelmiş yıl') + '</em></div>' +
+      '<div class="kpi"><span>Dökümde tahakkuku tespit edilemeyen</span><strong class="n" style="color:' + (say('bekliyor') ? 'var(--red)' : 'var(--ink)') + '">' + say('bekliyor') + '</strong><em>' + (Y > y0 ? say('plan') + ' park hesaplandı, zamanı gelmedi' : (say('kapsam') ? say('kapsam') + ' parkta döküm tarihi kapsamıyor' : '120 son yevmiye ' + fd(E.dokumSon(S.veri)['120']))) + '</em></div>' +
       '<div class="kpi"><span>TÜFE bekleyen</span><strong class="n">' + say('tufe') + '</strong><em>' + (say('tufe') ? 'ilk açıklama ' + fd(L.filter((t) => t.yayim).map((t) => t.yayim).sort()[0]) : 'hepsi hesaplandı') + '</em></div></section>' +
       '<section class="card"><div class="ch"><h2>' + Y + ' yılı kira ve tahakkuk planı</h2><button class="btn sm" data-a="tTalimat">Tahakkuk talimatı (yazdır)</button></div><div class="scroll"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Dönem</th><th>TÜFE</th><th class="r">Yıllık kira</th><th class="r">Ağaç. / KDV</th><th>Taksitler</th><th class="r">Muhasebe</th><th>Durum</th><th class="noprint"></th></tr></thead><tbody>' +
       L.map(satir).join('') + '</tbody></table></div><p class="muted" style="margin:10px 22px 16px;font-size:13.5px">“Tahakkuk et” kayıtları programın muhasebe defterine işlenir; muhasebe dökümü yüklendiğinde aynı park ve yılın gerçek tahakkuku gelirse program kaydı kendiliğinden devreden çıkar. İşlenmiş tahakkuk, sonradan değişen oranlardan etkilenmez.</p></section>';
@@ -1472,7 +1904,7 @@
         return ib == null ? '' : kv('Kesin teminat (ihale × %6)', tl(r2(ib * 0.06))) + (ekT ? kv('Ek tesis kesin teminatı (ek kira × %6, Md. 9/2)', tl(ekT)) + kv('Toplam', tl(r2(ib * 0.06 + ekT))) : '') + kv('Kayıtlı kesin teminat', p.kesin != null ? tl(p.kesin) : 'Kayıt yok'); }
       case '10': return kira == null ? '' : (p.guv != null ? kv('Güvence (' + y + ' kirası × ' + E.pct(p.guv, 0) + ')', tl(r2(kira * p.guv))) : kv('Güvence', 'Sözleşmede yok')) + (p.dep != null ? kv('Depozito (' + y + ' kirası × ' + E.pct(p.dep, 0) + ')', tl(r2(kira * p.dep))) : kv('Depozito', 'Sözleşmede yok'));
       case '13': case '27': case '18': case '19': case '23': case '25': case '29': case '36': case '42': return tk(new RegExp('Md\\. ' + no + '\\b'));
-      case '30': return (S.veri.plan || []).filter((x) => x.park === p.kisa).map((x) => { const r = revizeTahakkuk(x); return kv(esc(x.revize) + ' · ' + fd(x.onay), 'yıllık ' + tl(x.ek) + ' · kıst ' + tl(r.kist) + ' · ek teminat ' + tl(r2(x.ek * 0.06))); }).join('') || kv('Revize plan', 'Kayıtlı ek tesis yok');
+      case '30': return (S.veri.plan || []).filter((x) => x.park === p.kisa).map((x) => { const r = revizeDurumP(x); return kv(esc(x.revize) + ' · ' + fd(x.onay), 'yıllık ' + tl(r.ek) + ' · tahsil ' + (r.tahsil ? fd(r.tahsil) : '—') + ' · ek teminat ' + tl(r.tem)) + '<p class="muted" style="margin:2px 0 8px;font-size:13px">' + esc(r.durum) + '.</p>'; }).join('') || kv('Revize plan', 'Kayıtlı ek tesis yok');
       case '31': return ib == null ? '' : kv('İlk yıl kirası', tl(ib)) + kv('Ödeme', ib <= 150000 ? 'Sözleşmede tek seferde peşin (≤ 150.000 TL)' : 'Peşin ya da 1/3 peşin + kalanı iki eşit taksit') + kv('İlk yıl ağaçlandırma (Md. 33/2)', tl(r2(ib * 0.05))) + kv('İlk yıl KDV', tl(r2((ib + r2(ib * 0.05)) * 0.2)));
       case '32': { const a = S.plan[y][p.kisa], b = S.plan[y + 1][p.kisa];
         return kv('Dönem tabanı / kural', fd(p.taban) + ' · ' + esc(p.kural || '')) + kv(y + ' yıllık kira', a && a.kira != null ? tl(a.kira) + ' (' + a.donem + '. dönem)' : esc(a ? a.durum : '—')) + kv((y + 1) + ' yıllık kira', b && b.kira != null ? tl(b.kira) : esc(b ? b.durum + (b.yayim ? ' (' + fd(b.yayim) + ')' : '') : '—')) +

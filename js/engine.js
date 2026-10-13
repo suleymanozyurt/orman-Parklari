@@ -193,11 +193,14 @@
     if (p.kural === 'Yıldönümü ayı') return [y, m];
     return m === 1 ? [y - 1, 12] : [y, m - 1];   // Yayımlanan (önceki ay): dönem ayında yayımlanan = önceki ayın verisi
   };
+  // Belgeli başlangıç (p.kok = {bas, bedel, kaynak}): eski dönemleri belgelerle kurulamayan parklarda zincir, belgede yazan
+  // dönem kirasından başlatılır; o tarihten önceki dönemler hesaplanmaz (tahmin yok).
   E.zincir = function (p, tufe, ekKira, NPER) {
     NPER = NPER || 30;
     const out = [];
     if (!p.taban || p.ihale_b == null) return out;
     const [ty, tm, td] = P(p.taban);
+    const kok = p.kok && p.kok.bas && p.kok.bedel != null ? p.kok : null;
     for (let n = 1; n <= NPER; n++) {
       let bas;
       if (n === 1) bas = p.taban;
@@ -207,21 +210,26 @@
         if (p.soz_bit && bas >= p.soz_bit) break;
       }
       const ek = (ekKira || []).filter((e) => e.park === p.kisa && e.donem === n).reduce((a, e) => a + e.tutar, 0);
-      let t = null, ta = null, bedel = null;
-      if (n === 1) bedel = p.ihale_b;
+      let t = null, ta = null, bedel = null, belge = null;
+      if (n > 1) { ta = E.tufeAyi(p, bas); t = E.tufeAl(tufe, ta[0], ta[1]); }
+      if (kok && bas < kok.bas) { out.push({ n, bas, tufe: t, tufeAy: ta, ek, bedel: null, oncesi: true }); continue; }
+      if (kok && bas === kok.bas) { bedel = r2(kok.bedel); belge = kok.kaynak || 'belge'; }
+      else if (n === 1) bedel = p.ihale_b;
       else {
-        ta = E.tufeAyi(p, bas); t = E.tufeAl(tufe, ta[0], ta[1]);
         const prev = out[n - 2];
         if (t != null && prev && prev.bedel != null) bedel = r2((prev.bedel + prev.ek) * (1 + t));
       }
-      out.push({ n, bas, tufe: t, tufeAy: ta, ek, bedel });
+      out.push({ n, bas, tufe: t, tufeAy: ta, ek, bedel, belge });
     }
     return out;
   };
-  // rapor yılının 31 Mart'ına kadar başlamış son dönem karşılaştırılır (Excel Kira Zinciri ile aynı)
+  // Takvim yılına düşen dönem: varsayılan, yılın 31 Mart'ına kadar başlamış son dönem (muhasebe uygulaması);
+  // p.yil_esas === 'Dönem başı' ise o yıl içinde başlayan dönem (ör. 15 Kasım yıldönümlü parklar).
+  E.yilSiniri = (p, Y) => (p.yil_esas === 'Dönem başı' ? iso(Y, 12, 31) : iso(Y, 3, 31));
+  // Kira kontrolünde karşılaştırılan dönem: rapor tarihinde yürüyen dönem
   E.kiraKontrol = function (p, tufe, ekKira, rapor) {
     const z = E.zincir(p, tufe, ekKira);
-    const sinir = iso(E.year(rapor), 3, 31);
+    const sinir = p.yil_esas === 'Dönem başı' ? rapor : iso(E.year(rapor), 3, 31);
     const G = z.filter((x) => x.bas <= sinir).length;
     const d = G ? z[G - 1] : null;
     const hesap = d ? d.bedel : null;
@@ -238,7 +246,7 @@
   // Y takvim yılının yıllık kirası: Y yılının 31 Mart'ına kadar başlamış son dönemin bedeli (muhasebe uygulaması ve kira kontrolüyle aynı esas).
   E.kiraYili = function (p, tufe, ekKira, Y) {
     const z = E.zincir(p, tufe, ekKira);
-    const sinir = iso(Y, 3, 31);
+    const sinir = E.yilSiniri(p, Y);
     const G = z.filter((x) => x.bas <= sinir);
     if (!G.length) return null;
     const d = G[G.length - 1];
@@ -301,14 +309,73 @@
     // örnek hesap kodları
     const hk = (tur) => { const x = ornek && ornek.items.find((i) => i.tur === tur); return x ? x.hesap : null; };
     out.hesap = { kira: hk('Kira') || '120.99.01', kdv: hk('KDV') || hk('Vergi/fon') || '120.99.05', agac: hk('Ağaçlandırma') || hk('Vergi/fon') || '120.99.06' };
+    // tahakkuk zamanı: takvim yılı esasında yıl başı; 'Dönem başı' esasında dönemin başladığı gün
+    const due = p.yil_esas === 'Dönem başı' ? ky.bas : iso(Y, 1, 1);
+    const ds = E.dokumSon(veri);
+    out.zaman = due; out.dokumSon = ds['120'] || null;
     if (out.muhasebede) {
       out.fark = r2(out.muhKira - kira);
       out.durum = Math.abs(out.fark) <= 1 ? 'Muhasebede tahakkuk edildi' : 'Muhasebede farklı tutarla tahakkuk edildi';
       out.kod = Math.abs(out.fark) <= 1 ? 'tamam' : 'fark';
     } else if (out.otoVar) { out.durum = 'Program kaydıyla tahakkuk edildi'; out.kod = 'oto'; }
-    else if (rapor >= iso(Y, 1, 1)) { out.durum = 'Tahakkuk edilmeli'; out.kod = 'bekliyor'; }
-    else { out.durum = 'Hesaplandı, ' + Y + ' başında tahakkuk edilecek'; out.kod = 'plan'; }
+    else if (rapor >= due && out.dokumSon && out.dokumSon >= due) { out.durum = 'İncelenen dökümde tahakkuk tespit edilemedi'; out.kod = 'bekliyor'; }
+    else if (rapor >= due) { out.durum = 'Döküm bu tarihi kapsamıyor (120 son yevmiye ' + E.fmtDate(out.dokumSon) + ')'; out.kod = 'kapsam'; }
+    else { out.durum = 'Hesaplandı, ' + E.fmtDate(due) + ' itibarıyla tahakkuk edilecek'; out.kod = 'plan'; }
     return out;
+  };
+  // Muhasebe dökümlerinin kapsadığı son yevmiye tarihi (elle/program kayıtları hariç)
+  E.dokumSon = function (veri) {
+    const o = {};
+    (veri.muhasebe || []).forEach((x) => { if (x.ek || x.oto || !x.tarih) return; if (!o[x.kaynak] || x.tarih > o[x.kaynak]) o[x.kaynak] = x.tarih; });
+    (veri.muhasebe || []).forEach((x) => { if (!x.ek || x.oto || !x.tarih) return; if (!o.ek || x.tarih > o.ek) o.ek = x.tarih; });
+    return o;
+  };
+  // Mükerrer kontrol anahtarı: aynı hesap dökümü satırı (kaynak, yevmiye no ve tarihi, hesap, VKN, vade, borç, alacak)
+  E.muhAnahtar = (x) => [x.kaynak, x.yev, x.tarih, (x.hesap || '').trim(), String(x.vkn || '').replace(/^0+/, ''), x.vade || '', r2(x.borc || 0).toFixed(2), r2(x.alacak || 0).toFixed(2)].join('|');
+  // Yeni döküm satırlarını mevcut kayıtlara işler: aynı hesabın eski döküm satırları yenisiyle değişir; elle eklenmiş
+  // satırlardan dökümde birebir karşılığı bulunanlar mükerrer olmasın diye çıkarılır; program tahakkukları gerçek tahakkuk gelince düşer.
+  E.muhBirlestir = function (mevcut, rows, kaynak) {
+    const sayac = new Map(); rows.forEach((x) => { const k = E.muhAnahtar(x); sayac.set(k, (sayac.get(k) || 0) + 1); });
+    const eskiSon = mevcut.filter((x) => x.kaynak === kaynak && !x.ek && !x.oto && x.tarih).map((x) => x.tarih).sort().slice(-1)[0] || null;
+    const yeniSon = rows.map((x) => x.tarih).filter(Boolean).sort().slice(-1)[0] || null;
+    const mukerrer = [], kalan = [];
+    mevcut.forEach((x) => {
+      if (x.kaynak === kaynak && !x.ek && !x.oto) return;            // eski döküm satırı: yenisiyle değişir
+      if (x.ek && !x.oto) { const k = E.muhAnahtar(x), n = sayac.get(k) || 0; if (n > 0) { sayac.set(k, n - 1); mukerrer.push(x); return; } }
+      kalan.push(x);
+    });
+    const gercek = new Set(rows.filter((x) => x.kaynak === '120' && x.borc > 0 && (x.alacak_h || '').includes('600')).map((x) => x.vkn + '|' + E.year(x.tarih)));
+    const sonuc = kalan.filter((x) => !(x.oto && gercek.has(x.vkn + '|' + x.oto.split('|')[1])));
+    return { muhasebe: sonuc.concat(rows), mukerrer, otoDus: kalan.length - sonuc.length, eskiSon, yeniSon, geri: !!(eskiSon && yeniSon && yeniSon < eskiSon) };
+  };
+  // Ek yapı ve tesis kirasının tahsil zamanı (Md. 30/2). vadeler: onay yılının kira taksit vadeleri.
+  E.ekTahsil = function (onay, vadeler) {
+    if (!onay) return { tarih: null, ne: 'Onay tarihi girilmedi' };
+    const V = (vadeler || []).filter(Boolean).slice().sort(), [oy, om] = P(onay), ayson = iso(oy, om, lastDay(oy, om));
+    if (V.length > 1) {
+      const s = V.find((v) => v > onay);
+      return s ? { tarih: s, ne: 'Onayı izleyen ilk kira taksitiyle birlikte (Md. 30/2)' } : { tarih: ayson, ne: 'Son taksit tarihi geçtiği için onay ayının sonuna kadar peşin (Md. 30/2)' };
+    }
+    if (V.length === 1) return onay < V[0] ? { tarih: V[0], ne: 'Yıllık kira bedeliyle birlikte (Md. 30/2)' } : { tarih: ayson, ne: 'Kira tahsil tarihinden sonra onaylandığı için onay ayının sonuna kadar (Md. 30/2)' };
+    return { tarih: null, ne: 'Kira ödeme düzeni bilinmiyor' };
+  };
+  // Onaylı revize plan: Tebliğ tutarları (tam yıllık ek kira, Md. 30/1), tahsil zamanı (Md. 30/2) ve muhasebe kaydıyla karşılaştırma.
+  // Tebliğ gün/365 kıstlaştırma öngörmez; muhasebede kıst kaydı varsa fark olarak gösterilir, otomatik kıst hesaplanmaz.
+  E.revizeDurum = function (veri, esl, pl, vadeler, rapor) {
+    const ek = r2(pl.ek || 0), agac = r2(ek * 0.05), kdv = r2((ek + agac) * 0.2), tem = r2(ek * 0.06);
+    const th = E.ekTahsil(pl.onay, vadeler);
+    const rom = ((pl.revize || '').match(/^([IVX]+)\./) || [])[1];
+    const re = rom ? new RegExp('(^|[^IVX])' + rom + '\\.\\s*Revize', 'i') : null;
+    const kayit = (esl.items || []).filter((it) => it.park === pl.park && it.grup === 'Ek tahakkuk' && it.tur === 'Kira' && re && re.test(it.aciklama || '') && !/fark/i.test(it.aciklama || ''));
+    const muh = r2(kayit.reduce((s, it) => s + it.tutar, 0));
+    const ds = E.dokumSon(veri), son = [ds['120'], ds['127']].filter(Boolean).sort().slice(-1)[0] || null;
+    let kod, durum;
+    if (kayit.length && Math.abs(muh - ek) <= 1) { kod = 'tamam'; durum = 'Muhasebede Tebliğ tutarıyla tahakkuk edildi'; }
+    else if (kayit.length) { kod = 'fark'; durum = 'Muhasebe kaydı (' + E.tl(muh) + ') Tebliğe göre yıllık ek kiradan (' + E.tl(ek) + ') farklı; fark ' + E.tl(r2(ek - muh)) + (/k[ıi]st/i.test(kayit.map((k) => k.aciklama).join(' ')) ? '. Kayıtta gün/365 kıst uygulanmış; Tebliğ Md. 30/1–2 kıst öngörmez, ayrı dayanak belgesi yoksa farkın tahakkuku incelenmeli.' : '.'); }
+    else if (son && th.tarih && son >= th.tarih) { kod = 'yok'; durum = 'İncelenen dökümde (son yevmiye ' + E.fmtDate(son) + ') tahakkuk tespit edilemedi'; }
+    else if (th.tarih && rapor >= th.tarih) { kod = 'kapsam'; durum = 'Tahsil tarihi (' + E.fmtDate(th.tarih) + ') geçti; dökümler bu tarihi kapsamıyor (son yevmiye ' + E.fmtDate(son) + ')'; }
+    else { kod = 'bekliyor'; durum = 'Tahsil zamanı ' + (th.tarih ? E.fmtDate(th.tarih) : 'belirsiz') + (son && pl.onay && son < pl.onay ? '; dökümler plan onayından önce (son yevmiye ' + E.fmtDate(son) + ')' : ''); }
+    return { ek, agac, kdv, tem, top: r2(ek + agac + kdv + tem), tahsil: th.tarih, tahsilNe: th.ne, kayit, muh, kod, durum, dokumSon: son };
   };
 
   // ---------- rakamı yazıyla (Türkçe) ----------
@@ -340,7 +407,10 @@
       if (p.soz_bit && p.durum === 'Kirada') { if (p.soz_bit < rapor) uy.push('Süre dolmuş'); else if (days(rapor, p.soz_bit) <= 180) uy.push('Bitime 6 aydan az'); }
       if (p.durum === 'Sona erdi') uy.push('Sona erdi: geri teslim ve tahliye (Md. 13, 41)');
       if (p.soz_bas && p.teslim && p.teslim < p.soz_bas) uy.push('Saha teslimi sözleşmeden önce');
-      if (p.durum === 'Kirada' && kira_yil === 0) uy.push('Bu yıl tahakkuk yok');
+      if (p.durum === 'Kirada' && kira_yil === 0) {
+        const ky = p.yil_esas === 'Dönem başı' ? E.kiraYili(p, tufe, veri.ek_kira, y) : null;
+        if (!(ky && ky.bas > rapor)) uy.push('Dökümde bu yıl vadeli kira yok');
+      }
       if (kk.durum === 'Fark var') uy.push('Kira hesabı farklı');
       const kalan = p.soz_bit ? Math.max(0, days(rapor, p.soz_bit) / 365.25) : null;
       const enEski = A.filter((a) => !a.odeme && a.esas && a.esas < rapor).map((a) => a.esas).sort()[0] || null;
@@ -351,17 +421,34 @@
 
   // ---------- muhasebe CSV okuma (120.99 / 127 dökümü; ';' ayraçlı) ----------
   E.csvOku = function (text, hesap) {
-    const num = (s) => { s = (s || '').trim(); return s ? parseFloat(s.replace(/\./g, '').replace(',', '.')) : 0; };
-    const dte = (s) => { s = (s || '').trim(); if (!s) return null; const [d, m, y] = s.split('.'); return iso(+y, +m, +d); };
-    const lines = text.replace(/^﻿/, '').split(/\r?\n/);
+    // tırnak içindeki ';' ve satır sonları alanın parçasıdır (açıklama sütunu çok satırlı olabilir)
+    const t = text.replace(/^﻿/, ''), M = []; let row = [], cur = '', q = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; continue; }
+      if (ch === '"') q = true; else if (ch === ';') { row.push(cur); cur = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); M.push(row); row = []; cur = ''; }
+      else cur += ch;
+    }
+    if (cur !== '' || row.length) { row.push(cur); M.push(row); }
+    return E.dokumSatir(M.slice(1), hesap);
+  };
+  // Döküm satırları (CSV ya da Excel'den okunan tablo; sütun sırası muhasebe sisteminin 120.99/127 dökümüyle aynı)
+  E.dokumSatir = function (M, hesap) {
+    const s = (v) => (v == null ? '' : String(v)).trim();
+    const num = (v) => { if (typeof v === 'number') return r2(v); v = s(v); return v ? r2(parseFloat(v.replace(/\./g, '').replace(',', '.'))) : 0; };
+    const dte = (v) => {
+      if (v instanceof Date) return iso(v.getUTCFullYear(), v.getUTCMonth() + 1, v.getUTCDate());
+      if (typeof v === 'number') { const t = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5); return iso(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); }
+      v = s(v); if (!v) return null; if (/^\d{4}-\d\d-\d\d/.test(v)) return v.slice(0, 10);
+      const [d, m, y] = v.split(/[./]/); return y ? iso(+y, +m, +d) : null;
+    };
     const out = [];
-    const split = (ln) => { const r = []; let cur = '', q = false; for (const ch of ln) { if (ch === '"') q = !q; else if (ch === ';' && !q) { r.push(cur); cur = ''; } else cur += ch; } r.push(cur); return r; };
-    for (let i = 1; i < lines.length; i++) {
-      const x = split(lines[i]);
-      if (x.length < 17 || !(x[2] || '').trim()) continue;
-      out.push({ kaynak: hesap, yev: parseInt(x[2], 10), tarih: dte(x[3]), hesap: x[5].trim(), vkn: x[6].trim(), musteri: x[7].trim(), vade: dte(x[8]),
-        neden: x[12].trim(), aciklama: x[13].split(/\s+/).filter(Boolean).join(' '), borc: num(x[14]), alacak: num(x[15]),
-        borc_h: (x[17] || '').trim(), alacak_h: (x[18] || '').trim(), not_: '', ek: false });
+    for (const x of M) {
+      if (!x || x.length < 17 || !s(x[2]) || isNaN(parseInt(s(x[2]), 10))) continue;
+      out.push({ kaynak: hesap, yev: parseInt(s(x[2]), 10), tarih: dte(x[3]), hesap: s(x[5]), vkn: s(x[6]), musteri: s(x[7]), vade: dte(x[8]),
+        neden: s(x[12]), aciklama: s(x[13]).split(/\s+/).filter(Boolean).join(' '), borc: num(x[14]), alacak: num(x[15]),
+        borc_h: s(x[17]), alacak_h: s(x[18]), not_: '', ek: false });
     }
     return out;
   };
@@ -374,11 +461,13 @@
   E.KATSAYI = [['Kır evi', .03], ['Çadır ünitesi', .01], ['Lüks çadır ünitesi', .03], ['Karavan ünitesi', .01], ['Kır lokantası', .08], ['Kır kahvesi', .08], ['Büfe', .05],
     ['Yöresel ürün satış yeri', .04], ['Yüzme havuzu', .10], ['Macera parkı', .10], ['Paintball sahası', .10], ['Zipline', .15], ['Sıhhi tesis kompleksi', .06],
     ['Manej ve hayvan barınağı', .05], ['Diğer gelir getirici yapı ve tesis', .05]];
-  E.ekTesis = function (kira, katsayi, maliyet, onay) {
-    const kb = r2(kira * katsayi), m2 = r2(maliyet * .02), ek = Math.max(kb, m2);
-    const gun = onay ? days(onay, iso(E.year(onay), 12, 31)) : 0;
-    const kist = r2(ek * gun / 365), agac = r2(kist * .05), kdv = r2((kist + agac) * .2), tem = r2(ek * .06);
-    return { kb, m2, ek, gun, kist, agac, kdv, tem, top: r2(kist + agac + kdv + tem), taban: r2(kira + ek) };
+  // Md. 30/1: yıllık ek kira = max(cari yıl kirası × katsayı, onay yılı maliyetinin %2'si); cari yıl kirasına eklenir.
+  // Md. 30/2: ek kira, KDV'si, ağaçlandırma bedeli ve ek kesin teminat onayı izleyen ilk taksitle (son taksit geçmişse onay ayı sonuna kadar) peşin tahsil edilir.
+  // Tebliğ gün/365 kıstlaştırma öngörmediğinden tutar tam yıllıktır.
+  E.ekTesis = function (kira, katsayi, maliyet, onay, vadeler) {
+    const kb = r2(kira * katsayi), m2 = r2((maliyet || 0) * .02), ek = Math.max(kb, m2);
+    const agac = r2(ek * .05), kdv = r2((ek + agac) * .2), tem = r2(ek * .06), th = E.ekTahsil(onay, vadeler);
+    return { kb, m2, ek, agac, kdv, tem, top: r2(ek + agac + kdv + tem), taban: r2(kira + ek), tahsil: th.tarih, tahsilNe: th.ne };
   };
   E.ihale = function (tah, oran, ih, sure) {
     return { gec: (oran < 10 || oran > 30) ? null : r2(tah * oran / 100), kes: r2(ih * .06), guv: r2(ih * .25), dep: r2(ih * .10), agac: r2(ih * .05),

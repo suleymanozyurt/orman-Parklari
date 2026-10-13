@@ -405,3 +405,33 @@ th.mc{text-align:center;padding:10px 2px}
 
 .pagehead>.seg{flex:0 0 auto}
 .dxozet{background:var(--paper);border-radius:10px;padding:18px 20px;max-width:640px;margin:0 auto;color:var(--ink2);line-height:1.5}.dxozet p{margin:0 0 12px}
+/* yetkiye göre görünen alanlar */
+.yon-only,.muh-only,.duz-only{display:none}
+.r-yonetim .yon-only,.r-muhasebe .muh-only,.r-duzenle .duz-only{display:revert}
+/* hesaplama: park seçimi ve formül satırı */
+.hpark{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:0 0 14px}
+.hpark label{font-weight:600;font-size:14px}
+.hpark select{max-width:340px}
+.res .fx{font-size:12.5px;color:var(--mute);margin:-2px 0 6px;font-variant-numeric:tabular-nums}
+/* eksik veriler */
+.ekt td.ek-c{padding:0}
+.ekt .ekb{all:unset;cursor:pointer;display:block;padding:9px 10px;min-height:20px;font-size:13px;width:100%;box-sizing:border-box}
+.ekt .ekb:hover{background:var(--mist)}
+.ekt td.ek-celiski{box-shadow:inset 0 0 0 2px #E6B54A}
+.ekt td.ek-uyg{background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(127,127,127,.06) 6px 12px)}
+.ek-e{color:var(--red);font-weight:600;font-size:12.5px}
+.ek-y{color:var(--ambt);font-weight:600;font-size:12.5px}
+/* harita */
+.hgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+.hmap{height:72vh;min-height:420px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--mist)}
+.hside{display:flex;flex-direction:column;gap:14px}
+.hlist{padding:6px;max-height:40vh;overflow:auto}
+.hrow{all:unset;cursor:pointer;display:block;padding:8px 10px;border-radius:8px;box-sizing:border-box;width:100%}
+.hrow b{display:block;font-size:14px}
+.hrow span{font-size:12.5px;color:var(--mute)}
+.hrow i{font-style:normal}
+.hrow.on,.hrow:hover{background:var(--mist)}
+.hside details{margin-top:8px}
+.hside summary{cursor:pointer;font-weight:600;font-size:13.5px}
+.leaflet-container a{color:#1F5E43}
+@media (max-width:900px){.hgrid{grid-template-columns:1fr}.hmap{height:60vh}}
