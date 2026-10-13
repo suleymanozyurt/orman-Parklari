@@ -33,4 +33,7 @@ Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).
 
 ## Harita ve eksik veriler
 - Park sınırları ve tesisler Leaflet ile gösterilir (`vendor/leaflet`, `vendor/proj4.js`). Koordinatlar ITRF96 TM 3° (EPSG:5254 vb.), ED50 TM 3°/UTM 6° (EPSG:1784 dönüşüm parametreleri) ya da WGS84 olarak yüklenebilir; sınırdan hesaplanan alan kayıttaki alanla karşılaştırılır.
+- Gelişim ve Yönetim Planı / vaziyet planı tesis çizimleri `data/harita.enc` dosyasındadır (şifreli; Harita sayfası açılınca yüklenir). Her çizimde tür, durum (mevcut / planlanan / önceki planda onaylı – yapılmamış / kaldırılan / yol-otopark / belirtilmemiş), kod, plan katmanı, çizimden hesaplanan alan ve kaynak dosya bulunur; haritada tesise ya da yan paneldeki listeye tıklayınca bilgi kutusu açılır. Durum KML klasör ve katman adlarından okunur; adında durum olmayan katman “belirtilmemiş” gösterilir.
+- “Koordinat / KML yükle” penceresinde “Plan tesis katmanı (KML/KMZ)” seçilerek yeni bir GYP KML’i eklenebilir (veri düzenleme yetkisi). “KML indir” sınırları, diğer sınır çizimlerini ve plan tesislerini durum klasörleriyle tek KML olarak verir (Google Earth, Netcad, QGIS).
+- Sınır seçimi: kayıtlı alanla uyumlu ve en yeni onaylı belgeye dayanan çizim esas alınır; kayıtla uyuşmayan ya da onayı belirsiz çizimler “diğer sınır çizimleri” olarak kesikli gösterilir.
 - “Eksik veriler” sayfası park kaydındaki boş, belgede bulunamayan ve çelişkili alanları gösterir; girilen değer kaynağıyla birlikte park kaydına yazılır ve bütün sayfalara, eklere ve hesaplara yansır.
