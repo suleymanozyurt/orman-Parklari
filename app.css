@@ -3,7 +3,7 @@
 :root{--pine:#0F3527;--pine2:#174A37;--moss:#3F7D4E;--leaf:#9CC27A;--mist:#F1F4EF;--paper:#FFFFFF;--ink:#16221B;--ink2:#3F5046;--mute:#6F7E75;--line:#DDE4DC;--line2:#EDF1EC;
 --ok:#2F8A55;--okbg:#E4F1E7;--amb:#DDA034;--ambt:#8A5A0B;--ambbg:#FBF0D9;--red:#C2412D;--redt:#9A2C1C;--redbg:#FBE8E3;--soft:#F4F6F3;--fldbg:#FFFBEA;--blbg:#EEF4F8;--glass:rgba(241,244,239,.94);color-scheme:light}
 body{margin:0;background:var(--mist);font-family:"Bahnschrift","Barlow",system-ui,sans-serif;color:var(--ink)}
-.app{font-family:"Bahnschrift","Barlow",system-ui,sans-serif;color:var(--ink);display:grid;grid-template-columns:248px 1fr;min-height:100vh;background:linear-gradient(90deg,var(--pine) 248px,var(--mist) 248px)}
+.app{font-family:"Bahnschrift","Barlow",system-ui,sans-serif;color:var(--ink);display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh;background:linear-gradient(90deg,var(--pine) 248px,var(--mist) 248px)}
 .n{font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 .side{background:var(--pine);color:#DCE8DF;display:flex;flex-direction:column;padding:18px 0 16px;position:sticky;top:0;height:100vh;max-height:100vh;overflow-y:auto;box-sizing:border-box}
@@ -24,7 +24,8 @@ a{color:inherit;text-decoration:none}
 .search{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:280px;color:var(--mute);font-size:14px}
 .btn{font:inherit;font-size:14px;border-radius:8px;padding:8px 14px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);cursor:pointer}
 .btn.pri{background:var(--moss);border-color:var(--moss);color:#fff}
-.wrap{padding:28px 36px 56px;display:flex;flex-direction:column;gap:22px;max-width:1240px}
+.wrap{box-sizing:border-box;width:100%;max-width:none;padding:28px clamp(16px,1.6vw,30px) 56px;display:flex;flex-direction:column;gap:22px}
+.wrap>*{min-width:0}
 .hero{position:relative;overflow:hidden;border-radius:14px;background:linear-gradient(120deg,#0F3527 0%,#1B5A40 70%,#2B6E4A 100%);color:#fff;padding:30px 34px 64px;display:grid;grid-template-columns:1.25fr 1fr;gap:28px}
 .hero h1{margin:0;font-size:33px;line-height:1.12;font-weight:600;letter-spacing:-.3px;text-wrap:balance}
 .hero p{margin:12px 0 0;font-size:15.5px;line-height:1.5;color:#CFE3D6;max-width:520px}
@@ -422,7 +423,7 @@ th.mc{text-align:center;padding:10px 2px}
 .ek-e{color:var(--red);font-weight:600;font-size:12.5px}
 .ek-y{color:var(--ambt);font-weight:600;font-size:12.5px}
 /* harita */
-.hgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+.hgrid{display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,23vw,420px);gap:18px;align-items:start}
 .hmap{isolation:isolate;position:relative;z-index:0;height:72vh;min-height:420px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--mist)}
 .hside{display:flex;flex-direction:column;gap:14px}
 .hlist{padding:6px;max-height:40vh;overflow:auto}
@@ -435,7 +436,7 @@ th.mc{text-align:center;padding:10px 2px}
 .hside summary{cursor:pointer;font-weight:600;font-size:13.5px}
 .leaflet-container a{color:#1F5E43}
 @media (max-width:900px){.hgrid{grid-template-columns:minmax(0,1fr)}.hmap{height:60vh}}
-.hgrid>*{min-width:0}.hside .sl{overflow:auto;max-width:100%}
+.hgrid>*{min-width:0}.hside .sl{overflow:auto;max-width:100%}.hside .kv span{overflow-wrap:anywhere}
 /* harita: plan tesisleri, bilgi kutusu, lejant */
 .hsub{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--mute);text-transform:uppercase;margin:14px 0 4px}
 .hdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
