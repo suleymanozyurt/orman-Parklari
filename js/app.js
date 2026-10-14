@@ -102,9 +102,25 @@
   // PWA: yeni sürüm bildirimi (yarım kalan iş kaybolmasın diye kendiliğinden yenilenmez) ve çevrimdışı uyarısı
   function swKur() {
     const vardi = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (vardi) bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile'); });
+    let updateRequested = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (updateRequested && !S.dirty) { location.reload(); return; }
+      if (vardi) bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile');
+    });
     navigator.serviceWorker.register('sw.js').then((reg) => {
-      const offer = () => { if (!reg.waiting) return; bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle'); const b = $('#band-guncel button'); if (b) b.onclick = () => { if (S.dirty) { toast('Önce değişikliklerinizi kaydedin.', true); return; } reg.waiting.postMessage({ type: 'ACTIVATE_UPDATE' }); }; };
+      const offer = () => {
+        if (!reg.waiting) return;
+        bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle');
+        const b = $('#band-guncel button');
+        if (b) b.onclick = () => {
+          if (S.dirty) { toast('Önce değişikliklerinizi kaydedin.', true); return; }
+          const worker = reg.waiting;
+          if (!worker) { bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile'); return; }
+          updateRequested = true;
+          b.disabled = true; b.textContent = 'Güncelleniyor…';
+          worker.postMessage({ type: 'ACTIVATE_UPDATE' });
+        };
+      };
       offer(); reg.addEventListener('updatefound', () => { const worker = reg.installing; if (worker) worker.addEventListener('statechange', () => { if (worker.state === 'installed') offer(); }); });
       const bak = () => reg.update().catch(() => {});
       setInterval(bak, 30 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') bak(); });
@@ -370,6 +386,12 @@
     S.page = PAGES.find((p) => p.id === id) ? id : 'genel';
     modalKapat(); sayfaCiz(); window.scrollTo(0, 0);
   }
+  function icerigeGec(e) {
+    e.preventDefault();
+    const page = $('#page'), target = page && $('#app').style.display !== 'none' ? page : $('#gate input');
+    if (target) { target.focus(); if (target === page) target.scrollIntoView({ block: 'start' }); }
+  }
+  document.addEventListener('click', (e) => { if (e.target.closest('.skip-link')) icerigeGec(e); });
   function sayfaCiz() {
     if (S._hmap) { S._hmap.remove(); S._hmap = null; S._hIdx = null; }
     $$('.nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.p === S.page));
