@@ -76,7 +76,7 @@
     geometri_hatasi: rows.filter((r) => r.issues.length).length, birebir_tekrar: rows.filter((r) => r.duplicate).length, ayni_geometri: rows.filter((r) => r.geometryPeer).length,
     aciklama: 'Geometrik kontrol hukuki onay veya saha mevcudiyeti teyidi değildir. Sınır dışı çizimler arşiv, altyapı veya farklı sınır sürümüne ait olabilir.',
     parklar: parks.map((p) => ({ park: p.kisa, kayitli_alan_ha: p.alan, geometrik_alan_ha: p.harita && p.harita.alan_ha,
-      sinir_kontrolu: (p.harita && p.harita.sinir || []).flatMap(G.ringIssues), diger_sinirlar: (p.harita && p.harita.alt || []).map((a) => ({ ad: a.ad, sorunlar: (a.sinir || []).flatMap(G.ringIssues), kaynak: a.kaynak })), kaynak: p.harita && p.harita.kaynak, onay: p.harita && p.harita.onay || 'Onay belgesiyle eşleştirme gerekli' })),
+      sinir_kontrolu: (p.harita && p.harita.sinir || []).flatMap(G.ringIssues), diger_sinirlar: (p.harita && p.harita.alt || []).map((a) => ({ ad: a.ad, sorunlar: (a.sinir || []).flatMap(G.ringIssues), kaynak: a.kaynak })), kaynak: p.harita && p.harita.kaynak, onay: p.harita && p.harita.onay || 'Onay belgesiyle eşleştirme gerekli', belge_incelemesi: p.harita && p.harita.belge_incelemesi || null })),
     cizimler: rows.map((r) => ({ id: r.id, park: r.p.kisa, kod: r.f.ad, tur: r.f.t, durum: r.f.d, kaynak: r.source.ad, kaynak_url: G.safeURL(r.source.url),
       sorunlar: r.issues, birebir_tekrar: r.duplicate, ayni_geometri: r.geometryPeer, sinir_disina_tasma: r.outside,
       onay: r.f.onay || r.source.onay || 'Teyit gerekli', saha: r.f.saha || 'Saha mevcudiyeti teyit edilmedi' })) }; };

@@ -500,3 +500,5 @@ body.hfull-on{overflow:hidden}
 .checklist-item{display:flex;align-items:start;justify-content:space-between;gap:14px;padding:16px 0;border-top:1px solid var(--line2)}.checklist-item>div{min-width:0}.checklist-item strong{font-size:14px}.checklist-item p{margin:6px 0}.checklist-item>button{flex:none}
 @media(max-width:600px){.checklist-item{flex-direction:column}.checklist-item>button{min-height:42px}.hrow-link{min-height:42px}.park-actions .btn{min-height:42px;display:inline-flex;align-items:center}.hmap{min-height:340px}.hpopw .leaflet-popup-content{max-height:55dvh;overflow:auto}}
 @media(min-width:901px){.hmapw{position:sticky;top:16px}.hside{max-height:none}}
+
+.hmeta{margin:10px 0;padding:10px 0;border-top:1px solid var(--line)}.hmeta summary{font-size:13px;font-weight:600;cursor:pointer;min-height:28px}.hmeta[open] summary{margin-bottom:10px}.hmeta .hnote{overflow-wrap:anywhere}.hps .hbtns{margin-top:14px}
