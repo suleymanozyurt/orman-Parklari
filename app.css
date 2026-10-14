@@ -490,3 +490,12 @@ body.hfull-on{overflow:hidden}
 .henv2 td b{display:block;font-weight:600;font-size:13px}.henv2 td small{display:block;font-size:11.5px;color:var(--mute);line-height:1.35;margin-top:1px}.henv2 .hdot{width:8px;height:8px;margin:0 4px 0 0}.henv2 td.r{white-space:nowrap;vertical-align:top}
 @media (max-width:700px){.hmap.popacik .leaflet-left,.hmap.popacik .leaflet-bottom.leaflet-right .hcoord{display:none}}
 .henv2{width:100%;table-layout:auto}.henv2 td:first-child{white-space:normal}.henv2 td small{white-space:normal}
+.skip-link{position:fixed;left:12px;top:-80px;z-index:3000;padding:12px 18px;background:var(--paper);color:var(--ink);border:2px solid var(--pine);border-radius:8px}.skip-link:focus{top:12px}
+:focus-visible{outline:3px solid var(--ok);outline-offset:3px}
+.park-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.hresult{font-size:13px;color:var(--mute);margin:6px 0 10px;line-height:1.5}
+.hrow-link{font-family:inherit;font-size:13px;font-weight:600;border:0;background:transparent;color:var(--ink);padding:6px 0;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.hnote{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.checklist-item{display:flex;align-items:start;justify-content:space-between;gap:14px;padding:16px 0;border-top:1px solid var(--line2)}.checklist-item>div{min-width:0}.checklist-item strong{font-size:14px}.checklist-item p{margin:6px 0}.checklist-item>button{flex:none}
+@media(max-width:600px){.checklist-item{flex-direction:column}.checklist-item>button{min-height:42px}.hrow-link{min-height:42px}.park-actions .btn{min-height:42px;display:inline-flex;align-items:center}.hmap{min-height:340px}.hpopw .leaflet-popup-content{max-height:55dvh;overflow:auto}}
+@media(min-width:901px){.hmapw{position:sticky;top:16px}.hside{max-height:none}}

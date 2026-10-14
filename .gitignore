@@ -4,3 +4,5 @@ data/veri.json
 secret/
 data/ekler.json
 scripts/__pycache__/
+
+node_modules/

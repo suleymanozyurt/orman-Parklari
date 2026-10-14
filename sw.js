@@ -1,36 +1,14 @@
-/* Çevrimdışı kabuk.
-   - Sayfa (index) ağ öncelikli: yeni sürüm her açılışta gelir, çevrimdışında son kopya.
-   - Uygulama dosyaları (?v= sürümlü) önbellekten, arkada güncellenir.
-   - Veriler (data/, GitHub API) her zaman ağdan; çevrimdışında son kopya.
-   - Harita altlık karoları: görüntülenenler sınırlı sayıda saklanır (çevrimdışında yalnız daha önce açılan bölgeler görünür). */
-const V = 'op-v5';
-const T = 'op-karo-v1', TMAX = 3000;
-const SHELL = ['./', 'index.html', 'app.css?v=5', 'js/engine.js?v=5', 'js/kasa.js?v=5', 'js/ekler.js?v=5', 'js/app.js?v=5', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png',
-  'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/images/layers.png', 'vendor/leaflet/images/layers-2x.png', 'vendor/proj4.js', 'vendor/jszip.min.js'];
-const KARO = ['tile.openstreetmap.org', 'server.arcgisonline.com'];
-self.addEventListener('install', (e) => { e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V && k !== T).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
-let budama = 0;
-async function karoBuda(c) { if (++budama % 50) return; const ks = await c.keys(); if (ks.length > TMAX) await Promise.all(ks.slice(0, ks.length - TMAX).map((k) => c.delete(k))); }
-self.addEventListener('fetch', (e) => {
-  const q = e.request; if (q.method !== 'GET') return;
-  const u = new URL(q.url);
-  if (q.mode === 'navigate' && u.origin === location.origin) {   // sayfa: ağ öncelikli
-    e.respondWith(fetch(q).then((r) => { if (r.ok) { const c = r.clone(); caches.open(V).then((ca) => ca.put('index.html', c)); } return r; })
-      .catch(() => caches.match('index.html').then((m) => m || caches.match('./'))));
-    return;
-  }
-  if (KARO.some((h) => u.hostname.endsWith(h)) && (/\/tile\//.test(u.pathname) || /\.png$/.test(u.pathname))) {   // altlık karoları: önbellek, yoksa ağ
-    e.respondWith(caches.open(T).then((c) => c.match(q).then((m) => m || fetch(q).then((r) => { if (r.ok || r.type === 'opaque') { c.put(q, r.clone()); karoBuda(c); } return r; }))));
-    return;
-  }
-  const veri = u.pathname.includes('/data/') || u.hostname === 'api.github.com';
-  if (veri) {   // ağ öncelikli; çevrimdışında son kopya
-    e.respondWith(fetch(q).then((r) => { if (r.ok && u.origin === location.origin) { const c = r.clone(); caches.open(V).then((ca) => ca.put(u.pathname, c)); } return r; })
-      .catch(() => caches.match(u.pathname)));
-    return;
-  }
-  if (u.origin === location.origin) {   // kabuk: önbellek, arkada güncelle
-    e.respondWith(caches.match(q).then((m) => { const f = fetch(q).then((r) => { if (r.ok) { const c = r.clone(); caches.open(V).then((ca) => ca.put(q, c)); } return r; }).catch(() => m); return m || f; }));
-  }
-});
+/* Kabuk sürümü ve şifreli veri kopyaları ayrı tutulur. */
+const V='op-v6', D='op-data-v1', T='op-karo-v1', ROOT=new URL('./',self.registration.scope);
+const SHELL=['index.html','app.css?v=6','js/engine.js?v=6','js/kasa.js?v=6','js/ekler.js?v=6','js/geo.js?v=6','js/workflows.js?v=6','js/app.js?v=6','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png','icons/apple-touch-icon.png','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','vendor/leaflet/images/layers.png','vendor/leaflet/images/layers-2x.png','vendor/leaflet/images/marker-icon.png','vendor/leaflet/images/marker-icon-2x.png','vendor/leaflet/images/marker-shadow.png','vendor/proj4.js','vendor/jszip.min.js','vendor/exceljs.min.js','vendor/docx-preview.min.js'];
+const DATA=['data/veri.enc','data/harita.enc','data/ekler.enc','data/teblig.enc','data/oranlar.json'].map(p=>new URL(p,ROOT).href);
+const canonical=u=>{const x=new URL(u,ROOT);x.search='';return x.href;}, dataURL=u=>DATA.includes(canonical(u));
+const miss=()=>new Response('Çevrimdışı kopya bulunamadı.',{status:503,headers:{'Content-Type':'text/plain;charset=utf-8'}});
+async function remember(r){const h=new Headers(r.headers);h.set('X-OP-Saved-At',new Date().toISOString());return new Response(await r.clone().arrayBuffer(),{status:r.status,statusText:r.statusText,headers:h});}
+self.addEventListener('install',e=>e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL.map(p=>new URL(p,ROOT).href)))));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{const d=await caches.open(D),ks=await caches.keys();for(const k of ks.filter(k=>/^op-v\d+$/.test(k)&&k!==V)){const old=await caches.open(k);for(const req of await old.keys()){if(dataURL(req.url)&&!await d.match(canonical(req.url))){const r=await old.match(req);if(r)await d.put(canonical(req.url),await remember(r));}}await caches.delete(k);}await self.clients.claim();})()));
+self.addEventListener('message',e=>{const type=e.data&&e.data.type;if(type==='ACTIVATE_UPDATE'){e.waitUntil(self.skipWaiting());return;}if(!['OFFLINE_STATUS','SAVE_OFFLINE'].includes(type))return;e.waitUntil((async()=>{try{const c=await caches.open(D);if(type==='SAVE_OFFLINE'){const fresh=await Promise.all(DATA.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('Veri indirilemedi.');return[u,await remember(r)];}));for(const[u,r]of fresh)await c.put(u,r);}const files=await Promise.all(DATA.map(async u=>{const r=await c.match(u);return{file:new URL(u).pathname.split('/').pop(),saved:!!r,date:r&&r.headers.get('X-OP-Saved-At')};}));const tiles=(await(await caches.open(T)).keys()).length;if(e.ports[0])e.ports[0].postMessage({ok:true,files,tiles});}catch(error){if(e.ports[0])e.ports[0].postMessage({ok:false,error:error.message});}})());});
+self.addEventListener('fetch',e=>{const q=e.request;if(q.method!=='GET'||q.headers.has('Authorization'))return;const u=new URL(q.url);if(u.hostname==='api.github.com')return;
+if(dataURL(q.url)){e.respondWith((async()=>{const c=await caches.open(D);try{const r=await fetch(q);if(!r.ok)throw new Error('Veri alınamadı.');try{await c.put(canonical(q.url),await remember(r));}catch(_){}return r;}catch(_){const r=await c.match(canonical(q.url));if(!r)return miss();const h=new Headers(r.headers);h.set('X-OP-Offline','1');return new Response(await r.arrayBuffer(),{status:r.status,headers:h});}})());return;}
+if(['tile.openstreetmap.org','server.arcgisonline.com'].includes(u.hostname)&&(/\/tile\//.test(u.pathname)||/\.png$/.test(u.pathname))){e.respondWith((async()=>{const c=await caches.open(T),old=await c.match(q);if(old)return old;try{const r=await fetch(q);if(r.ok||r.type==='opaque'){try{await c.put(q,r.clone());const ks=await c.keys();for(const key of ks.slice(0,Math.max(0,ks.length-3000)))await c.delete(key);}catch(_){}}return r;}catch(_){return miss();}})());return;}
+if(u.origin!==ROOT.origin||!u.pathname.startsWith(ROOT.pathname)||u.pathname.includes('/data/'))return;const url=q.mode==='navigate'?new URL('index.html',ROOT).href:q.url;e.respondWith((async()=>{const c=await caches.open(V),old=await c.match(url);if(old)return old;try{return await fetch(q);}catch(_){return miss();}})());});

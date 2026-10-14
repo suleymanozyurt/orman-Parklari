@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict'),G=require('../js/geo');
+test('small valid polygons and consecutive duplicate corners do not produce false intersection errors',()=>{const p=[[41,28],[41,28.0000001],[41.0000001,28.0000001],[41.0000001,28]];assert.deepEqual(G.ringIssues(p),[]);assert.deepEqual(G.ringIssues([p[0],p[0],...p.slice(1),p[0]]),[]);});
+test('self-crossing polygons and malformed coordinates are detected',()=>{assert.ok(G.ringIssues([[41,28],[41.01,28.01],[41.01,28],[41,28.01]]).length);assert.ok(G.validate({g:'N',c:[NaN,28]}).length);assert.ok(G.validate({g:'N',c:[100,28]}).length);});
+test('holes outside outer polygon and crossing holes are detected',()=>{assert.ok(G.validate({g:'A',c:[[0,0],[0,3],[3,3],[3,0]],holes:[[[4,4],[4,5],[5,5],[5,4]]]}).length);});
+test('canonical geometry detects rotated and reversed rings without changing data',()=>{const a={g:'A',c:[[41,28],[41,29],[42,29],[42,28]]},b={g:'A',c:[[42,29],[41,29],[41,28],[42,28]]};assert.equal(G.geometryKey(a),G.geometryKey(b));assert.ok(G.distance([0,0],[0,1])>111000);});

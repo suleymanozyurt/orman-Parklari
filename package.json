@@ -1,0 +1,27 @@
+{
+  "name": "orman-parklari",
+  "version": "1.0.0",
+  "description": "İstanbul Orman İşletme Müdürlüğü, Emlak Şefliği için orman parkı kira takip uygulaması (313 sayılı Orman Parkları Tebliği). Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suleymanozyurt/orman-Parklari.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/suleymanozyurt/orman-Parklari/issues"
+  },
+  "homepage": "https://github.com/suleymanozyurt/orman-Parklari#readme",
+  "devDependencies": {
+    "jsdom": "^30.1.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.12"
+  }
+}
