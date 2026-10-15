@@ -7,7 +7,7 @@
    Yeni ay ancak bulunan seri tablodaki bilinen aylarla birebir tutuyorsa kabul edilir (yanlış seri alınmasın diye).
 Kullanım: python oran_guncelle.py [--gun YYYY-AA-GG] [--geri N]
 """
-import json, os, re, sys, datetime as dt, urllib.request, urllib.parse, ssl, html, io
+import json, os, re, sys, datetime as dt, urllib.request, urllib.parse, ssl, html, io, math
 
 YOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'oranlar.json')
 UA = {'User-Agent': 'Mozilla/5.0 (orman-parklari oran guncelleme; +https://github.com/suleymanozyurt/orman-Parklari)'}
@@ -29,24 +29,30 @@ def metin(b):
 
 # ------------------------------------------------------------ gecikme zammı
 GZ_RE = re.compile(r'gecikme\s+zamm', re.I)
-def gz_tara(gun, geri):
+def gz_tara(gun, geri, kontrol=None):
     bulunan = []
+    kontrol = kontrol if kontrol is not None else {}
+    kontrol.update(istenen=geri, ok=0, eksik=[], karar_eksik=[])
     for i in range(geri):
         d = gun - dt.timedelta(days=i)
         url = 'https://www.resmigazete.gov.tr/eskiler/%04d/%02d/%04d%02d%02d.htm' % (d.year, d.month, d.year, d.month, d.day)
         try:
             b, _ = get(url)
         except Exception as e:
-            log('RG', d, 'alınamadı:', e); continue
+            kontrol['eksik'].append(d.isoformat()); log('RG', d, 'alınamadı:', e); continue
         s = metin(b)
+        if not re.search(r'resm[îi]\s*gazete', html.unescape(s), re.I):
+            kontrol['eksik'].append(d.isoformat()); log('RG', d, 'fihrist doğrulanamadı'); continue
+        kontrol['ok'] += 1
         for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', s, re.S | re.I):
             t = html.unescape(re.sub(r'<[^>]+>', ' ', m.group(2)))
             t = re.sub(r'\s+', ' ', t).strip()
             if GZ_RE.search(t) and ('6183' in t or 'Amme Alacaklar' in t or 'Tahsil Usul' in t):
                 link = urllib.parse.urljoin(url, m.group(1))
                 log('RG', d, 'karar bulundu:', t, link)
-                oran = oran_metinden(t, 'başlık') or karar_oran(link)
+                oran = karar_oran(link)
                 if oran: bulunan.append((d.isoformat(), oran, t[:160], link))
+                else: kontrol['karar_eksik'].append(link)
     return bulunan
 
 def oran_metinden(s, ne):
@@ -80,6 +86,9 @@ def karar_oran(link):
         log('karar alınamadı', e); return None
     s = pdf_metin(b) if ('pdf' in ct.lower() or link.lower().endswith('.pdf')) else html.unescape(re.sub(r'<[^>]+>', ' ', metin(b)))
     log('karar metni (ilk 300):', re.sub(r'\s+', ' ', s)[:300])
+    normalized = re.sub(r'\s+', ' ', s).lower()
+    if not re.search(r'yay[ıi]m[ıi] tarihinde.{0,80}yürürlüğe girer', normalized):
+        log('Kararın yürürlük tarihi otomatik doğrulanamadı; teyit gerekli'); return None
     v = oran_metinden(s, 'karar metni')
     if v: return v
     log('karar metninde oran bulunamadı'); return None
@@ -168,7 +177,7 @@ def tufe_portal(tablo, yil0=2025):
         per = j['dimension']['TIME_PERIOD']['category']['index']
         if isinstance(per, dict): per = sorted(per, key=lambda k: per[k])
         out = {}
-        for k, v in j['value'].items():
+        for k, v in (j['value'].items() if isinstance(j['value'], dict) else enumerate(j['value'])):
             if v in (None, ''): continue
             y, m = map(int, per[int(k)].split('-')[:2])
             out[(y, m)] = round(float(v) / 100, 6)
@@ -189,22 +198,35 @@ def main():
     gun = dt.date.today()
     if '--gun' in args: gun = dt.date.fromisoformat(args[args.index('--gun') + 1])
     geri = int(args[args.index('--geri') + 1]) if '--geri' in args else 7
-    O = json.load(open(YOL, encoding='utf-8'))
+    if not 1 <= geri <= 45: raise ValueError('Tarama aralığı 1–45 gün olmalı')
+    with open(YOL, encoding='utf-8') as stream:
+        O = json.load(stream)
     eski = json.dumps(O, sort_keys=True, ensure_ascii=False)
-    simdi = dt.datetime.utcnow() + dt.timedelta(hours=3)
+    simdi = dt.datetime.now(dt.timezone(dt.timedelta(hours=3)))
+    stamp = simdi.strftime('%Y-%m-%d %H:%M')
+    O['gz']['son_deneme'] = stamp
     # GZ
     try:
-        bul = gz_tara(gun, geri)
+        kontrol = {}
+        bul = sorted(gz_tara(gun, geri, kontrol), key=lambda x: x[0])
+        O['gz']['tarama'] = kontrol
         oranlar = O['gz']['oranlar']
         for (tarih, oran, baslik, link) in bul:
             son = oranlar[-1]
             if tarih > son[0] and abs(oran - son[1]) > 1e-9:
                 oranlar.append([tarih, oran, 'RG ' + tarih + ' — ' + baslik])
+                O['gz'].setdefault('kayit', {})[tarih] = {'kaynak_url': link, 'baslik': baslik, 'alindi': stamp}
                 O['gz']['durum'] = 'Yeni oran Resmî Gazete’den alındı: %s tarihinden aylık %%%s' % (tarih, str(round(oran * 100, 4)).replace('.', ','))
                 log('YENİ GZ ORANI', tarih, oran)
-        O['gz']['son_kontrol'] = simdi.strftime('%Y-%m-%d %H:%M')
+        if kontrol['ok'] == geri and not kontrol['karar_eksik']:
+            O['gz']['son_kontrol'] = stamp
+            O['gz']['son_basarili_kontrol'] = stamp
+            O['gz']['durum'] = 'Resmî Gazete: %d günlük tarama tamamlandı; yeni oran varsa yürürlük tablosuna işlendi.' % geri
+        else:
+            O['gz']['durum'] = 'Tarama eksik: %d/%d günlük fihriste erişildi; %d karar okunamadı. Son kayıtlı oranlar korunuyor.' % (kontrol['ok'], geri, len(kontrol['karar_eksik']))
     except Exception as e:
         log('GZ taraması hata:', e)
+        O['gz']['durum'] = 'Resmî Gazete kontrolü tamamlanamadı; son kayıtlı oranlar korunuyor.'
     # TÜFE
     tab = O['tufe']['degerler']
     seri, durum = tufe_portal(tab)
@@ -216,19 +238,23 @@ def main():
         eklenen = 0
         kayit = O['tufe'].setdefault('kayit', {})
         for (y, m), v in sorted(seri.items()):
+            if not (1 <= m <= 12 and math.isfinite(v) and -1 < v < 3 and (y, m) < (gun.year, gun.month)): continue
             a = tab.setdefault(str(y), [None] * 12)
-            if a[m - 1] is None and 0 < v < 3:
+            if a[m - 1] is None:
                 a[m - 1] = v; eklenen += 1; log('YENİ TÜFE', y, m, v)
                 kayit['%04d-%02d' % (y, m)] = {'alindi': simdi.strftime('%Y-%m-%d %H:%M'), 'kaynak': durum.split(' — ')[0]}
         sonay = max((int(y), i + 1) for y, a in tab.items() for i, v in enumerate(a) if v is not None)
         O['tufe']['son_ay'] = '%04d-%02d' % sonay
         O['tufe']['durum'] = 'otomatik: ' + durum
+        O['tufe']['son_kontrol'] = stamp
+        O['tufe']['son_basarili_kontrol'] = stamp
     else:
         O['tufe']['durum'] = 'otomatik güncelleme yapılamadı: ' + durum
-    O['tufe']['son_kontrol'] = simdi.strftime('%Y-%m-%d %H:%M')
+    O['tufe']['son_deneme'] = stamp
     O['guncelleme'] = simdi.strftime('%Y-%m-%dT%H:%M:%S+03:00')
     O['son_calisma_kaydi'] = LOG[-25:]
-    json.dump(O, open(YOL, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    with open(YOL, 'w', encoding='utf-8') as stream:
+        json.dump(O, stream, ensure_ascii=False, indent=1)
     print('değişti' if json.dumps(O, sort_keys=True, ensure_ascii=False) != eski else 'değişmedi')
 
 if __name__ == '__main__':

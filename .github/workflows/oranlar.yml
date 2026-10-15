@@ -1,7 +1,12 @@
 name: Resmî oranları güncelle
 on:
   schedule:
-    - cron: '35 7 * * *'     # her gün 10:35 (TSİ); TÜİK TÜFE'yi ayın 3'ünde 10:00'da açıklar
+    - cron: '5,35 7 * * *'   # TSİ 10:05 ve 10:35
+    - cron: '5 10,13,16 * * *' # TSİ 13:05, 16:05 ve 19:05
+  push:
+    paths:
+      - 'scripts/oran_guncelle.py'
+      - '.github/workflows/oranlar.yml'
   workflow_dispatch:
     inputs:
       gun:
@@ -28,11 +33,13 @@ jobs:
       - name: Oranları çek
         env:
           TUIK_API_KEY: ${{ secrets.TUIK_API_KEY }}
+          SCAN_DAY: ${{ github.event.inputs.gun }}
+          SCAN_BACK: ${{ github.event.inputs.geri }}
         run: |
-          ARGS=""
-          if [ -n "${{ github.event.inputs.gun }}" ]; then ARGS="$ARGS --gun ${{ github.event.inputs.gun }}"; fi
-          if [ -n "${{ github.event.inputs.geri }}" ]; then ARGS="$ARGS --geri ${{ github.event.inputs.geri }}"; fi
-          python scripts/oran_guncelle.py $ARGS
+          args=()
+          if [ -n "$SCAN_DAY" ]; then args+=(--gun "$SCAN_DAY"); fi
+          if [ -n "$SCAN_BACK" ]; then args+=(--geri "$SCAN_BACK"); fi
+          python scripts/oran_guncelle.py "${args[@]}"
       - name: Değiştiyse kaydet
         run: |
           git config user.name "oran-guncelleme"

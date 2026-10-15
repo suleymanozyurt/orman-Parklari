@@ -607,3 +607,24 @@ body,.app,.gate{font-family:"Barlow",system-ui,sans-serif}
  :root[data-tema="koyu"] .gate .brand-eyebrow,:root[data-tema="koyu"] .gate h1 span,:root[data-tema="koyu"] .gate-credit strong{color:#7DE7B8}
  @media(prefers-color-scheme:dark){:root:not([data-tema="acik"]) .gate .brand-eyebrow,:root:not([data-tema="acik"]) .gate h1 span,:root:not([data-tema="acik"]) .gate-credit strong{color:#7DE7B8}}
 }
+
+.year-picker{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}.year-picker select{min-width:104px;max-width:150px;background:var(--paper)}.year-picker small{flex-basis:100%;font-size:11px;color:var(--mute)}
+
+@media screen{
+ .nav a.on{background:linear-gradient(110deg,#008766,#087662);color:#FFF;border-color:rgba(108,235,188,.28);box-shadow:inset 3px 0 #FFD377,0 4px 12px rgba(0,35,28,.18)}
+ .nav a.on svg,.nav a.on:hover svg{color:#FFD377}
+ .nav{gap:2px}.nav a{padding:8px 11px;min-height:20px}.nav .h{padding-top:16px;color:#91D5BF}
+ .quick-tasks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+ .quick-tasks a{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:11px;border:1px solid var(--line);font-size:14px;font-weight:600;background:var(--paper);color:var(--ink);box-shadow:var(--elevation)}
+ .quick-tasks a svg{color:#008A69}.quick-tasks a:nth-child(2) svg{color:#1B91BB}.quick-tasks a:nth-child(3) svg{color:#BB8623}.quick-tasks a:nth-child(4) svg{color:#8A6BC1}
+ .quick-tasks a:hover{border-color:var(--moss);background:var(--soft)}
+ .park-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+ .park-actions .btn{display:inline-flex;align-items:center;gap:6px}.context-park{font-weight:600;color:var(--ink);margin-right:7px}
+ :root[data-tema="koyu"] .tile .ic{background:var(--soft);border-color:var(--line);color:#7DE7B8}
+ :root[data-tema="koyu"] .quick-tasks a{background:var(--paper);color:var(--ink)}
+ :root[data-tema="koyu"] .quick-tasks a svg{color:#7DE7B8}
+ @media(prefers-color-scheme:dark){:root:not([data-tema="acik"]) .tile .ic{background:var(--soft);border-color:var(--line);color:#7DE7B8}:root:not([data-tema="acik"]) .quick-tasks a svg{color:#7DE7B8}}
+ @media(max-width:600px){.quick-tasks{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.quick-tasks a{font-size:13px}.park-actions{gap:7px}.context-park{width:100%}.park-actions .btn{flex:1 1 auto;justify-content:center}}
+}
+
+@media screen{.btn.pri{background:linear-gradient(125deg,#008363,#08765B);border-color:#00765A}.nav a.on{background:linear-gradient(110deg,#008164,#087662)}:root{--moss:#008363}}
