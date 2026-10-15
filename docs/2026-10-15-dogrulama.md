@@ -26,3 +26,18 @@ Otomatik kaynak testleri kontrollü yanıtlar kullanır; tek başına canlı res
 15.10.2026 TSİ 10:37 çalışması tamamlandı. Resmî Gazete 7/7 günlük fihriste erişti. TÜİK veri servisi adres çözümleme hatası verdi; Eylül 2026 dahil mevcut tablo korunarak hata duruma yazıldı. Başarısız bağlantı yeni oran alınmış gibi gösterilmedi. Geçici taşıma hataları için sınırlı yeniden deneme eklendi. Kaynak güncellemesinin iş olarak tamamlanması, bütün dış kaynakların başarılı olduğu anlamına gelmez.
 
 v15: uygulama sürüm denetimi açılışta ve görünürken iki dakikalık aralıklarla yapılır; kullanıcının taslağı varken zorla yenilenmez. Kesin TÜİK yayım tarihi olarak hesaplanan ayın 3'ü gösterilmez; açıklanmamış veri için bekleniyor ifadesi kullanılır.
+
+
+## v16 · son talimata göre ana çalışma alanları
+
+Yedi ana menü: Genel Durum, Harita, Orman Parkları, Muhasebe, Tebliğ Ekleri, Kayıt Defteri, Tebliğ ve Hesaplar. Önceki adresler alt sayfa olarak korunur. Seçili parkın bağlantı parametresi gezinmede güncellenir. Muhasebe tablosu seçili parkla açılır; tüm kayıtlar ayrıca seçilebilir. Resmî işlem defteri ayrı sayfa ve CSV çıktısıdır. Mevcut veri veya hesaplama motoru bu düzenlemeyle değiştirilmez.
+
+Koyu yüzeyler, yüksek kontrastlı metin, zümrüt vurgu ve altın etkin sekmeler tek bir UI stil dosyasında birleştirildi. Resmî form kâğıtları baskı amaçlı beyaz kalır; uygulama yüzeyleri ve harita bilgi kutuları koyu tasarıma uyar. Ekran görüntüsü ve canlı arayüz kontrolleri ayrıca kaydedilecektir.
+
+Kaynak incelemesi park detayında ve harita panelinde görünür. Belge onay durumu, inceleme güveni, planda mevcut/planlanan/işlevi değiştirilen durumları ve saha/konum teyidi ayrı alanlardır. Koordinatı olmayan cetvel satırları geometri veya doğrulanmış tesis sayısı üretmez. Kaynak incelemesi güncellenirken önceki inceleme arşivlenir; finans ve sınırlar değiştirilmez. Yönetici tarafından kontrol ve uygulama adımı gerekir.
+
+Güncel test sonucu: 48 JavaScript + 6 Python = 54 başarılı test. Yeni testler: tam yedi menü, eski rota sahipliği, seçili park bağlantılarının güncellenmesi, defterin bağımsız görüntülenmesi/dışa aktarımı, kaynak doğrulaması, tehlikeli URL/yanlış park/eksik belge/geçersiz ölçü reddi, izinsiz kaynak düzenlemesinin engellenmesi, önceki incelemenin korunması, geometri ve saha kesinliği üretilememesi, seçili park/tüm muhasebe kayıtları ayrımı.
+
+### Güncellenen canlı kaynak sonucu
+
+15.10.2026 TSİ 10:43 denemesinde TÜİK veri portalına erişildi ve seri 21 bilinen ayla doğrulandı. Eylül 2026 son verisi korundu, açıklanmamış aylara oran yazılmadı. Resmî Gazete 7/7 günlük taraması tamamlandı. Bu sonuç kaynak kontrol kaydıdır; geçmiş belgelerin veya bütün mali hesaplamaların hukuki doğrulaması değildir.
