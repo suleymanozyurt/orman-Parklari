@@ -568,3 +568,42 @@ body,.app,.gate{font-family:"Barlow",system-ui,sans-serif}
  .card,.panel,.kpi,.hero,.phead,.calc,.tile{box-shadow:none}
  .kpi:before{display:none}
 }
+
+/* Canlı park kimliği; durum renkleri ve form şablonları bağımsız kalır. */
+@media screen{
+ :root{--pine:#075D53;--pine2:#087F69;--moss:#008865;--leaf:#C1F09D;--accent:#F5BD46;--elevation:0 6px 22px rgba(13,89,68,.065),0 1px 3px rgba(13,89,68,.035)}
+ .side{overflow:hidden;padding:0;background:radial-gradient(ellipse at 0 0,rgba(27,192,145,.3),transparent 65%),linear-gradient(160deg,#075D53,#064A43 60%,#073E3B)}
+ .side-scroll{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;padding:20px 0 16px;scrollbar-width:thin;scrollbar-color:#4C9483 transparent}
+ .brand{padding-bottom:23px;align-items:center}.park-logo{display:inline-block;object-fit:contain;flex:none;vertical-align:middle;filter:drop-shadow(0 4px 7px rgba(0,30,20,.12))}
+ .brand b{font-size:18px;line-height:1.2}.brand .park-logo{width:44px;height:44px}
+ .nav a.on{color:#075B49;background:linear-gradient(100deg,#C8F3D9,#EFFCEB);border-color:#B2E5CB;box-shadow:inset 3px 0 #F3CB67,0 4px 12px rgba(0,37,26,.12)}
+ .nav a svg{color:#A0E5CC}.nav a.on svg{color:#08775B}
+ .nav a[data-p="harita"] svg{color:#6DE8E4}.nav a[data-p="ekler"] svg{color:#F4D98B}.nav a[data-p="denetim"] svg{color:#C6D2FF}.nav a.on svg{color:#08775B}
+ .side-credit{flex:none;padding:13px 20px 16px;border-top:1px solid rgba(169,235,204,.17);background:rgba(0,31,28,.26)}
+ .side-credit span{display:block;font-size:10.5px;color:#A8D7C7;letter-spacing:.3px}.side-credit strong{display:block;color:#F3D790;font-size:14px;font-weight:600;margin-top:3px}
+ .app-credit .prepared{display:none}
+ .main{background:radial-gradient(ellipse at 95% 0,rgba(38,182,165,.12),transparent 45%),radial-gradient(ellipse at 0 70%,rgba(179,205,80,.07),transparent 55%)}
+ .hero,.phead{background:radial-gradient(ellipse at 100% 0,rgba(88,225,187,.4),transparent 65%),linear-gradient(115deg,#075D53,#07885E 65%,#0B956C);box-shadow:0 12px 30px rgba(0,114,82,.17)}
+ .hero .chip{background:rgba(158,246,201,.16);border-color:rgba(200,255,224,.27)}
+ .big{background:linear-gradient(135deg,rgba(0,57,48,.3),rgba(0,84,66,.12));border-color:rgba(197,250,213,.32)}
+ .big>span{color:#D6F9E6}.big .row div{color:#CEF3E2}
+ .kpi:nth-child(1){background:linear-gradient(130deg,rgba(16,185,129,.075),transparent 85%),var(--paper);border-color:rgba(33,160,115,.23)}
+ .kpi:nth-child(2){background:linear-gradient(130deg,rgba(14,165,233,.075),transparent 85%),var(--paper);border-color:rgba(49,143,177,.23)}
+ .kpi:nth-child(3){background:linear-gradient(130deg,rgba(245,158,11,.09),transparent 85%),var(--paper);border-color:rgba(198,145,49,.26)}
+ .kpi:nth-child(4){background:linear-gradient(130deg,rgba(139,92,246,.07),transparent 85%),var(--paper);border-color:rgba(133,108,192,.22)}
+ .kpi:before{background:#00A978}.kpi:nth-child(2):before{background:#159FCC}.kpi:nth-child(3):before{background:#E6AA32}.kpi:nth-child(4):before{background:#8B72CD}
+ .tile:nth-child(3n+1) .ic{background:#DEF7EB;color:#00765A;border-color:#BFE6D4}
+ .tile:nth-child(3n+2) .ic{background:#E2F3FC;color:#197AA4;border-color:#C6E4F3}
+ .tile:nth-child(3n) .ic{background:#FFF2CF;color:#99700F;border-color:#F1DEAB}
+ .btn.pri{background:linear-gradient(125deg,#008D69,#08765B);border-color:#007C5E;box-shadow:0 4px 11px rgba(0,137,99,.16)}
+ .btn.pri:hover{background:#00775B;border-color:#00775B}
+ .gate{background:radial-gradient(ellipse at 12% 8%,rgba(16,185,139,.55),transparent 55%),radial-gradient(ellipse at 96% 90%,rgba(184,196,67,.2),transparent 50%),linear-gradient(125deg,#064A43,#075D53 70%,#074B40)}
+ .gate .park-logo{width:66px;height:66px}.gate .brand-eyebrow{color:var(--moss);letter-spacing:2px;font-size:10px;margin-top:23px}
+ .gate h1 span{color:#008D69}.gate-credit strong{color:var(--moss)}
+ @media(max-width:860px){.app-credit .prepared{display:block}.mbar{background:linear-gradient(110deg,#075D53,#078E6A)}.mbar .park-logo{width:37px;height:37px}}
+}
+
+@media screen{
+ :root[data-tema="koyu"] .gate .brand-eyebrow,:root[data-tema="koyu"] .gate h1 span,:root[data-tema="koyu"] .gate-credit strong{color:#7DE7B8}
+ @media(prefers-color-scheme:dark){:root:not([data-tema="acik"]) .gate .brand-eyebrow,:root:not([data-tema="acik"]) .gate h1 span,:root:not([data-tema="acik"]) .gate-credit strong{color:#7DE7B8}}
+}

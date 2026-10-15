@@ -22,7 +22,7 @@
     map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14', edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6'
   };
   const svg = (d, s, w) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"></path></svg>';
-  const LOGO = (s) => '<svg width="' + s + '" height="' + s + '" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#174A37" stroke="#2C6A4D"></circle><path d="M20 7 12.5 18h4L11 26h6.5v6h5v-6H29l-5.5-8h4z" fill="#9CC27A"></path></svg>';
+  const LOGO = (s) => '<img class="park-logo" src="icons/park-mark.svg?v=13" width="' + s + '" height="' + s + '" alt="" aria-hidden="true">';
   const PAGES = [
     { id: 'genel', l: 'Genel durum', s: 'Genel', ic: IC.home }, { id: 'park', l: 'Park Bilgileri ve Sözleşme', s: 'Park bilgileri', ic: IC.park },
     { id: 'alacaklar', l: 'Alacaklar', s: 'Alacaklar', ic: IC.money }, { id: 'hesap', l: 'Hesaplama', s: 'Hesap', ic: IC.calc },
@@ -209,9 +209,9 @@
   }
   function gateGoster(t, msg) {
     const g = $('#gate'); g.style.display = 'grid'; $('#app').style.display = 'none';
-    if (t === 'yukleniyor') { g.innerHTML = '<div class="box" style="text-align:center">' + LOGO(56) + '<span class="brand-eyebrow">İSTANBUL ORMAN İŞLETME MÜDÜRLÜĞÜ</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Veriler yükleniyor…</p><span class="spin"></span></div>'; return; }
+    if (t === 'yukleniyor') { g.innerHTML = '<div class="box" style="text-align:center">' + LOGO(56) + '<span class="brand-eyebrow">PARK · PLAN · YÖNETİM</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Veriler yükleniyor…</p><span class="spin"></span></div>'; return; }
     if (t === 'hata') { g.innerHTML = '<div class="box">' + LOGO(48) + '<h1>Bağlantı sorunu</h1><p>' + esc(msg) + '</p><button class="btn pri" onclick="location.reload()">Yeniden dene</button></div>'; return; }
-    g.innerHTML = '<form class="box" id="gform">' + LOGO(52) + '<span class="brand-eyebrow">İSTANBUL ORMAN İŞLETME MÜDÜRLÜĞÜ</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Park kayıtları, planlar, sözleşmeler ve mali işlemler için güvenli erişim.</p>' +
+    g.innerHTML = '<form class="box" id="gform">' + LOGO(52) + '<span class="brand-eyebrow">PARK · PLAN · YÖNETİM</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Park kayıtları, planlar, sözleşmeler ve mali işlemler için güvenli erişim.</p>' +
       '<input class="fld" id="gpw" type="password" autocomplete="current-password" placeholder="Erişim parolası" aria-label="Erişim parolası" required>' +
       '<label class="chk"><input type="checkbox" id="gkeep" checked> Bu cihazda hatırla</label>' +
       '<button class="btn pri" type="submit">Aç</button><div class="err" id="gerr" role="alert"></div>' +
@@ -303,7 +303,7 @@
       '<button class="ib" id="mSearch" aria-label="Ara">' + svg(IC.search, 18, 2) + '</button><button class="ib" id="mMore" aria-label="İşlemler">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button></header>' +
       '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
-      '<aside class="side"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b><small>İstanbul Orman İşletme Müdürlüğü</small></div></div>' +
+      '<aside class="side"><div class="side-scroll"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b></div></div>' +
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
       '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Park, işletmeci, yevmiye ara" aria-label="Ara"></label><div class="sres" id="sRes"></div></div>' +
       '<div class="sbox" id="sPark"><span class="lbl">Seçili park</span><select id="sSel" aria-label="Park seçin"></select>' +
@@ -315,8 +315,8 @@
       '<button class="sbtn" data-a="yenile">Verileri yenile</button>' +
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
-      '<div class="foot" id="sFoot"></div></aside>' +
-      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span>Orman Parkları Yönetim Sistemi</span><span>Hazırlayan <strong>Süleyman Özyurt</strong></span></footer></div>';
+      '<div class="foot" id="sFoot"></div></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
+      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span class="prepared">Hazırlayan <strong>Süleyman Özyurt</strong></span><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
     A.addEventListener('click', tikla);
@@ -350,7 +350,7 @@
     switch (a) {
       case 'prev': parkSec(keys[(i - 1 + keys.length) % keys.length]); break;
       case 'next': parkSec(keys[(i + 1) % keys.length]); break;
-      case 'park': parkSec(t.dataset.k, t.dataset.go); break;
+      case 'park': if (t.tagName === 'A') ev.preventDefault(); parkSec(t.dataset.k, t.dataset.go); break;
       case 'geri': if (history.length > 1) history.back(); else location.hash = '#/genel'; break;
       case 'pdf': modalKapat(); setTimeout(() => window.print(), 50); break;
       case 'csv': csvIndir(); break;
@@ -368,7 +368,7 @@
   }
   function parkSec(k, go) {
     if (!S.pBy[k]) return; S.park = k; S.zPark = k;
-    if (go) { if (location.hash !== '#/' + go) { location.hash = '#/' + go; return; } }
+    if (go || S.page === 'park') { const target = '#/' + (go || 'park') + ((go || S.page) === 'park' ? '?p=' + encodeURIComponent(k) : ''); if (location.hash !== target) { location.hash = target; return; } }
     modalKapat(); sayfaCiz();
   }
   async function yenile(zorla) {
@@ -431,7 +431,7 @@
     q = (q || '').trim().toLocaleLowerCase('tr-TR');
     if (q.length < 2) { box.classList.remove('on'); box.innerHTML = ''; return; }
     const out = [];
-    S.veri.parks.forEach((p) => { const t = [p.kisa, p.ad, p.isletmeci, p.vkn, p.seflik].join(' ').toLocaleLowerCase('tr-TR'); if (t.includes(q)) out.push('<a href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.isletmeci || '') + '</small></a>'); });
+    S.veri.parks.forEach((p) => { const t = [p.kisa, p.ad, p.isletmeci, p.vkn, p.seflik].join(' ').toLocaleLowerCase('tr-TR'); if (t.includes(q)) out.push('<a href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.isletmeci || '') + '</small></a>'); });
     S.veri.muhasebe.forEach((x) => { if (out.length > 30) return; const t = (String(x.yev) + ' ' + x.aciklama + ' ' + x.musteri).toLocaleLowerCase('tr-TR'); if (t.includes(q)) out.push('<a href="#/muhasebe" data-a="muhara" data-q="' + esc(String(x.yev)) + '">Yev. ' + x.yev + ' · ' + fd(x.tarih) + '<small>' + esc(x.aciklama) + ' · ' + tl(x.borc || x.alacak) + '</small></a>'); });
     box.innerHTML = out.length ? out.slice(0, 30).join('') : '<a class="muted">Sonuç yok</a>'; box.classList.add('on');
   }
@@ -440,6 +440,7 @@
   function yonlendir() {
     const id = (location.hash.replace(/^#\/?/, '') || 'genel').split('?')[0];
     S.page = PAGES.find((p) => p.id === id) ? id : 'genel';
+    const park = new URLSearchParams(location.hash.split('?')[1] || '').get('p'); if (park && S.pBy[park]) { S.park = park; S.zPark = park; }
     modalKapat(); sayfaCiz(); window.scrollTo(0, 0);
   }
   function icerigeGec(e) {
@@ -492,7 +493,7 @@
     const cnt = (s) => D.filter((d) => d === s).length;
     const hero = '<section class="hero"><div><h1>' + (late.length ? 'Dökümlere göre ' + late.length + ' parkta vadesi geçmiş alacak görünüyor' : 'Dökümlerde vadesi geçmiş alacak görünmüyor') + '</h1>' +
       '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için dökümde ödenmemiş kalem var; döküm tarihinden sonraki ödemeler muhasebeden teyit edilmeli. Park adına dokununca park bilgileri ve sözleşme ayrıntıları açılır.' : 'Dökümdeki vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
-      '<div class="chips">' + late.map((o) => '<a class="chip" href="#/park" data-a="park" data-k="' + esc(o.kisa) + '" data-go="park"><i></i>' + esc(o.kisa) + '</a>').join('') + '</div></div>' +
+      '<div class="chips">' + late.map((o) => '<a class="chip" href="#/park?p=' + encodeURIComponent(o.kisa) + '" data-k="' + esc(o.kisa) + '" data-go="park"><i></i>' + esc(o.kisa) + '</a>').join('') + '</div></div>' +
       '<div class="big"><span>Vadesi geçmiş alacak</span><strong class="n">' + tl(vgec) + ' TL</strong><div class="row"><div>Gecikme zammı ve KDV’si<b class="n">' + tl(gz) + '</b></div><div>En eski vade<b class="n">' + fd(enEski) + '</b></div></div></div>' +
       treeSvg(7, 31) + '</section>';
     const kp = [['Bu yıl vadeli kira', tl(kira), 'Dökümdeki ek tahakkuklar dahil', 'var(--ink)', 100, '#3F7D4E'],
@@ -507,7 +508,7 @@
       if (A.some((a) => a.durum === 'Vadesi gelmedi')) return 'open'; if (A.some((a) => a.durum === 'Ödendi')) return 'ok'; return '';
     };
     const rows = S.veri.parks.map((p) => { const o = S.ozBy[p.kisa];
-      return '<tr>' + td('<a class="pk" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' Şefliği</small></a>', '', 'lead') +
+      return '<tr>' + td('<a class="pk" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' Şefliği</small></a>', '', 'lead') +
         td('<span class="' + stCls(p.durum) + '">' + esc(p.durum) + '</span>', 'Durum') +
         AY3.map((a, i) => { const c = calCls(p.kisa, i); return '<td class="mc' + (i === m0 ? ' now' : '') + '" data-l="' + a + '">' + (c ? '<i class="cal c-' + c + '" title="' + a + '"></i>' : '') + '</td>'; }).join('') +
         td(o.kira_yil ? tl(o.kira_yil) : '–', 'Bu yıl kira', 'n r') + td('<b>' + (o.acik ? tl(o.acik) : '–') + '</b>', 'Açık alacak', 'n r') +
@@ -689,7 +690,7 @@
       [['acik', 'Açık'], ['odenmedi', 'Ödenmedi'], ['gec', 'Geç ödendi'], ['tum', 'Tümü']].map((s) => '<button class="' + (S.af === s[0] ? 'on' : '') + '" data-a="af" data-v="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>' +
       '<select id="aPark" aria-label="Park süz">' + parks.map((k) => '<option' + (k === S.ap ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select></div></div>' +
       '<div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Park</th><th>Esas vade</th><th>Grup</th><th>Tür</th><th class="r">Tutar</th><th>Ödeme</th><th>Durum</th><th class="r">Gün</th><th class="r">GZ ve KDV’si</th><th class="noprint"></th></tr></thead><tbody>' +
-      L.map((a) => '<tr>' + td('<a href="#/park" data-a="park" data-k="' + esc(a.park) + '" data-go="park" style="font-weight:600">' + esc(a.park) + '</a>', '', 'lead') +
+      L.map((a) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(a.park) + '" data-k="' + esc(a.park) + '" data-go="park" style="font-weight:600">' + esc(a.park) + '</a>', '', 'lead') +
         td('<span class="' + (a.duz ? 'duz' : '') + '" title="' + esc(a.vnot) + '">' + fd(a.esas) + '</span>', 'Esas vade', 'n') + td(esc(a.grup), 'Grup', 'muted') + td(esc(a.tur), 'Tür') + td('<b>' + tl(a.tutar) + '</b>', 'Tutar', 'n r') +
         td(a.odeme ? fd(a.odeme) : '–', 'Ödeme', 'n muted') + td('<span class="badge ' + (badgeDurum[a.durum] || 'b-gray') + '">' + a.durum + '</span>', 'Durum') + td(a.gun || '–', 'Gün', 'n r') +
         td(a.gztop ? tl(a.gztop) : '–', 'GZ ve KDV’si', 'n r ' + (a.durum === 'Ödenmedi' ? 'red-t' : 'muted')) + td('<button class="btn sm" data-a="kalemBilgi" data-kalem="' + a.kalem + '" data-odeme="' + (a.odeme || '') + '">Ayrıntı</button>', '', 'noprint') + '</tr>').join('') +
@@ -853,7 +854,7 @@
       '<section class="sumrow">' + sm.map((s) => '<div class="sm"><b class="n" style="color:' + s[2] + '">' + s[0] + '</b><span>' + s[1] + '</span></div>').join('') + '</section>' +
       '<section class="card"><div class="ch"><h2>' + (D[0] ? esc(D[0].donem.split(' (')[0]) : 'Denetim') + ' sonuçları</h2><span class="muted" style="font-size:13px">Kaynak: imzalı Ek-10 raporları</span></div><div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Park</th>' +
       ['Ödeme planı', 'Onaylı plan', 'Tesis bakımı', 'Saha temizliği', 'Şartname ve sözleşme'].map((h) => '<th style="text-align:center">' + h + '</th>').join('') + '<th>Komisyonun kanaati</th><th class="noprint"></th></tr></thead><tbody>' +
-      D.map((d) => '<tr>' + td('<a href="#/park" data-a="park" data-k="' + esc(d.park) + '" data-go="park" style="font-weight:600">' + esc(d.park) + '</a>', '', 'lead') +
+      D.map((d) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(d.park) + '" data-k="' + esc(d.park) + '" data-go="park" style="font-weight:600">' + esc(d.park) + '</a>', '', 'lead') +
         ['Ödeme planı', 'Onaylı plan', 'Tesis bakımı', 'Saha temizliği', 'Şartname ve sözleşme'].map((h, i) => td('<span class="v ' + cls(d[C[i]]) + '">' + esc(sh(d[C[i]])) + '</span>', h, '', ' style="text-align:center"')).join('') +
         td(esc(d.ozet || d['Genel kanaat']), 'Kanaat', 'wide', ' style="white-space:normal;font-size:13.5px;color:var(--ink2);max-width:380px"') +
         td('<button class="btn sm" data-a="formAc" data-e="R10" data-k="' + esc(d.park) + '">Raporu aç</button>', '', 'noprint') + '</tr>').join('') + '</tbody></table></div></section>' +
@@ -991,12 +992,12 @@
       rows: P.map((p) => { const o = S.ozBy[p.kisa]; return [p.kisa, p.ad, p.seflik, p.statu, p.durum, p.isletmeci, p.vkn, p.sekil, p.alan, fd(p.ihale_t), p.ihale_b, fd(p.soz_bas), fd(p.soz_bit), fd(p.teslim), o.kalan != null ? r2(o.kalan) : '', p.artis, p.kural, p.kesin, o.kira_yil, o.tahsil, o.acik, o.vgec, o.gz, o.uyari.join(' · ')]; }) };
     return '<div class="pagehead"><div><h1>Orman Parkı Envanteri</h1><p>Bütün parkların kayıtları, işletmecileri ve mali özeti. Ayrıntılar için park adını seçin. Mali sütunlar muhasebe dökümünden otomatik hesaplanır; park bilgilerini yalnız yönetici değiştirebilir.</p></div><button class="btn pri own-only" data-a="parkDuzenle" data-k="">Yeni orman parkı ekle</button></div>' +
       '<section class="card"><div class="scroll" style="padding-top:8px"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Durum</th><th>İşletmeci</th><th>Sözleşme</th><th class="r">Kalan</th><th class="r">Bu yıl kira</th><th class="r">Tahsil edilen</th><th class="r">Açık</th><th class="r">Vadesi geçmiş</th><th>Uyarılar</th><th class="noprint"></th></tr></thead><tbody>' +
-      P.map((p) => { const o = S.ozBy[p.kisa]; return '<tr>' + td('<a class="pk" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' · ' + esc(p.statu || '') + '</small></a>', '', 'lead') +
+      P.map((p) => { const o = S.ozBy[p.kisa]; return '<tr>' + td('<a class="pk" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' · ' + esc(p.statu || '') + '</small></a>', '', 'lead') +
         td('<span class="' + stCls(p.durum) + '">' + esc(p.durum) + '</span>', 'Durum') + td(esc(p.isletmeci || '—'), 'İşletmeci', 'wide', ' style="white-space:normal;max-width:240px;font-size:13.5px"') +
         td(p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '—', 'Sözleşme', 'n') + td(o.kalan != null ? o.kalan.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' yıl' : '—', 'Kalan', 'r') +
         td(o.kira_yil ? tl(o.kira_yil) : '–', 'Bu yıl kira', 'n r') + td(o.tahsil ? tl(o.tahsil) : '–', 'Tahsil', 'n r') + td('<b>' + (o.acik ? tl(o.acik) : '–') + '</b>', 'Açık', 'n r') + td(o.vgec ? tl(o.vgec) : '–', 'Vadesi geçmiş', 'n r ' + (o.vgec ? 'red-t' : 'muted')) +
         td(o.uyari.length ? o.uyari.map((u) => '<span class="tag2">' + esc(u) + '</span>').join(' ') : '<span class="muted">—</span>', 'Uyarılar', 'wide', ' style="white-space:normal;max-width:260px"') +
-        td('<button class="btn sm own-only" data-a="parkDuzenle" data-k="' + esc(p.kisa) + '">Düzenle</button><a class="btn sm view-only" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Aç</a>', '', 'noprint') + '</tr>'; }).join('') +
+        td('<button class="btn sm own-only" data-a="parkDuzenle" data-k="' + esc(p.kisa) + '">Düzenle</button><a class="btn sm view-only" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">Aç</a>', '', 'noprint') + '</tr>'; }).join('') +
       '</tbody></table></div></section>';
   };
 
@@ -1025,7 +1026,7 @@
     const satirlar = P.map((p) => { let ne = 0; const h = EKF.map((g) => g[1].map((f) => { const d = ekDurum(p, f); if (say[d.s] != null) say[d.s]++; if (d.s === 'eksik' || d.s === 'yok' || d.s === 'celiski') ne++;
       const title = (d.not ? 'Kaynak/not: ' + d.not : '') + (d.cel ? (d.not ? ' · ' : '') + 'Çelişki: ' + d.cel : '');
       return '<td class="ek-c ek-' + d.s + '" data-l="' + esc(f[1]) + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><button class="ekb" data-a="' + (f[2] === 'harita' ? 'eksikHarita' : 'eksikDuz') + '" data-k="' + esc(p.kisa) + '" data-f="' + f[0] + '">' + ekGoster(p, f, d) + '</button></td>'; }).join('')).join('');
-      return { ne, h: '<tr>' + td('<a class="pk" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.durum || '') + '</small></a>', '', 'lead') + h + '</tr>' }; });
+      return { ne, h: '<tr>' + td('<a class="pk" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.durum || '') + '</small></a>', '', 'lead') + h + '</tr>' }; });
     const L = S.eksikTum ? satirlar : satirlar.filter((x) => x.ne);
     const ek = [];
     P.forEach((p) => EKF.forEach((g) => g[1].forEach((f) => { const d = ekDurum(p, f); if (d.s === 'eksik' || d.s === 'yok' || d.s === 'celiski') ek.push([p.kisa, f[1], { eksik: 'Eksik', yok: 'Belgede bulunamadı', celiski: 'Belgeler çelişkili' }[d.s], d.not || d.cel]); })));
@@ -1087,7 +1088,7 @@
   AKSIYON.offlineKaydet = () => offlineDurum('SAVE_OFFLINE');
   function islemSecimi() { return OPWorkflows.find((x) => x.id === S.islemTip) || OPWorkflows[0]; }
   function islemKayit(p, w, i) { return ((p.islem_kontrol || {})[w.id] || {})[i.id] || { durum: 'incelenmedi', kaynak: '', not: '' }; }
-  function parkIslemBaglari(p) { return '<nav class="park-actions" aria-label="Park işlemleri"><a class="btn sm" href="#/harita?p=' + encodeURIComponent(p.kisa) + '">Haritada aç</a><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/denetim">Denetim ve planlar</a><a class="btn sm" href="#/islem">İşlem dosyası</a></nav>'; }
+  function parkIslemBaglari(p) { return '<nav class="park-actions" aria-label="Park işlemleri"><a class="btn sm" href="#/harita?p=' + encodeURIComponent(p.kisa) + '">Haritada aç</a><a class="btn sm" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/denetim">Denetim ve planlar</a><a class="btn sm" href="#/islem">İşlem dosyası</a></nav>'; }
   SAYFA.islem = () => {
     const p = S.pBy[S.park], w = islemSecimi(), counts = { incelenmedi: 0, var: 0, yok: 0, uygulanmaz: 0 };
     w.items.forEach((i) => { const c = islemKayit(p, w, i); counts[c.durum] = (counts[c.durum] || 0) + 1; });
@@ -1243,7 +1244,7 @@
       (h.kontrol ? '<p class="hnote">' + esc(h.kontrol) + '</p>' : '') + (h.koordinat_url ? '<a href="' + esc(OPGeo.safeURL(h.koordinat_url)) + '" target="_blank" rel="noopener">Koordinat cetvelini aç</a>' : '') + '</details>' +
       (p.plan ? '<details class="hmeta"><summary>Planın kapsamı</summary><p class="hnote">' + esc(p.plan) + '</p></details>' : '') +
       (h.alt && h.alt.length ? '<details class="hmeta"><summary>Önceki sınır çizimleri (' + h.alt.length + ')</summary>' + h.alt.map((a) => { const url = OPGeo.safeURL(a.url || a.kaynak_url); return kv(esc(a.ad), haMetin(a.alan_ha)) + '<p class="hnote">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(a.kaynak || 'Kaynak belge') + '</a>' : esc(a.kaynak || BYOK)) + '</p>'; }).join('') + '</details>' : '') +
-      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/islem">İşlem dosyası</a></div></section>' +
+      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/islem">İşlem dosyası</a></div></section>' +
       hPlanPanel(p, g) +
       '<section class="panel"><h3>Tesis envanteri <small id="henvN"></small></h3>' + (Object.keys(say).length ? '<div class="hleg2">' + Object.keys(DUR).filter((d) => say[d]).map((d) => '<span><i style="background:' + DUR[d][1] + '"></i>' + esc(DUR[d][0]) + ' <b>' + say[d] + '</b></span>').join('') + '</div>' : '') +
       '<div id="henv"></div></section>' +
@@ -2370,7 +2371,7 @@
     const durumC = { tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', plan: 'b-gray', tufe: 'b-amb', yok: 'b-gray', kapsam: 'b-amb' };
     S.csv = { name: 'tahakkuk_' + Y, head: ['Park', 'Dönem', 'Dönem başı', 'TÜFE ayı', 'TÜFE', 'Yıllık kira (Tebliğ)', 'Ağaçlandırma', 'KDV', 'Toplam', 'Muhasebe', 'Fark', 'Vadeler', 'Güvence', 'Depozito', 'Durum'],
       rows: L.map((t) => [t.park, t.donem, fd(t.bas), t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] : '', t.tufe, t.kira, t.agac, t.kdv, t.toplam, t.muhasebede ? t.muhKira : '', t.fark, (t.vadeler || []).map((v) => fd(v.vade) + ' ' + tl(v.kira)).join(' | '), t.guv, t.dep, t.durum]) };
-    const satir = (t) => '<tr>' + td('<a href="#/park" data-a="park" data-k="' + esc(t.park) + '" data-go="park" style="font-weight:600">' + esc(t.park) + '</a>', '', 'lead') +
+    const satir = (t) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(t.park) + '" data-k="' + esc(t.park) + '" data-go="park" style="font-weight:600">' + esc(t.park) + '</a>', '', 'lead') +
       td(t.donem ? t.donem + '. dönem<br><span class="muted n" style="font-size:12.5px">' + fd(t.bas) + '</span>' : '—', 'Dönem') +
       td(t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + '<br><span class="n">' + (t.tufe != null ? E.pct(t.tufe) : 'açıklanmadı') + '</span>' : (t.donem === 1 ? 'İhale bedeli' : '—'), 'TÜFE') +
       td(t.kira != null ? '<b>' + tl(t.kira) + '</b>' : (t.kod === 'tufe' ? '<span class="amb-t">' + fd(t.yayim) + '’te</span>' : '—'), 'Yıllık kira', 'n r') +
