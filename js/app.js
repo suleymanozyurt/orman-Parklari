@@ -403,7 +403,8 @@
   }
   function parkSec(k, go) {
     if (!S.pBy[k]) return; S.park = k; S.zPark = k;
-    if (go || S.page === 'park') { const target = '#/' + (go || 'park') + ((go || S.page) === 'park' ? '?p=' + encodeURIComponent(k) : ''); if (location.hash !== target) { location.hash = target; return; } }
+    const target = '#/' + (go || S.page || 'park') + '?p=' + encodeURIComponent(k);
+    if (location.hash !== target) { location.hash = target; return; }
     modalKapat(); sayfaCiz();
   }
   async function yenile(zorla) {
@@ -494,9 +495,13 @@
     if (target) { target.focus(); if (target === page) target.scrollIntoView({ block: 'start' }); }
   }
   document.addEventListener('click', (e) => { if (e.target.closest('.skip-link')) icerigeGec(e); });
+  function baglamBaglantilari() {
+    $$('.nav a, .tabbar a').forEach((a) => { const active = a.dataset.p === anaModul(S.page).id; a.href = '#/' + a.dataset.p + (S.park ? '?p=' + encodeURIComponent(S.park) : ''); a.classList.toggle('on', active); if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    const sel = $('#sSel'); if (sel) sel.value = S.park;
+  }
   function sayfaCiz() {
     if (S._hmap) { S._hmap.remove(); S._hmap = null; S._hIdx = null; }
-    $$('.nav a, .tabbar a').forEach((a) => { const active = a.dataset.p === anaModul(S.page).id; a.href = '#/' + a.dataset.p + (S.park ? '?p=' + encodeURIComponent(S.park) : ''); a.classList.toggle('on', active); if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    baglamBaglantilari();
     const showPark = S.page !== 'genel';
 
     $('#sPark').style.display = showPark ? '' : 'none';
@@ -604,7 +609,7 @@
       (up.length ? '' : '<div class="empty">60 gün içinde vadesi gelen alacak yok.</div>') + '<div class="sum"><span>Toplam</span><span class="n">' + tl(sumOf(up, (u) => u.t)) + '</span></div></div></section>';
     const tiles = [['park', 'Park Bilgileri ve Sözleşme', 'Sözleşme, bedeller, denetim ve alacaklar tek sayfada', IC.park], ['alacaklar', 'Alacaklar', 'Kalem kalem vade, ödeme ve gecikme zammı', IC.money],
       ['hesap', 'Hesaplama', 'Gecikme zammı, ek tesis, ihale, devir, fesih', IC.calc], ['denetim', 'Denetim ve planlar', 'Ek-10 sonuçları, revize planlar, yazışmalar', IC.check],
-      ['ekler', 'Tebliğ Ekleri ve Kayıt Defteri', 'Tebliğin 18 eki, süre sınırları, işlem defteri', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
+      ['ekler', 'Tebliğ Ekleri', 'Resmî formlar, düzenleme ve belge çıktıları', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     const quick = '<nav class="quick-tasks noprint" aria-label="Hızlı işlemler"><a href="#/harita">' + svg(IC.map) + 'Harita ve tesisler</a><a href="#/parklar">' + svg(IC.list) + 'Park envanteri</a><a href="#/ekler">' + svg(IC.file) + 'Tebliğ ekleri</a><a href="#/tahakkuk">' + svg(IC.clock) + 'Kira ve tahakkuk</a></nav>';
     return quick + banners() + hero + kpis + cal + '<div class="split">' + todoH + tlH + '</div>' + tilesH;
@@ -1427,6 +1432,7 @@
     if (changed) hFiltreTemizle();
     if (S.hP) delete S.hF.kapali[S.hP];
     try { history.replaceState(null, '', '#/harita' + (S.hP ? '?p=' + encodeURIComponent(S.hP) : '')); } catch (e) { /* yok */ }
+    baglamBaglantilari();
     const inp = $('#hPark'); if (inp && inp.value !== S.hP) inp.value = S.hP;
     if (S._hmap) S._hmap.closePopup();
     hFiltreCiz(); hPanelCiz(); hUygula(); if (sigdir !== false) hSigdir();

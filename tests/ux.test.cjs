@@ -40,3 +40,26 @@ test('source review rejects mismatched park, invalid measurements, unsafe URLs a
 test('source review cannot import geometry or claim field verification; source panel escapes text',()=>{const {dom,w,a}=preparedApp();try{const j=reviewData();j.sinir=[[41,28]];j.tesis_cetveli[0].c=[41,28];j.tesis_cetveli[0].saha='Mevcut';j.tesis_cetveli[0].ad='<img src=x onerror=alert(1)>';const out=a.incelemeDogrula(j,'Test');assert.equal(out.sinir,undefined);assert.equal(out.tesis_cetveli[0].c,undefined);assert.equal(out.tesis_cetveli[0].saha,'Teyit gerekli');assert.equal(out.guven,'İncelemede');a.S.pBy.Test.harita={belge_incelemesi:out};w.document.querySelector('#page').innerHTML=a.kaynakPanel(a.S.pBy.Test);assert.equal(w.document.querySelector('#page img'),null);assert.match(w.document.querySelector('#page').textContent,/haritaya işlenmiş tesis sayısı değildir/);}finally{dom.window.close();}});
 test('review editor is role guarded, archives earlier review and preserves financial and spatial data',()=>{const {dom,w,a}=preparedApp();try{a.AKSIYON.kaynakIncele();assert.equal(w.document.querySelector('#krJson'),null);a.S.owner=true;a.S.rol={duzenle:true};a.S.veri.parks[0].harita={sinir:[[[41,28],[41.01,28],[41,28.01],[41,28]]],belge_incelemesi:{tarih:'2026-10-01',plan_notu:'Önceki inceleme'}};const before=JSON.stringify(a.S.veri.parks[0].harita.sinir);a.AKSIYON.kaynakIncele();w.document.querySelector('#krJson').value=JSON.stringify(reviewData());w.document.querySelector('#krCheck').click();assert.equal(w.document.querySelector('#krApply').disabled,false);w.document.querySelector('#krApply').click();const p=a.S.pBy.Test;assert.equal(p.harita.inceleme_gecmisi.length,1);assert.equal(p.harita.inceleme_gecmisi[0].tarih,'2026-10-01');assert.equal(JSON.stringify(p.harita.sinir),before);assert.equal(p.ihale_b,100000);assert.equal(p.harita.belge_incelemesi.tesis_cetveli.length,1);assert.equal(a.S.dirty,1);}finally{dom.window.close();}});
 test('accounting respects selected park and an explicit all-records choice',()=>{const {dom,a}=preparedApp();try{const row=(park,yev)=>({park,yev,kaynak:'120',tarih:'2026-10-01',borc:100,alacak:0,aciklama:'Kira',musteri:park});a.S.esl.rows=[row('Test',1),row('Other',2)];a.S.muhAll=false;assert.match(a.SAYFA.muhasebe(),/Test · Borç|Döküm satırları · Test/);assert.equal(a.S.csv.rows.length,1);a.S.muhAll=true;a.SAYFA.muhasebe();assert.equal(a.S.csv.rows.length,2);}finally{dom.window.close();}});
+
+test('map selection updates sidebar park and destination context before opening accounting',()=>{
+  const {dom,w,a}=preparedApp();try{
+    const second={kisa:'Kayabaşı',ad:'Kayabaşı'};a.S.veri.parks.push(second);a.hesapla();a.parkSecenekleriniYenile();
+    a.S.page='harita';a.S.hP='Test';a.S.gyp={parklar:{Test:{f:[],kaynak:[],planlar:[]},'Kayabaşı':{f:[],kaynak:[],planlar:[]}}};
+    a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};
+    w.history.replaceState(null,'','#/harita?p=Test');w.document.querySelector('#page').innerHTML=a.SAYFA.harita();
+    a.hParkSec('Kayabaşı',false);
+    assert.equal(w.document.querySelector('#sSel').value,'Kayabaşı');
+    const link=w.document.querySelector('.nav a[data-p=muhasebe]');
+    assert.equal(new URL(link.href).hash,'#/muhasebe?p=Kayaba%C5%9F%C4%B1');
+    w.history.replaceState(null,'',link.href);a.yonlendir();assert.equal(a.S.park,'Kayabaşı');assert.match(w.document.querySelector('#page').textContent,/Döküm satırları · Kayabaşı/);
+  }finally{dom.window.close();}
+});
+test('sidebar park selection replaces old map URL context rather than restoring the previous park',()=>{
+  const {dom,w,a}=preparedApp();try{
+    a.S.veri.parks.push({kisa:'Kayabaşı'});a.hesapla();a.S.page='harita';
+    w.history.replaceState(null,'','#/harita?p=Test');a.parkSec('Kayabaşı');
+    assert.equal(new URLSearchParams(w.location.hash.split('?')[1]).get('p'),'Kayabaşı');
+    a.SAYFA.harita();assert.equal(a.S.hP,'Kayabaşı');assert.equal(a.S.park,'Kayabaşı');
+    a.parkSec('Test','tahakkuk');assert.equal(w.location.hash,'#/tahakkuk?p=Test');
+  }finally{dom.window.close();}
+});

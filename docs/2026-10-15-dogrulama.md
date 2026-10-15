@@ -41,3 +41,13 @@ Güncel test sonucu: 48 JavaScript + 6 Python = 54 başarılı test. Yeni testle
 ### Güncellenen canlı kaynak sonucu
 
 15.10.2026 TSİ 10:43 denemesinde TÜİK veri portalına erişildi ve seri 21 bilinen ayla doğrulandı. Eylül 2026 son verisi korundu, açıklanmamış aylara oran yazılmadı. Resmî Gazete 7/7 günlük taraması tamamlandı. Bu sonuç kaynak kontrol kaydıdır; geçmiş belgelerin veya bütün mali hesaplamaların hukuki doğrulaması değildir.
+
+## v17 · canlı gezinme testi ve kaynak kaydı
+
+Canlı sitede harita üzerinden Kurtyolu → Kayabaşı seçimi yapıldığında sol menü bağlantılarının önceki parkı koruduğu gözlendi. Harita seçimi artık sol park seçicisini ve bütün ana menü bağlantılarını birlikte günceller. Sol panelden yapılan park değişikliği de ilgili sayfanın park parametresini değiştirir; harita eski URL'deki parkı yeniden seçmez. Muhasebe ve tahakkuk bağlantıları seçili parkı taşır. Genel sayfadaki Tebliğ Ekleri kartının eski birleşik adı düzeltildi.
+
+Yeni iki test gerçek hata senaryolarını kapsar: haritadan park değiştirip muhasebeye geçiş ve sol panelden seçilen parkın eski harita parametresiyle geri alınmaması. Sonuç: 50 JavaScript ve 6 Python testi başarılı (56 toplam).
+
+Kurtyolu kaynak incelemesi uygulamanın standart şifreli kayıt akışıyla kaydedildi; canlı arayüzde “Kaydedildi” ve sunucu eşitlemesi doğrulandı. Kaynak taramanın 83–84. sayfalarından 50 cetvel satırı kaydedildi: 19 planlanan, 27 çizimde mevcut, 4 işlevi değiştirilen satır. Bunlar benzersiz tesis veya doğrulanmış konum sayısı değildir. 4. revize tarama ile park kaydındaki 14.04.2023 tarihli 5. revize plan ayrıldı. Sayısal NCZ ve talep KMZ kaynağı bulundu; onay/sürüm bağı doğrulanmadığından harita sınırı veya tesis geometrisi değiştirilmedi. Üç kaynak ve beş teyit konusu park detayında ve haritada görünür.
+
+Yeni 109 sayfalık taramanın metin indeksi çıkarıldı. Kurtyolu cetveli görsel olarak incelendi; bütün 109 sayfanın resmî onay ve tesis doğrulaması tamamlanmış sayılmıyor. 100–109. sayfalar önceki Tayakadın sayfalarının tekrarını içeriyor; arşiv indeksi Kağıthane kapsamıyla çeliştiğinden belge içeriğinin yerine esas alınmadı.
