@@ -81,15 +81,63 @@
     if (!r.ok) throw new Error(url + ' ' + r.status);
     return r.text();
   }
-  async function veriGetir() {
+  async function veriGetir(ref) {
     // En güncel hâl için önce GitHub API (yayın gecikmesi yok), olmazsa site kopyası
     try {
       const h = { Accept: 'application/vnd.github.raw+json' };
       if (S.token) h.Authorization = 'Bearer ' + S.token;
-      const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + CFG.veri + '?ref=' + CFG.branch + '&t=' + Date.now(), { headers: h, cache: 'no-store' });
+      const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + CFG.veri + '?ref=' + encodeURIComponent(ref || CFG.branch) + '&t=' + Date.now(), { headers: h, cache: 'no-store' });
       if (r.ok) return await r.text();
     } catch (e) { /* çevrimdışı ya da sınır */ }
+    if (ref) throw new Error('Güncel veri sürümü alınamadı.');
     return getText(CFG.veri + '?t=' + Date.now(), true);
+  }
+  async function veriSHA(text) {
+    const content = new TextEncoder().encode(text), prefix = new TextEncoder().encode('blob ' + content.length + '\0');
+    const bytes = new Uint8Array(prefix.length + content.length); bytes.set(prefix); bytes.set(content, prefix.length);
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-1', bytes)), (x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  function parkSecenekleriniYenile() {
+    const select = $('#sSel'); if (!select || !S.veri) return;
+    const names = JSON.stringify(S.veri.parks.map((p) => p.kisa));
+    if (select.dataset.parks !== names) { select.innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join(''); select.dataset.parks = names; }
+    select.value = S.park || '';
+  }
+  function senkronKur() {
+    if (S.sync || !window.OPSync) return;
+    const durum = (text) => { S.syncText = text; const el = $('#syncStatus'); if (el) el.textContent = text; };
+    S.sync = OPSync.create({
+      available: () => !!S.veri && navigator.onLine && document.visibilityState !== 'hidden',
+      blocked: () => !!S.dirty || !!S.saving || !!$('#modal.on') || !!document.activeElement?.closest('input,textarea,select,[contenteditable="true"]'),
+      revision: async () => {
+        const headers = { Accept: 'application/vnd.github+json' }; if (S.token) headers.Authorization = 'Bearer ' + S.token;
+        const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/commits?path=' + encodeURIComponent(CFG.veri) + '&sha=' + CFG.branch + '&per_page=1', { headers, cache: 'no-store' });
+        if (!r.ok) throw new Error('Senkronizasyon denetimi alınamadı.');
+        const list = await r.json(); return list[0] && list[0].sha;
+      },
+      read: async (revision) => { const text = await veriGetir(revision); return { text, veri: await K.coz(text, S.pw), sha: await veriSHA(text) }; },
+      pending: () => durum('Yeni veri var; düzenlemeniz bitince alınacak.'),
+      error: () => durum('Senkronizasyon bekliyor; mevcut kayıtlar korunuyor.'),
+      apply: (snapshot) => {
+        if (snapshot.text !== S.enc) {
+          const oldMeta = S.veri.meta || {}, nextMeta = snapshot.veri.meta || {};
+          if (oldMeta.harita_surum !== nextMeta.harita_surum) { S.gyp = null; S.gypS = null; }
+          if (oldMeta.ekler_surum !== nextMeta.ekler_surum) S.ekB = null;
+          const scroll = window.scrollY;
+          S.veri = snapshot.veri; S.enc = snapshot.text; S.sha = snapshot.sha;
+          hesapla(); if (S.hP && !S.pBy[S.hP]) S.hP = null;
+          parkSecenekleriniYenile(); kabukDurum(); sayfaCiz(); window.scrollTo(0, scroll);
+          toast('Güncel kayıtlar otomatik alındı.');
+        } else S.sha = snapshot.sha;
+        durum('Senkronize · ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+      },
+    });
+    const check = () => S.sync.check();
+    if (window.BroadcastChannel) { S.syncChannel = new BroadcastChannel('op-veri-sync'); S.syncChannel.onmessage = (e) => { if (e.data && e.data.type === 'saved') check(); }; }
+    setInterval(check, 120000);
+    window.addEventListener('online', check);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    durum('Otomatik senkronizasyon açık'); check();
   }
   async function oranGetir() {
     try {
@@ -156,6 +204,8 @@
     kabukKur();
     window.addEventListener('hashchange', yonlendir);
     yonlendir();
+    S.sha = await veriSHA(S.enc);
+    senkronKur();
   }
   function gateGoster(t, msg) {
     const g = $('#gate'); g.style.display = 'grid'; $('#app').style.display = 'none';
@@ -203,7 +253,7 @@
     fDuzenle: 'duzenle', fSifirla: 'duzenle', haritaYukle: 'duzenle', haritaSil: 'duzenle', gypSil: 'duzenle', planDuz: 'duzenle', islemDuzenle: 'duzenle',
     csvYukle: 'muhasebe', kayitEkle: 'muhasebe', kayitSil: 'muhasebe', tahsilat: 'muhasebe', tahakkuk: 'muhasebe', tEt: 'muhasebe', tEtP: 'muhasebe', tGeri: 'muhasebe', vadeDuz: 'muhasebe', vadeSil: 'muhasebe',
     gzGir: 'yonetim', gzSil: 'yonetim', tufeGir: 'yonetim', sifreDegis: 'yonetim', yPwDegis: 'yonetim', anahtarYenile: 'yonetim', yedekYukle: 'yonetim', kulEkle: 'yonetim', kulDuz: 'yonetim', kulSil: 'yonetim' };
-  async function shaAl(yol) { try { return (await gh('/contents/' + yol + '?ref=' + CFG.branch)).sha; } catch (e) { return null; } }
+  async function shaAl(yol) { try { return (await gh('/contents/' + yol + '?ref=' + CFG.branch, { cache: 'no-store' })).sha; } catch (e) { return null; } }
   async function dosyaYaz(yol, txt, mesaj) {
     const sha = await shaAl(yol);
     const body = { message: mesaj, content: K.b64(new TextEncoder().encode(txt)), branch: CFG.branch };
@@ -213,12 +263,16 @@
   }
   async function kaydet() {
     if (!S.owner) { yoneticiGiris(); return; }
+    if (S.saving) return;
+    S.saving = true;
     const btn = $('#bKaydet'); if (btn) { btn.disabled = true; btn.textContent = 'Kaydediliyor…'; }
     try {
       const uzak = await shaAl(CFG.veri);
       if (S.sha && uzak && uzak !== S.sha) {
-        const ok = confirm('Veriler siz düzenlerken başka bir cihazdan kaydedilmiş. “Tamam” derseniz sizin hâliniz kaydedilir (öteki değişiklikler git geçmişinde kalır). “İptal” derseniz değişiklikleriniz yedek dosyası olarak indirilir ve güncel hâl yüklenir.');
-        if (!ok) { AKSIYON.yedekIndir(); S.dirty = 0; if (btn) btn.disabled = false; await yenile(true); return; }
+        modal('Güncel kayıt değişti', '<p>Bu kayıt açıldıktan sonra sunucuda değişmiş. Taslağınız korunuyor. Önce taslağı indirip güncel veriyi alın; değişiklikleri güncel kayıtla birleştirin.</p>', '<button class="btn" id="syncKeep">Taslakta kal</button><button class="btn pri" id="syncReload">Taslağı indir ve güncel veriyi al</button>');
+        $('#syncKeep').onclick = modalKapat;
+        $('#syncReload').onclick = async () => { AKSIYON.yedekIndir(); modalKapat(); await yenile(true); };
+        return;
       }
       S.veri.meta.kaydedildi = new Date().toISOString(); S.veri.meta.kaydeden = S.kim || 'Yönetici';
       const txt = await K.sifrele(S.veri, S.pw);
@@ -227,9 +281,9 @@
       const j = await gh('/contents/' + CFG.veri, { method: 'PUT', body: JSON.stringify(body) });
       S.sha = j && j.content ? j.content.sha : null;
       S.enc = txt; S.dirty = 0; kabukDurum(); toast('Kaydedildi. Linki açan herkes güncel hâli görür.');
+      if (S.sync) { S.sync.invalidate(); S.sync.check(); } if (S.syncChannel) S.syncChannel.postMessage({ type: 'saved' });
     } catch (e) { toast('Kaydedilemedi: ' + e.message, true); }
-    if (btn) { btn.disabled = false; }
-    kabukDurum();
+    finally { S.saving = false; if (btn) btn.disabled = false; kabukDurum(); }
   }
   // her değişiklik işlem geçmişine yazılır (kim, ne zaman, ne)
   function degisti(msg, park) {
@@ -273,13 +327,14 @@
     kabukDurum();
   }
   function kabukDurum() {
+    parkSecenekleriniYenile();
     const late = S.oz.filter((o) => o.vgec > 0).length;
     ['#cntAl', '#cntAl2'].forEach((s) => { const el = $(s); if (el) { el.textContent = late || ''; el.style.display = late ? '' : 'none'; } });
     const tf = S.oran.tufe, sonAy = sonTufeAyi();
     const dsn = E.dokumSon(S.veri);
     $('#sFoot').innerHTML = 'Rapor tarihi <b class="n">' + fd(S.rapor) + '</b><br>Döküm son yevmiye: 120 <b class="n">' + fd(dsn['120']) + '</b> · 127 <b class="n">' + fd(dsn['127']) + '</b><br>TÜFE son veri <b>' + (sonAy ? AY[sonAy[1] - 1] + ' ' + sonAy[0] : '—') + '</b>' +
       (tufeGecikti() ? '<br><span class="warn">TÜFE güncellemesi bekleniyor</span>' : '') + '<br>GZ oranı <b>%' + (gzSon()[1] * 100).toLocaleString('tr-TR') + '</b> · ' + fd(gzSon()[0]) +
-      '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div>';
+      '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div><div id="syncStatus" role="status" style="margin-top:8px">' + esc(S.syncText || 'Otomatik senkronizasyon hazırlanıyor') + '</div>';
     const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : 'Kaydedildi ✓';
   }
   const gzSon = () => S.gzO[S.gzO.length - 1];
@@ -321,7 +376,8 @@
     toast('Güncel veriler alınıyor…');
     try {
       const [vt, or] = await Promise.all([veriGetir(), oranGetir()]);
-      S.enc = vt; S.oran = or; S.veri = await K.coz(vt, S.pw); S.dirty = 0; if (S.owner) S.sha = await shaAl(CFG.veri); hesapla(); kabukDurum(); sayfaCiz(); toast('Veriler ve oranlar güncel.');
+      const candidate = await K.coz(vt, S.pw), sha = await veriSHA(vt);
+      S.enc = vt; S.oran = or; S.veri = candidate; S.dirty = 0; S.sha = sha; hesapla(); kabukDurum(); sayfaCiz(); toast('Veriler ve oranlar güncel.');
     } catch (e) { toast('Yenilenemedi: ' + e.message, true); }
   }
   function paylas() {
@@ -1695,7 +1751,7 @@
       if (!ok) { S.token = null; $('#yerr').innerHTML = 'Parola doğru, ancak kayıtlı GitHub anahtarı artık geçerli değil (süresi dolmuş veya iptal edilmiş). <a href="#" data-a="kurulum" data-m="yenile" style="text-decoration:underline">Anahtarı yenileyin</a>.'; return; }
       S.rol = TUM_ROL; S.kullanici = null; S.dirKey = o.dirKey || null;
       oturumAc(o.token, o.kim, $('#ykeep').checked); S.yPw = pw;
-      if (!S.dirty) S.sha = await shaAl(CFG.veri);
+      if (!S.dirty) S.sha = await veriSHA(S.enc);
       modalKapat(); kabukDurum(); sayfaCiz(); toast('Yönetici girişi yapıldı (' + S.kim + '). Düzenleme düğmeleri açıldı.');
     };
     $('#yOk').onclick = go; $('#ypw').onkeydown = (e) => { if (e.key === 'Enter') go(); };
@@ -1720,7 +1776,7 @@
       if (!ok) { S.token = null; er.textContent = 'Bu anahtarın ' + CFG.repo + ' deposuna yazma izni yok. Depo seçimini ve “Contents: Read and write” iznini kontrol edin.'; return; }
       try { await dosyaYaz(CFG.yonetici, await K.sifrele({ token: tok, kim, t: new Date().toISOString() }, p1), 'Yönetici anahtarı güncellendi (' + kim + ')'); }
       catch (e) { er.textContent = 'Yönetici kaydı yazılamadı: ' + e.message; return; }
-      S.rol = TUM_ROL; S.kullanici = null; oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await shaAl(CFG.veri);
+      S.rol = TUM_ROL; S.kullanici = null; oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await veriSHA(S.enc);
       if (mod === 'yenile') { try { await kulYenidenSar({ token: tok }); } catch (e) { toast('Kullanıcı kayıtlarındaki anahtar güncellenemedi: ' + e.message + ' (Veriler › Kullanıcılar › Kayıtları yenile).', true); } }
       modalKapat(); kabukDurum(); sayfaCiz(); toast('Kurulum tamam. Bundan sonra yönetici girişi için yalnız parola yeterli.');
     };
@@ -1768,7 +1824,7 @@
         oturumAc(S.token, d.ad, keep);
         if (S.token) { const ok = await yetkiKontrol(true); if (!ok) toast('Hesabınızdaki GitHub anahtarı geçersiz; yöneticiden kayıtları yenilemesini isteyin. Şimdilik görüntüleme modundasınız.', true); }
         rolSinif();
-        if (gate) await acildi(); else { modalKapat(); if (!S.dirty) S.sha = await shaAl(CFG.veri); kabukDurum(); sayfaCiz(); }
+        if (gate) await acildi(); else { modalKapat(); if (!S.dirty) S.sha = await veriSHA(S.enc); kabukDurum(); sayfaCiz(); }
         toast('Hoş geldiniz, ' + d.ad + '.');
       } catch (e) { $('#kgErr').textContent = e.message; }
     };
@@ -1856,7 +1912,8 @@
       H('Notlar') + '<div class="frow one">' + fi('pk_yap', 'Yapılacak iş (Genel durum listesine eklenir)', p.yapilacak, 'area') + fi('pk_not', 'Notlar ve kaynak', p.notlar, 'area') + fi('pk_kzn', 'Kira kontrol notu', p.kz_not, 'area') + '</div>' +
       '<div class="err" id="pkErr" role="alert"></div>',
       (yeni ? '' : '<button class="btn red" id="pkSil">Parkı sil</button>') + '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="pkOk">' + (yeni ? 'Parkı ekle' : 'Kaydet') + '</button>');
-    $('#pkOk').onclick = () => {
+    $('#pkOk').onclick = async () => {
+      const oncekiTaslak = S.dirty;
       const er = (m) => { $('#pkErr').textContent = m; $('#pkErr').scrollIntoView({ block: 'nearest' }); };
       const k = gv('pk_kisa'); if (!k) return er('Kısa ad gerekli.');
       if (k !== p.kisa && S.pBy[k]) return er('Bu kısa adla başka park var.');
@@ -1887,6 +1944,8 @@
       if (yeni) S.veri.parks.push(yeniK);
       else if (k !== t.dataset.k) parkAdTasi(t.dataset.k, k);
       modalKapat(); S.park = k; degisti(yeni ? k + ' parkı eklendi' : k + ' park kaydı güncellendi', k);
+      if (yeni && !oncekiTaslak) await kaydet();
+      else if (yeni) toast('Park eklendi. Önceki taslaklarla birlikte “Değişiklikleri kaydet” ile yayımlayın.');
     };
     const sil = $('#pkSil'); if (sil) sil.onclick = () => { if (!confirm(p.kisa + ' parkı silinsin mi? Muhasebe satırları silinmez, “Park dışı” görünür; ek kira, vade düzeltmesi ve form kayıtları da silinir.')) return;
       S.veri.parks = S.veri.parks.filter((x) => x !== p); ['ek_kira', 'vade_duz'].forEach((k) => { S.veri[k] = (S.veri[k] || []).filter((x) => x.park !== p.kisa); }); if (S.veri.ekler) delete S.veri.ekler[p.kisa];
@@ -2172,11 +2231,11 @@
     const ekler = Object.keys(EKAD).filter((k) => k !== 'R10');
     return mpick() + '<div class="pagehead ftool"><div><h1>' + esc(r10 ? 'İmzalı Ek-10 · ' + p.kisa : f.ek + ' · ' + EKAD[f.ek]) + '</h1><p>' +
       (r10 ? 'Komisyonun imzaladığı rapor, orijinal düzeniyle. Yönetici yeni dönem tespitlerini doğrudan hücrelere yazabilir.' :
-        'Orijinal şablon. Park, sözleşme, kurum ve hesap bilgileri kayıtlardan gelir; boş kalan alanları ' + (docx ? 'park kaydından tamamlayın.' : 'yönetici doğrudan form üzerinde doldurur.')) + '</p></div></div>' +
+        'Orijinal şablon. Park, sözleşme, kurum ve hesap bilgileri kayıtlardan gelir; yetkili kullanıcı bu forma özel alanları uygulama içinde düzenleyebilir.') + '</p></div></div>' +
       '<div class="ftool frow2"><select id="fEk" class="fld" aria-label="Ek seç">' + ekler.map((k) => '<option value="' + k + '"' + (k === f.ek ? ' selected' : '') + '>' + k + ' · ' + EKAD[k] + '</option>').join('') +
       (S.ekB === null || (S.ekB && S.ekB.rapor10[p.r10 || p.kisa]) ? '<option value="R10"' + (r10 ? ' selected' : '') + '>İmzalı Ek-10 raporu (' + esc(p.kisa) + ')</option>' : '') + '</select>' +
       '<button class="btn pri" data-a="fYazdir">Yazdır / PDF</button>' + (docx ? '<button class="btn" data-a="fWord">Word indir</button>' : '<button class="btn" data-a="fExcel">Excel indir</button>') +
-      (!docx ? '<button class="btn own-only" data-a="fDuzenle">' + (f.duzenle ? 'Düzenlemeyi bitir' : 'Form üzerinde düzenle') + '</button><button class="btn own-only" data-a="fSifirla">Elle girilenleri sil</button>' : '') +
+      '<button class="btn duz-only" data-a="fDuzenle">' + (f.duzenle ? 'Önizlemeye dön' : 'Form üzerinde düzenle') + '</button><button class="btn duz-only" data-a="fSifirla">Elle girilenleri sil</button>' +
       '<button class="btn own-only" data-a="parkDuzenle" data-k="' + esc(p.kisa) + '">Park bilgilerini düzenle</button>' +
       '<button class="btn" data-a="teblig" data-pg="' + (EKSAYFA[nm] || 1) + '">Tebliğdeki asıl form</button></div>' +
       '<div class="ftool eks-leg"><span><i class="lg-oto"></i>Kayıtlardan otomatik</span><span><i class="lg-el"></i>Elle girilen</span><span><i class="lg-ip"></i>Doldurulacak alan</span><span id="fEksik"></span></div>' +
@@ -2222,6 +2281,7 @@
     const f = S.form, p = S.park; S.veri.ekler = S.veri.ekler || {};
     const E1 = S.veri.ekler[p] = S.veri.ekler[p] || {}; const D = E1[f.ek] = E1[f.ek] || {};
     if (v == null) delete D[a]; else D[a] = v;
+    S.fW = null; S.fWek = null;
     S.dirty++;
     const anahtar = p + '|' + f.ek;
     if (S._ekLog !== anahtar) { S._ekLog = anahtar; S.veri.gecmis.push({ t: new Date().toISOString(), kim: S.kim || 'Yönetici', is: f.ek + ' formu düzenlendi', park: p }); }
@@ -2242,21 +2302,42 @@
   AKSIYON.fDuzenle = () => { if (!S.owner) return yoneticiGiris(); S.form.duzenle = !S.form.duzenle; sayfaCiz(); };
   AKSIYON.fSifirla = () => { const el = elDeger(S.park, S.form.ek); const n = Object.keys(el).length; if (!n) { toast('Bu formda elle girilmiş değer yok.'); return; }
     if (!confirm(n + ' elle girilmiş değer silinsin mi? Otomatik değerler yerine gelir.')) return; delete S.veri.ekler[S.park][S.form.ek]; degisti(S.form.ek + ' elle girilen değerleri silindi', S.park); };
-  AKSIYON.fYazdir = () => { document.body.classList.add('pr-form'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('pr-form'), 500); }, 60); };
+  AKSIYON.fYazdir = async () => {
+    if (['Ek-11', 'Ek-16', 'Ek-17'].includes(S.form.ek)) {
+      S.form.duzenle = false; S.fOnizle = true;
+      const button = $('[data-a="fDuzenle"]'); if (button) button.textContent = 'Form üzerinde düzenle';
+      await wordGoster(S.form.ek, S.pBy[S.park]);
+      if (!$('#ekAlan .dxk')) { toast('Belge önizlemesi hazırlanmadan yazdırılamaz.', true); return; }
+    }
+    document.body.classList.add('pr-form'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('pr-form'), 500); }, 60);
+  };
   AKSIYON.fExcel = async () => {
     if (!S.fV) return; toast('Excel dosyası hazırlanıyor…');
     try { const b = await EK.excel(S.form.ek, S.fV.m, S.fV.V, S.form.ek === 'R10' ? 'Ek-10 ' + S.park : S.form.ek); EK.indir(b, (S.form.ek === 'R10' ? 'Ek-10_imzali_' : S.form.ek + '_') + dosyaAdi(S.park) + '.xlsx'); toast('Excel indirildi.'); }
     catch (e) { toast('Excel üretilemedi: ' + e.message, true); }
   };
   const dosyaAdi = (s) => (s || '').replace(/[çÇğĞıİöÖşŞüÜ]/g, (c) => ({ ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' }[c])).replace(/[^\w-]+/g, '_');
-  async function wordUret(ek, p) { return EK.docxDoldur(ek, S.ekB.docx[ek], EK.alanlar(ekCtx(p)), null); }
+  async function wordUret(ek, p) { return EK.docxDoldur(ek, S.ekB.docx[ek], EK.alanlar(ekCtx(p)), elDeger(p.kisa, ek)); }
   async function wordGoster(ek, p) {
     const kutu = $('#ekAlan'); const F = EK.alanlar(ekCtx(p)); S.fW = null; S.fWek = ek + '|' + p.kisa;
     const al = EK.docAlanlar(ek, F), bos = Array.from(new Set(al.filter((x) => !x.v).map((x) => x.key)));
     $('#fEksik').innerHTML = bos.length ? '<b class="amb-t">Park kaydında boş olduğu için boş bırakılan alanlar:</b> ' + esc(bos.map((k) => ALANAD[k] || k).join(', ')) : '<b class="ok-t">Belgedeki bütün kayıt alanları dolu.</b>';
     try {
-      const { blob, sonuc } = await wordUret(ek, p);
+      const { blob, sonuc, paragraflar } = await wordUret(ek, p);
+      if (S.page !== 'form' || S.form.ek !== ek || S.park !== p.kisa) return;
       S.fW = blob;
+      if (S.form.duzenle && yetki('duzenle')) {
+        const list = paragraflar.filter((x) => x.source.trim() || x.text.trim()), size = 16;
+        const page = Math.min(Math.max(0, S.wordPage || 0), Math.max(0, Math.ceil(list.length / size) - 1)); S.wordPage = page;
+        const part = list.slice(page * size, (page + 1) * size);
+        kutu.innerHTML = '<section class="panel word-editor"><h2>Belgeyi düzenle</h2><p class="hnote">Bu değişiklikler yalnız seçili parkın bu ekine kaydedilir. Asıl şablon korunur. Düzenleme bitince “Değişiklikleri kaydet” ile yayımlayın; Word ve PDF çıktıları aynı kayıtları kullanır.</p>' +
+          part.map((x) => '<div class="f"><label for="wp-' + x.index + '">Paragraf ' + (x.index + 1) + (x.manual ? ' · elle düzenlendi' : '') + '</label>' + (x.stale ? '<p class="red-t">Şablon değişmiş; önceki düzenleme uygulanmadı.</p>' : '') + '<textarea class="fld" id="wp-' + x.index + '" data-word-index="' + x.index + '" rows="4">' + esc(x.text) + '</textarea></div>').join('') +
+          '<div class="hbtns"><button class="btn sm" id="wordPrev"' + (!page ? ' disabled' : '') + '>Önceki paragraflar</button><span>' + (page * size + 1) + '–' + Math.min((page + 1) * size, list.length) + ' / ' + list.length + '</span><button class="btn sm" id="wordNext"' + ((page + 1) * size >= list.length ? ' disabled' : '') + '>Sonraki paragraflar</button></div></section>';
+        part.forEach((x) => { $('#wp-' + x.index).oninput = (e) => { const value = e.target.value; if (value !== x.text) { ekYaz('word:' + x.index, { source: x.source, value }); x.text = value; } }; });
+        $('#wordPrev').onclick = () => { S.wordPage = page - 1; wordGoster(ek, p); };
+        $('#wordNext').onclick = () => { S.wordPage = page + 1; wordGoster(ek, p); };
+        return;
+      }
       const dolu = sonuc.filter((x) => x.durum === 'dolduruldu').length;
       const goster = async () => { kutu.innerHTML = '<div class="empty"><span class="spin"></span> Önizleme hazırlanıyor…</div>'; await new Promise((r) => setTimeout(r, 30));
         const d = document.createElement('div'); d.className = 'dxk'; await EK.docxGoster(blob, d); kutu.innerHTML = ''; kutu.appendChild(d); };

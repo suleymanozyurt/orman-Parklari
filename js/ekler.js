@@ -410,6 +410,8 @@
     const xml = await zip.file('word/document.xml').async('string');
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     const body = doc.getElementsByTagNameNS(W_NS, 'body')[0];
+    const all = Array.from(body.getElementsByTagNameNS(W_NS, 'p'));
+    const original = all.map((p) => parSegs(p).map((s) => s.t).join(''));
     const pars = Array.from(body.childNodes).filter((n) => n.nodeType === 1 && n.localName === 'p');
     const K = DOC[ek] || {}; const sonuc = [];
     Object.keys(K).forEach((ix) => {
@@ -436,9 +438,21 @@
       sonuc.push({ ix, durum: 'dolduruldu', txt: yeni.t });
       void parca;
     });
+    const paragraflar = all.map((p, index) => {
+      const override = el && el['word:' + index];
+      let segs = parSegs(p), text = segs.map((s) => s.t).join('');
+      const matches = override && typeof override === 'object' && override.source === original[index] && typeof override.value === 'string';
+      if (matches && segs.length) {
+        let start = 0, end = 0;
+        while (start < text.length && start < override.value.length && text[start] === override.value[start]) start++;
+        while (end < text.length - start && end < override.value.length - start && text[text.length - 1 - end] === override.value[override.value.length - 1 - end]) end++;
+        degistir(doc, segs, start, text.length - end, override.value.slice(start, override.value.length - end)); text = override.value;
+      }
+      return { index, source: original[index], text, manual: !!matches, stale: !!override && !matches };
+    });
     zip.file('word/document.xml', new XMLSerializer().serializeToString(doc));
     const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    return { blob, sonuc };
+    return { blob, sonuc, paragraflar };
   };
   EK.docxGoster = async function (blob, kutu) {
     await EK.js('vendor/jszip.min.js');
