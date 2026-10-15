@@ -1203,7 +1203,17 @@
   const arsivMi = (g, f) => plOf(g, f).durum === 'arsiv';
   const m2 = (x) => x.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' m²';
   const trS = (a, b) => String(a).localeCompare(String(b), 'tr');
-  function gypKaynak(g, f) { return ((g && g.kaynak) || []).find((x) => x.k === f.s) || { ad: f.s || '' }; }
+  function gypKaynak(g, f) {
+    const ky = ((g && g.kaynak) || []).find((x) => x.k === f.s) || { ad: f.s || '' };
+    const val = (name) => ((f.b || []).find((x) => x[0] === name) || [])[1];
+    const url = OPGeo.safeURL(ky.url || val('Kaynak belge bağlantısı'));
+    return Object.assign({}, ky, { url, ad: ky.url ? ky.ad : (val('Kaynak belge adı') || ky.ad) });
+  }
+  function hKonumDisinda(p, f) {
+    const rings = p.harita && p.harita.sinir;
+    if (!rings || !rings.length || rings.some((r) => OPGeo.ringIssues(r).length) || OPGeo.validate(f).length) return null;
+    return OPGeo.points(f).some((q) => !rings.some((r) => OPGeo.inside(q, r)));
+  }
   function planMetin(pl) { return [pl.ad, pl.tarih ? fd(pl.tarih) : '', pl.onay].filter(Boolean).join(' · ') || BYOK; }
   function gypSatir(p, f) {
     const g = S.gyp && S.gyp.parklar[p.kisa], pl = plOf(g, f);
@@ -1239,8 +1249,8 @@
       ['Denetim bulgusu', dn && dn['Plana uygunluk'] && dn['Plana uygunluk'] !== '-' ? dn['Plana uygunluk'] : BYOK]];
     b.filter((x) => !/^Çizimden alan/.test(x[0])).forEach((x) => ay.push(x));
     if (f.k) ay.push(['Plan katmanı', f.k]);
-    ay.push(['Kaynak sayfa / pafta', /\.(ncz|kml|kmz)/i.test(ky.ad || '') ? 'Sayısal çizim – katman “' + (f.k || '') + '”' : BYOK], ['Program kodu', f.id]);
-    const uy = [...new Set([...(f._geo || OPGeo.validate(f)), ...(f.v || []).map((v) => VMET[v] || v)])];
+    ay.push(['Kaynak sayfa / pafta', bul(/^Kaynak sayfa \/ pafta$/) || (/\.(ncz|kml|kmz)/i.test(ky.ad || '') ? 'Sayısal çizim – katman “' + (f.k || '') + '”' : BYOK)], ['Program kodu', f.id]);
+    const uy = [...new Set([...(f._geo || OPGeo.validate(f)), ...(f.v || []).filter((v) => v !== 'sinir_disinda').map((v) => VMET[v] || v), ...(hKonumDisinda(p, f) ? ['Çizim mevcut harita sınırının dışında; sınır ve plan sürümü karşılaştırılmalı. Bu sonuç tek başına aykırılık tespiti değildir.'] : [])])];
     return '<div class="hpop"><div class="hpt" style="border-color:' + r[1] + '">' + esc(f.ad || f.t) + '<small>' + esc(f.t !== (f.ad || f.t) ? f.t : '') + '</small></div>' +
       (uy.length ? '<div class="hwarn">' + uy.map(esc).join('<br>') + '</div>' : '') +
       '<table>' + ana.map((x) => '<tr><th>' + esc(x[0]) + '</th><td' + (x[1] === BYOK ? ' class="hbyok"' : '') + '>' + esc(x[1]) + '</td></tr>').join('') + '</table>' +
@@ -1367,15 +1377,17 @@
   }
   function hDogrulamaPanel(p, g) {
     const kt = g.kontrol || {}, ek = belgeEksikleri(p, g), k = alanKontrol(p), bul = [];
+    const current = OPGeo.inventory([p], {parklar:{[p.kisa]:g}}), outside = current.filter((x) => hKonumDisinda(p, x.f));
     (p.harita && p.harita.sinir || []).forEach((r, i) => OPGeo.ringIssues(r).forEach((msg) => bul.push({ tur: 'Sınır geometrisi', msg: (i + 1) + '. parça: ' + msg + ' · Hatalı parça haritada ve KML çıktısında gösterilmez.' })));
     (p.harita && p.harita.alt || []).forEach((a) => (a.sinir || []).forEach((r) => OPGeo.ringIssues(r).forEach((msg) => bul.push({ tur: 'Arşiv sınırı', msg: a.ad + ': ' + msg }))));
     if (k && !k.ok) bul.push({ tur: 'Sınır', msg: 'Haritadan alan ' + p.harita.alan_ha.toLocaleString('tr-TR') + ' ha, kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha.' });
     if (!(p.harita && p.harita.sinir)) bul.push({ tur: 'Sınır', msg: 'Sınır koordinatı yok.' });
     const gpl = (g.planlar || []).find((x) => x.durum === 'guncel'); if (gpl && /^yok/i.test(p.plan || '')) bul.push({ tur: 'Kayıt', msg: 'Park kaydında plan “' + p.plan + '” yazıyor; Drive’da onaylı plan var: ' + planMetin(gpl) + '. Park kaydı güncellenmeli.' });
-    g.f.forEach((f) => (f.v || []).forEach((v) => { if (v !== 'mukerrer_birlesti') bul.push({ tur: v === 'sinir_disinda' ? 'Sınır dışı' : 'Geometri', msg: (f.ad || f.t) + ' (' + f.id + ')', id: f.id }); }));
+    current.forEach((x) => x.issues.forEach((msg) => bul.push({tur:'Geometri',msg:(x.f.ad || x.f.t) + ': ' + msg,id:x.f.id})));
+    outside.forEach((x) => bul.push({tur:'Mevcut sınır dışında',msg:(x.f.ad || x.f.t) + ' · Sınır ve plan sürümü karşılaştırılmalı; tek başına aykırılık tespiti değildir.',id:x.f.id}));
     const N = 60;
     return '<section class="panel"><details' + (ek.length ? ' open' : '') + '><summary>Veri denetimi ve eksikler (' + (bul.length + ek.length) + ')</summary>' +
-      (kt.cizim != null ? '<p class="muted" style="font-size:12.5px;line-height:1.45">' + kt.cizim + ' çizim · ' + (kt.mukerrer_birlestirilen || 0) + ' mükerrer birleştirildi · ' + (kt.geometri_bozuk || 0) + ' hatalı geometri · ' + (kt.sinir_disinda || 0) + ' sınır dışı · ' + (kt.kodsuz_tesis || 0) + ' kodsuz/adsız tesis çizimi · ' + (kt.plan_sayisi || 0) + ' plan</p>' : '') +
+      '<p class="muted" style="font-size:12.5px;line-height:1.45">' + current.length + ' çizim · ' + current.filter((x) => x.duplicate).length + ' birebir tekrar · ' + current.filter((x) => x.issues.length).length + ' hatalı geometri · ' + outside.length + ' mevcut sınır dışında · ' + (g.planlar || []).length + ' plan. Kontrol mevcut katmanlardan yeniden hesaplanır.' + (kt.mukerrer_birlestirilen ? ' Önceki aktarımda ' + kt.mukerrer_birlestirilen + ' tekrar birleştirilmişti.' : '') + '</p>' +
       ek.map((x) => '<div class="hbul"><b>Eksik belge</b> ' + esc(x.konu) + '<br><span class="muted">Gerekli: ' + esc(x.gerekli) + '</span></div>').join('') +
       bul.slice(0, N).map((x) => '<div class="hbul"><b>' + esc(x.tur) + '</b> ' + esc(x.msg) + (x.id ? ' <button class="btn sm" data-a="hGit" data-id="' + esc(x.id) + '">Göster</button>' : '') + '</div>').join('') +
       (bul.length > N ? '<p class="muted" style="font-size:12.5px">+' + (bul.length - N) + ' bulgu daha</p>' : '') + (!bul.length && !ek.length ? '<p class="muted" style="font-size:13px">Kayıtlı kontrollerde bulgu yok; bütün belge ve saha uyumunun teyidi anlamına gelmez.</p>' : '') + '<button class="btn sm" data-a="hReport">Veri kontrolünü indir</button></details></section>';
