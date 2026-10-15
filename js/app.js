@@ -24,11 +24,11 @@
   const svg = (d, s, w) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"></path></svg>';
   const LOGO = (s) => '<svg width="' + s + '" height="' + s + '" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#174A37" stroke="#2C6A4D"></circle><path d="M20 7 12.5 18h4L11 26h6.5v6h5v-6H29l-5.5-8h4z" fill="#9CC27A"></path></svg>';
   const PAGES = [
-    { id: 'genel', l: 'Genel durum', s: 'Genel', ic: IC.home }, { id: 'park', l: 'Park dosyası', s: 'Park', ic: IC.park },
+    { id: 'genel', l: 'Genel durum', s: 'Genel', ic: IC.home }, { id: 'park', l: 'Park Bilgileri ve Sözleşme', s: 'Park bilgileri', ic: IC.park },
     { id: 'alacaklar', l: 'Alacaklar', s: 'Alacaklar', ic: IC.money }, { id: 'hesap', l: 'Hesaplama', s: 'Hesap', ic: IC.calc },
-    { id: 'denetim', l: 'Denetim ve planlar', s: 'Denetim', ic: IC.check }, { id: 'ekler', l: 'Ekler ve defter', s: 'Ekler', ic: IC.file },
+    { id: 'denetim', l: 'Denetim ve planlar', s: 'Denetim', ic: IC.check }, { id: 'ekler', l: 'Tebliğ Ekleri ve Kayıt Defteri', s: 'Ekler', ic: IC.file },
     { id: 'tahakkuk', l: 'Kira ve tahakkuk', s: 'Tahakkuk', ic: IC.clock }, { id: 'teblig', l: 'Tebliğ ve hesaplar', s: 'Tebliğ', ic: IC.doc },
-    { id: 'harita', l: 'Harita', s: 'Harita', ic: IC.map }, { id: 'islem', l: 'İşlem dosyası', s: 'İşlem', ic: IC.check }, { h: 'Kayıtlar' }, { id: 'parklar', l: 'Parklar', s: 'Parklar', ic: IC.list }, { id: 'eksik', l: 'Eksik veriler', s: 'Eksik', ic: IC.edit }, { id: 'zincir', l: 'Kira zinciri', s: 'Zincir', ic: IC.chain },
+    { id: 'harita', l: 'Harita ve Tesis Envanteri', s: 'Harita', ic: IC.map }, { id: 'islem', l: 'İşlem dosyası', s: 'İşlem', ic: IC.check }, { h: 'Kayıtlar' }, { id: 'parklar', l: 'Orman Parkı Envanteri', s: 'Envanter', ic: IC.list }, { id: 'eksik', l: 'Eksik veriler', s: 'Eksik', ic: IC.edit }, { id: 'zincir', l: 'Kira Bedeli Geçmişi', s: 'Zincir', ic: IC.chain },
     { id: 'muhasebe', l: 'Muhasebe', s: 'Muhasebe', ic: IC.book }, { id: 'veriler', l: 'Veriler ve ayarlar', s: 'Veriler', ic: IC.gear }, { id: 'form', l: 'Ek formu', s: 'Form', ic: IC.file, gizli: true }];
 
   // ---------------- durum ----------------
@@ -209,13 +209,13 @@
   }
   function gateGoster(t, msg) {
     const g = $('#gate'); g.style.display = 'grid'; $('#app').style.display = 'none';
-    if (t === 'yukleniyor') { g.innerHTML = '<div class="box" style="text-align:center">' + LOGO(56) + '<h1>Orman Parkları</h1><p>Veriler yükleniyor…</p><span class="spin"></span></div>'; return; }
+    if (t === 'yukleniyor') { g.innerHTML = '<div class="box" style="text-align:center">' + LOGO(56) + '<span class="brand-eyebrow">İSTANBUL ORMAN İŞLETME MÜDÜRLÜĞÜ</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Veriler yükleniyor…</p><span class="spin"></span></div>'; return; }
     if (t === 'hata') { g.innerHTML = '<div class="box">' + LOGO(48) + '<h1>Bağlantı sorunu</h1><p>' + esc(msg) + '</p><button class="btn pri" onclick="location.reload()">Yeniden dene</button></div>'; return; }
-    g.innerHTML = '<form class="box" id="gform">' + LOGO(52) + '<h1>Orman Parkları</h1><p>İstanbul Orman İşletme Müdürlüğü · Emlak Şefliği. Kayıtlar şifrelidir; size verilen erişim parolasını girin.</p>' +
+    g.innerHTML = '<form class="box" id="gform">' + LOGO(52) + '<span class="brand-eyebrow">İSTANBUL ORMAN İŞLETME MÜDÜRLÜĞÜ</span><h1>Orman Parkları<br><span>Yönetim Sistemi</span></h1><p>Park kayıtları, planlar, sözleşmeler ve mali işlemler için güvenli erişim.</p>' +
       '<input class="fld" id="gpw" type="password" autocomplete="current-password" placeholder="Erişim parolası" aria-label="Erişim parolası" required>' +
       '<label class="chk"><input type="checkbox" id="gkeep" checked> Bu cihazda hatırla</label>' +
       '<button class="btn pri" type="submit">Aç</button><div class="err" id="gerr" role="alert"></div>' +
-      '<p class="muted" style="margin:6px 0 0;font-size:13px"><a href="#" id="gkul" style="text-decoration:underline">Kişisel hesabımla gir (kullanıcı adı ve parola)</a></p></form>';
+      '<p class="muted" style="margin:6px 0 0;font-size:13px"><a href="#" id="gkul" style="text-decoration:underline">Kişisel hesabımla gir (kullanıcı adı ve parola)</a></p><div class="gate-credit">Hazırlayan <strong>Süleyman Özyurt</strong></div></form>';
     $('#gpw').focus();
     $('#gkul').onclick = (e) => { e.preventDefault(); kulGirisFormu($('#gate .box'), true); };
     $('#gform').onsubmit = async (ev) => {
@@ -303,7 +303,7 @@
       '<button class="ib" id="mSearch" aria-label="Ara">' + svg(IC.search, 18, 2) + '</button><button class="ib" id="mMore" aria-label="İşlemler">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button></header>' +
       '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
-      '<aside class="side"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları</b><small>İstanbul OİM · Emlak Şefliği</small></div></div>' +
+      '<aside class="side"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b><small>İstanbul Orman İşletme Müdürlüğü</small></div></div>' +
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
       '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Park, işletmeci, yevmiye ara" aria-label="Ara"></label><div class="sres" id="sRes"></div></div>' +
       '<div class="sbox" id="sPark"><span class="lbl">Seçili park</span><select id="sSel" aria-label="Park seçin"></select>' +
@@ -316,7 +316,7 @@
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
       '<div class="foot" id="sFoot"></div></aside>' +
-      '<div class="main"><div class="wrap" id="page"></div></div>';
+      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span>Orman Parkları Yönetim Sistemi</span><span>Hazırlayan <strong>Süleyman Özyurt</strong></span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
     A.addEventListener('click', tikla);
@@ -382,7 +382,7 @@
   }
   function paylas() {
     const url = location.origin + location.pathname + location.hash;
-    if (navigator.share) navigator.share({ title: 'Orman Parkları', text: 'Orman Parkları kira takip programı', url }).catch(() => {});
+    if (navigator.share) navigator.share({ title: 'Orman Parkları Yönetim Sistemi', text: 'Orman Parkları Yönetim Sistemi', url }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => toast('Bağlantı kopyalandı. Açacak kişiye erişim parolasını ayrıca iletin.'));
     else prompt('Bağlantı', url);
   }
@@ -450,7 +450,7 @@
   document.addEventListener('click', (e) => { if (e.target.closest('.skip-link')) icerigeGec(e); });
   function sayfaCiz() {
     if (S._hmap) { S._hmap.remove(); S._hmap = null; S._hIdx = null; }
-    $$('.nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.p === S.page));
+    $$('.nav a, .tabbar a').forEach((a) => { const active = a.dataset.p === S.page; a.classList.toggle('on', active); if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     const showPark = ['park', 'ekler', 'zincir', 'form', 'teblig', 'islem'].includes(S.page);
     $('#sPark').style.display = showPark ? '' : 'none';
     $('#sSel').value = S.park;
@@ -463,7 +463,7 @@
     if (S.page === 'veriler') { $('#page').insertAdjacentHTML('beforeend', '<section class="panel"><h3>Cihazdaki çevrimdışı veriler</h3><p class="muted hnote">Veri dosyaları şifreli olarak bu cihazda saklanır. Harita altlığı ayrı önbellektedir; karo sayısı bir parkın bütün ölçeklerde kaydedildiği anlamına gelmez. Drive belgeleri ayrıca kaydedilmedikçe çevrimdışı açılamaz.</p><div id="offlineDurum" role="status">Kayıtlı kopyalar kontrol ediliyor…</div><div class="hbtns"><button class="btn sm" data-a="offlineDurum">Kopyaları kontrol et</button><button class="btn sm" data-a="offlineKaydet">Verileri çevrimdışı için kaydet</button></div></section>'); AKSIYON.offlineDurum(); }
     $('#page').setAttribute('tabindex', '-1');
     if (AFTER[S.page]) AFTER[S.page]();
-    document.title = ((PAGES.find((p) => p.id === S.page) || {}).l || '') + ' – Orman Parkları';
+    document.title = ((PAGES.find((p) => p.id === S.page) || {}).l || '') + ' – Orman Parkları Yönetim Sistemi';
   }
   const mpick = () => '<div class="mpick"><button data-a="prev" aria-label="Önceki park">‹</button><select aria-label="Park seçin" onchange="window.__parkSec(this.value)">' +
     S.veri.parks.map((p) => '<option' + (p.kisa === S.park ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('') + '</select><button data-a="next" aria-label="Sonraki park">›</button></div>';
@@ -491,7 +491,7 @@
     const D = S.veri.parks.map((p) => p.durum);
     const cnt = (s) => D.filter((d) => d === s).length;
     const hero = '<section class="hero"><div><h1>' + (late.length ? 'Dökümlere göre ' + late.length + ' parkta vadesi geçmiş alacak görünüyor' : 'Dökümlerde vadesi geçmiş alacak görünmüyor') + '</h1>' +
-      '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için dökümde ödenmemiş kalem var; döküm tarihinden sonraki ödemeler muhasebeden teyit edilmeli. Park adına dokununca park dosyası açılır.' : 'Dökümdeki vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
+      '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için dökümde ödenmemiş kalem var; döküm tarihinden sonraki ödemeler muhasebeden teyit edilmeli. Park adına dokununca park bilgileri ve sözleşme ayrıntıları açılır.' : 'Dökümdeki vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
       '<div class="chips">' + late.map((o) => '<a class="chip" href="#/park" data-a="park" data-k="' + esc(o.kisa) + '" data-go="park"><i></i>' + esc(o.kisa) + '</a>').join('') + '</div></div>' +
       '<div class="big"><span>Vadesi geçmiş alacak</span><strong class="n">' + tl(vgec) + ' TL</strong><div class="row"><div>Gecikme zammı ve KDV’si<b class="n">' + tl(gz) + '</b></div><div>En eski vade<b class="n">' + fd(enEski) + '</b></div></div></div>' +
       treeSvg(7, 31) + '</section>';
@@ -554,9 +554,9 @@
     const tlH = '<section class="card"><div class="ch"><h2>Önümüzdeki 60 günün vadeleri</h2></div><div class="tl">' + up.map((u) => '<div class="d"><div class="day"><b>' + E.fmtDate(u.esas).slice(0, 2) + '</b><span>' + AY3[E.month(u.esas) - 1] + '</span></div>' +
       '<div class="who"><b>' + esc(u.park) + '</b><span>' + E.days(R, u.esas) + ' gün sonra' + (u.ek ? ' · ek kira dahil' : '') + '</span></div><div class="n" style="font-weight:600">' + tl(u.t) + '</div></div>').join('') +
       (up.length ? '' : '<div class="empty">60 gün içinde vadesi gelen alacak yok.</div>') + '<div class="sum"><span>Toplam</span><span class="n">' + tl(sumOf(up, (u) => u.t)) + '</span></div></div></section>';
-    const tiles = [['park', 'Park dosyası', 'Sözleşme, bedeller, denetim ve alacaklar tek sayfada', IC.park], ['alacaklar', 'Alacaklar', 'Kalem kalem vade, ödeme ve gecikme zammı', IC.money],
+    const tiles = [['park', 'Park Bilgileri ve Sözleşme', 'Sözleşme, bedeller, denetim ve alacaklar tek sayfada', IC.park], ['alacaklar', 'Alacaklar', 'Kalem kalem vade, ödeme ve gecikme zammı', IC.money],
       ['hesap', 'Hesaplama', 'Gecikme zammı, ek tesis, ihale, devir, fesih', IC.calc], ['denetim', 'Denetim ve planlar', 'Ek-10 sonuçları, revize planlar, yazışmalar', IC.check],
-      ['ekler', 'Ekler ve defter', 'Tebliğin 18 eki, süre sınırları, işlem defteri', IC.file], ['zincir', 'Kira zinciri', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
+      ['ekler', 'Tebliğ Ekleri ve Kayıt Defteri', 'Tebliğin 18 eki, süre sınırları, işlem defteri', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     return banners() + hero + kpis + cal + '<div class="split">' + todoH + tlH + '</div>' + tilesH;
   };
@@ -940,7 +940,7 @@
     const gzr = S.gzO.slice().reverse();
     const A = (S.veri.arsiv && S.veri.arsiv.park) || [], mx = Math.max.apply(null, A.map((a) => a[1]).concat([1]));
     const ku = S.veri.kurum || {};
-    return mpick() + '<div class="pagehead"><div><h1>Ekler, işlem defteri ve mevzuat</h1><p>Tebliğin 18 eki seçilen parkın bilgileriyle açılır; süre sınırları sözleşme tarihlerinden hesaplanır. Seçili park: <b>' + esc(p.kisa) + '</b></p></div></div>' +
+    return mpick() + '<div class="pagehead"><div><h1>Tebliğ Ekleri ve Kayıt Defteri</h1><p>Tebliğin 18 eki seçilen parkın bilgileriyle açılır; süre sınırları sözleşme tarihlerinden hesaplanır. Seçili park: <b>' + esc(p.kisa) + '</b></p></div></div>' +
       '<div class="two"><section class="panel"><h3>Forma aktarılan değerler <small>' + esc(p.kisa) + '</small></h3>' + vals + '</section>' +
       '<section class="panel"><h3>Süre sınırları <small>' + fd(S.rapor) + ' tarihine göre</small></h3>' + win.map((w) => '<div class="win"><div class="t"><span>' + esc(w.t) + '</span><span class="badge ' + w.c + '">' + esc(w.s) + '</span></div><div class="d n">' + esc(w.d) + '</div></div>').join('') + '</section></div>' +
       '<section class="card"><div class="ch"><h2>Tebliğ ekleri</h2><span class="muted" style="font-size:13px">313 sayılı Tebliğ · sürecin aşamasına göre</span></div><div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Ek</th><th>Form</th><th>Kim, ne zaman</th><th>Süre ve gönderim</th><th>Dayanak</th><th>' + esc(p.kisa) + ' için</th><th class="noprint"></th></tr></thead><tbody>' +
@@ -989,7 +989,7 @@
     const P = S.veri.parks;
     S.csv = { name: 'parklar', head: ['Park', 'Resmî adı', 'Şeflik', 'Statü', 'Durum', 'İşletmeci', 'VKN/TCKN', 'İhale usulü', 'Alan (ha)', 'İhale tarihi', 'İhale bedeli', 'Sözleşme başı', 'Sözleşme sonu', 'Saha teslimi', 'Kalan yıl', 'Artış esası', 'TÜFE kuralı', 'Kesin teminat', 'Bu yıl kira', 'Tahsil', 'Açık', 'Vadesi geçmiş', 'GZ', 'Uyarılar'],
       rows: P.map((p) => { const o = S.ozBy[p.kisa]; return [p.kisa, p.ad, p.seflik, p.statu, p.durum, p.isletmeci, p.vkn, p.sekil, p.alan, fd(p.ihale_t), p.ihale_b, fd(p.soz_bas), fd(p.soz_bit), fd(p.teslim), o.kalan != null ? r2(o.kalan) : '', p.artis, p.kural, p.kesin, o.kira_yil, o.tahsil, o.acik, o.vgec, o.gz, o.uyari.join(' · ')]; }) };
-    return '<div class="pagehead"><div><h1>Parklar</h1><p>Her satır bir orman parkı. Mali sütunlar muhasebe dökümünden otomatik hesaplanır; park bilgilerini yalnız yönetici değiştirebilir.</p></div><button class="btn pri own-only" data-a="parkDuzenle" data-k="">Yeni park ekle</button></div>' +
+    return '<div class="pagehead"><div><h1>Orman Parkı Envanteri</h1><p>Bütün parkların kayıtları, işletmecileri ve mali özeti. Ayrıntılar için park adını seçin. Mali sütunlar muhasebe dökümünden otomatik hesaplanır; park bilgilerini yalnız yönetici değiştirebilir.</p></div><button class="btn pri own-only" data-a="parkDuzenle" data-k="">Yeni orman parkı ekle</button></div>' +
       '<section class="card"><div class="scroll" style="padding-top:8px"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Durum</th><th>İşletmeci</th><th>Sözleşme</th><th class="r">Kalan</th><th class="r">Bu yıl kira</th><th class="r">Tahsil edilen</th><th class="r">Açık</th><th class="r">Vadesi geçmiş</th><th>Uyarılar</th><th class="noprint"></th></tr></thead><tbody>' +
       P.map((p) => { const o = S.ozBy[p.kisa]; return '<tr>' + td('<a class="pk" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' · ' + esc(p.statu || '') + '</small></a>', '', 'lead') +
         td('<span class="' + stCls(p.durum) + '">' + esc(p.durum) + '</span>', 'Durum') + td(esc(p.isletmeci || '—'), 'İşletmeci', 'wide', ' style="white-space:normal;max-width:240px;font-size:13.5px"') +
@@ -1087,7 +1087,7 @@
   AKSIYON.offlineKaydet = () => offlineDurum('SAVE_OFFLINE');
   function islemSecimi() { return OPWorkflows.find((x) => x.id === S.islemTip) || OPWorkflows[0]; }
   function islemKayit(p, w, i) { return ((p.islem_kontrol || {})[w.id] || {})[i.id] || { durum: 'incelenmedi', kaynak: '', not: '' }; }
-  function parkIslemBaglari(p) { return '<nav class="park-actions" aria-label="Park işlemleri"><a class="btn sm" href="#/harita?p=' + encodeURIComponent(p.kisa) + '">Haritada aç</a><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park dosyası</a><a class="btn sm" href="#/denetim">Denetim ve planlar</a><a class="btn sm" href="#/islem">İşlem dosyası</a></nav>'; }
+  function parkIslemBaglari(p) { return '<nav class="park-actions" aria-label="Park işlemleri"><a class="btn sm" href="#/harita?p=' + encodeURIComponent(p.kisa) + '">Haritada aç</a><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/denetim">Denetim ve planlar</a><a class="btn sm" href="#/islem">İşlem dosyası</a></nav>'; }
   SAYFA.islem = () => {
     const p = S.pBy[S.park], w = islemSecimi(), counts = { incelenmedi: 0, var: 0, yok: 0, uygulanmaz: 0 };
     w.items.forEach((i) => { const c = islemKayit(p, w, i); counts[c.durum] = (counts[c.durum] || 0) + 1; });
@@ -1196,7 +1196,7 @@
     else if (S.hP === undefined) S.hP = S.park || '';
     if (!S.hF) S.hF = { q: '', tur: '', d: { M: 1, P: 1, O: 1, V: 1, S: 1, K: 1, Y: 1, A: 1, B: 1 }, arsiv: 0, alt: 1, kapali: {}, pk: {}, acik: window.innerWidth >= 900 };
     const F = S.hF;
-    return '<div class="pagehead"><div><h1>Harita</h1><p>Orman parkı sınırları, Gelişim ve Yönetim Planı / vaziyet planı tesisleri ve tesis envanteri. Parkı seçin; tesise dokununca bilgi kutusu açılır.</p></div></div>' +
+    return '<div class="pagehead"><div><h1>Harita ve Tesis Envanteri</h1><p>Orman parkı sınırları, Gelişim ve Yönetim Planı / vaziyet planı tesisleri ve tesis envanteri. Parkı seçin; tesise dokununca bilgi kutusu açılır.</p></div></div>' +
       '<div id="hwrap" class="hwrap"><div class="htool">' +
       '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><input id="hPark" class="fld" list="hParkL" placeholder="Park adı yazın ya da seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><datalist id="hParkL">' + S.veri.parks.map((p) => '<option value="' + esc(p.kisa) + '">' + esc(p.ad || '') + '</option>').join('') + '</datalist>' +
       '<button class="btn sm" data-a="hTum">Tüm parklar</button></div></div>' +
@@ -1243,7 +1243,7 @@
       (h.kontrol ? '<p class="hnote">' + esc(h.kontrol) + '</p>' : '') + (h.koordinat_url ? '<a href="' + esc(OPGeo.safeURL(h.koordinat_url)) + '" target="_blank" rel="noopener">Koordinat cetvelini aç</a>' : '') + '</details>' +
       (p.plan ? '<details class="hmeta"><summary>Planın kapsamı</summary><p class="hnote">' + esc(p.plan) + '</p></details>' : '') +
       (h.alt && h.alt.length ? '<details class="hmeta"><summary>Önceki sınır çizimleri (' + h.alt.length + ')</summary>' + h.alt.map((a) => { const url = OPGeo.safeURL(a.url || a.kaynak_url); return kv(esc(a.ad), haMetin(a.alan_ha)) + '<p class="hnote">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(a.kaynak || 'Kaynak belge') + '</a>' : esc(a.kaynak || BYOK)) + '</p>'; }).join('') + '</details>' : '') +
-      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park dosyası</a><a class="btn sm" href="#/islem">İşlem dosyası</a></div></section>' +
+      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/park" data-a="park" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/islem">İşlem dosyası</a></div></section>' +
       hPlanPanel(p, g) +
       '<section class="panel"><h3>Tesis envanteri <small id="henvN"></small></h3>' + (Object.keys(say).length ? '<div class="hleg2">' + Object.keys(DUR).filter((d) => say[d]).map((d) => '<span><i style="background:' + DUR[d][1] + '"></i>' + esc(DUR[d][0]) + ' <b>' + say[d] + '</b></span>').join('') + '</div>' : '') +
       '<div id="henv"></div></section>' +
@@ -1618,7 +1618,7 @@
     const z = S.pBy[S.zPark] ? S.ozBy[S.zPark].kk : null;
     S.csv = { name: 'kira_zinciri', head: ['Park', 'Artış esası', 'TÜFE kuralı', 'Kira tabanı', 'İhale bedeli', 'Dönem', 'Dönem başı', 'TÜFE', 'Tebliğe göre', 'Muhasebe', 'Fark', 'Durum', 'Açıklama'],
       rows: S.veri.parks.map((p) => { const k = S.ozBy[p.kisa].kk; return [p.kisa, p.artis, p.kural, fd(p.taban), p.ihale_b, k.donem, fd(k.bas), k.tufe, k.hesap, k.muh, k.fark, k.durum, (p.muh_kira_not ? 'Muhasebe: ' + p.muh_kira_not + '. ' : '') + (p.kz_not || '')]; }) };
-    return mpick() + '<div class="pagehead"><div><h1>Kira zinciri ve kontrol</h1><p>Md. 31–32: 1. dönem ihale bedelidir; sonraki dönem = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE), kuruşa yuvarlanır. Rapor yılının 31 Mart’ına kadar başlamış son dönem muhasebedeki yıllık kirayla karşılaştırılır.</p></div></div>' +
+    return mpick() + '<div class="pagehead"><div><h1>Kira Bedeli Geçmişi ve Kontrolü</h1><p>Md. 31–32: 1. dönem ihale bedelidir; sonraki dönem = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE), kuruşa yuvarlanır. Rapor yılının 31 Mart’ına kadar başlamış son dönem muhasebedeki yıllık kirayla karşılaştırılır.</p></div></div>' +
       '<section class="card"><div class="ch"><h2>Park bazında kontrol</h2></div><div class="scroll"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Artış esası / TÜFE kuralı</th><th>Dönem başı</th><th class="r">TÜFE</th><th class="r">Tebliğe göre</th><th class="r">Muhasebe</th><th class="r">Fark</th><th>Durum</th><th>Açıklama</th></tr></thead><tbody>' +
       S.veri.parks.map((p) => { const k = S.ozBy[p.kisa].kk; return '<tr>' + td('<a href="#/zincir" data-a="zsec" data-k="' + esc(p.kisa) + '" style="font-weight:600">' + esc(p.kisa) + '</a>', '', 'lead') +
         td(esc(p.artis || '—') + '<br><span class="muted" style="font-size:12.5px">' + esc(p.kural || '') + '</span>', 'Esas / kural') + td(fd(k.bas), 'Dönem başı', 'n') + td(k.tufe != null ? E.pct(k.tufe) : '—', 'TÜFE', 'r') +
@@ -2481,7 +2481,7 @@
       case '31': return ib == null ? '' : kv('İlk yıl kirası', tl(ib)) + kv('Ödeme', ib <= 150000 ? 'Sözleşmede tek seferde peşin (≤ 150.000 TL)' : 'Peşin ya da 1/3 peşin + kalanı iki eşit taksit') + kv('İlk yıl ağaçlandırma (Md. 33/2)', tl(r2(ib * 0.05))) + kv('İlk yıl KDV', tl(r2((ib + r2(ib * 0.05)) * 0.2)));
       case '32': { const a = S.plan[y][p.kisa], b = S.plan[y + 1][p.kisa];
         return kv('Dönem tabanı / kural', fd(p.taban) + ' · ' + esc(p.kural || '')) + kv(y + ' yıllık kira', a && a.kira != null ? tl(a.kira) + ' (' + a.donem + '. dönem)' : esc(a ? a.durum : '—')) + kv((y + 1) + ' yıllık kira', b && b.kira != null ? tl(b.kira) : esc(b ? b.durum + (b.yayim ? ' (' + fd(b.yayim) + ')' : '') : '—')) +
-          '<div style="padding:8px 0 0"><a class="btn sm" href="#/tahakkuk">Kira ve tahakkuk planı</a> <a class="btn sm" href="#/zincir" data-a="zsec" data-k="' + esc(p.kisa) + '">Kira zinciri</a></div>'; }
+          '<div style="padding:8px 0 0"><a class="btn sm" href="#/tahakkuk">Kira ve tahakkuk planı</a> <a class="btn sm" href="#/zincir" data-a="zsec" data-k="' + esc(p.kisa) + '">Kira Bedeli Geçmişi</a></div>'; }
       case '33': return kira == null ? '' : kv('Ağaçlandırma (' + y + ' kirası × %5)', tl(r2(kira * 0.05)));
       case '34': return kv('Giriş ücreti', esc(p.giris || 'Kayıtta giriş ücreti yok')) + '<p class="muted" style="margin:6px 0 0;font-size:13px">Müteakip yıllar giriş ücreti ocakta açıklanan yıllık TÜFE (12 aylık ort.) oranında artar: ' + (S.tufe[y - 1] && S.tufe[y - 1][11] != null ? E.pct(S.tufe[y - 1][11]) + ' (Aralık ' + (y - 1) + ')' : '—') + '.</p>';
       case '35': case 'G4': return (kira == null ? '' : kv('Devirde ' + y + ' kirası (+%30)', tl(r2(kira * 1.3))) + kv('Artış', tl(r2(kira * 0.3)))) + tk(/Md\. 35/);

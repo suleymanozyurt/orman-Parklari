@@ -1,7 +1,9 @@
-# Orman Parkları — kira, alacak ve denetim takibi
+# Orman Parkları Yönetim Sistemi
 
-İstanbul Orman İşletme Müdürlüğü, Emlak Şefliği için orman parkı kira takip uygulaması (313 sayılı Orman Parkları Tebliği).
+İstanbul Orman İşletme Müdürlüğü için orman parkları yönetim sistemi (313 sayılı Orman Parkları Tebliği).
 Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).
+
+**Hazırlayan:** Süleyman Özyurt
 
 **Adres:** https://suleymanozyurt.github.io/orman-Parklari/
 

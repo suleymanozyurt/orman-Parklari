@@ -1,15 +1,15 @@
 {
   "id": "./",
-  "name": "Orman Parkları — Kira ve Alacak Takibi",
+  "name": "Orman Parkları Yönetim Sistemi",
   "short_name": "Orman Parkları",
-  "description": "İstanbul OİM orman parkları kira, alacak, gecikme zammı ve denetim takibi",
+  "description": "Orman parkları, planlar, tesisler, sözleşmeler ve mali işlemler. Hazırlayan: Süleyman Özyurt.",
   "lang": "tr",
   "start_url": "./#/genel",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0F3527",
-  "theme_color": "#0F3527",
+  "background_color": "#103F35",
+  "theme_color": "#103F35",
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -38,7 +38,7 @@
       "url": "./#/alacaklar"
     },
     {
-      "name": "Park dosyası",
+      "name": "Park Bilgileri ve Sözleşme",
       "url": "./#/park"
     },
     {
