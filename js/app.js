@@ -191,7 +191,7 @@
       if (updateRequested && !S.dirty) { location.reload(); return; }
       if (vardi) bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile');
     });
-    navigator.serviceWorker.register('sw.js').then((reg) => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       const offer = () => {
         if (!reg.waiting) return;
         bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle');
@@ -207,7 +207,7 @@
       };
       offer(); reg.addEventListener('updatefound', () => { const worker = reg.installing; if (worker) worker.addEventListener('statechange', () => { if (worker.state === 'installed') offer(); }); });
       const bak = () => reg.update().catch(() => {});
-      setInterval(bak, 30 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') bak(); });
+      bak(); setInterval(bak, 120000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') bak(); });
     }).catch(() => {});
   }
   function bandGoster(id, msg, dugme) {
@@ -590,7 +590,7 @@
     });
     const sy = Object.values(S.plan[y + 1] || {}), hz = sy.filter((t) => t.kod === 'plan'), bk = sy.filter((t) => t.kod === 'tufe');
     if (hz.length || bk.length) todo.push({ k: '', red: false, tutar: hz.length + ' / ' + (hz.length + bk.length), alt: (y + 1) + ' kirası hesaplanan', go: 'tahakkuk',
-      ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park TÜFE bekliyor (en erken ' + fd(bk.map((t) => t.yayim).filter(Boolean).sort()[0]) + ', otomatik tamamlanır).' : '.') });
+      ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park TÜFE bekliyor; resmî veri alındıkça hesaplanır.' : '.') });
     S.veri.parks.forEach((p) => { if (p.durum === 'Sona erdi') todo.push({ k: p.kisa, red: false, tutar: '', alt: '', ne: 'Sözleşme ' + fd(p.soz_bit) + '’de sona erdi: geri teslim tutanağı 15 gün içinde GM’ye (Md. 13/1), yeniden ihale.' }); });
     const todoH = '<section class="card"><div class="ch"><h2>Öncelik sırasıyla yapılacaklar</h2></div><ul class="todo">' + todo.map((t, i) => '<li><span class="no" style="background:' + (t.red ? 'var(--red)' : 'var(--amb)') + '">' + (i + 1) + '</span>' +
       '<div><b>' + (t.go && !t.k ? '<a href="#/' + t.go + '">Kira ve tahakkuk</a>' : '<a href="#/' + (t.go || 'park') + '" data-a="park" data-k="' + esc(t.k) + '" data-go="' + (t.go || 'park') + '">' + esc(t.k) + '</a>') + '</b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + t.tutar + '<small>' + esc(t.alt) + '</small></div></li>').join('') +
@@ -690,7 +690,7 @@
         (t.kira != null ? '<div class="big2 n">' + tl(t.kira) + ' TL</div><div class="muted" style="font-size:13px">' + t.donem + '. dönem · ' + fd(t.bas) + (t.tufe != null ? ' · TÜFE ' + E.pct(t.tufe) : '') + '</div>' +
           '<div class="muted n" style="font-size:13px;margin-top:6px">' + t.vadeler.map((v) => fd(v.vade).slice(0, 5) + ' ' + tl(v.kira)).join(' · ') + '<br>Ağaçlandırma ' + tl(t.agac) + ' · KDV ' + tl(t.kdv) + '</div>' +
           (t.kod === 'fark' ? '<div class="red-t" style="font-size:13px;margin-top:4px">Muhasebe ' + tl(t.muhKira) + ' · fark ' + tl(t.fark) + '</div>' : '')
-          : '<div class="muted" style="font-size:13.5px;margin-top:6px">' + (t.yayim ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + ' TÜFE’si ' + fd(t.yayim) + '’te açıklanınca otomatik hesaplanır.' : esc(t.durum)) + '</div>') +
+          : '<div class="muted" style="font-size:13.5px;margin-top:6px">' + (t.yayim ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + ' TÜFE’si resmî kaynaktan alınınca otomatik hesaplanır.' : esc(t.durum)) + '</div>') +
         '<div style="margin-top:8px"><button class="btn sm" data-a="tAyrP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Hesabı göster</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEtP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Tahakkuk et</button>' : '') + '</div></div>'; };
     const pYears = planYillari([p]), pYear = pYears.includes(S.pY) ? S.pY : y;
     const plH = pY(pYear) + (pYears.includes(pYear + 1) ? pY(pYear + 1) : '');
@@ -796,7 +796,7 @@
         const z = ky ? ky.zincir.filter((d) => d.n <= ky.donem + 1) : [];
         const satir = (d, i) => { const prev = z[i - 1]; let f;
           if (d.oncesi) f = 'Belgeli başlangıçtan önce — hesaplanmaz'; else if (d.belge) f = 'Belgeli dönem kirası: ' + esc(d.belge); else if (d.n === 1) f = 'İhale bedeli (Md. 31/1)';
-          else if (d.bedel == null) f = (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] + ' TÜFE’si ' + fd(E.tufeYayim(d.tufeAy)) + '’te açıklanacak' : '—');
+          else if (d.bedel == null) f = (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] + ' TÜFE verisi bekleniyor' : '—');
           else f = '(' + tl(prev.bedel) + (prev.ek ? ' + ' + tl(prev.ek) : '') + ') × (1 + ' + E.pct(d.tufe) + ') = ' + tl(d.bedel);
           return '<tr' + (d.n === (ky && ky.donem) ? ' style="background:#F1F8F3"' : '') + '><td>' + d.n + '</td><td class="n">' + fd(d.bas) + '</td><td>' + (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] : '—') + '</td><td class="n" style="white-space:normal">' + f + '</td><td class="r n"><b>' + tl(d.bedel) + '</b></td></tr>'; };
         const yilSec = '<div class="fl"><label for="h_kY">Yıl</label><select id="h_kY" data-h="kY">' + planYillari([p]).map((v) => '<option' + (v === Y ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>';
@@ -808,7 +808,7 @@
             '<div class="sl"><table><thead><tr><th>Vade</th><th class="r">Kira</th><th class="r">Ağaç.</th><th class="r">KDV</th></tr></thead><tbody>' + pl.vadeler.map((v) => '<tr><td class="n">' + fd(v.vade) + '</td><td class="r n">' + tl(v.kira) + '</td><td class="r n">' + (v.agac ? tl(v.agac) : '–') + '</td><td class="r n">' + (v.kdv ? tl(v.kdv) : '–') + '</td></tr>').join('') + '</tbody></table></div>' +
             (pl.guv != null ? out('Güvence (kira × ' + E.pct(p.guv, 0) + ', Md. 10/1)', tl(pl.guv) + (pl.guvFark != null ? ' · artış ' + tl(pl.guvFark) : '')) : '') + (pl.dep != null ? out('Depozito (kira × ' + E.pct(p.dep, 0) + ', Md. 10/2)', tl(pl.dep) + (pl.depFark != null ? ' · artış ' + tl(pl.depFark) : '')) : '') +
             out('Muhasebe', pl.muhasebede ? tl(pl.muhKira) + (pl.kod === 'fark' ? ' · fark ' + tl(pl.fark) : ' · uyumlu') : esc(pl.durum))
-            : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ' — ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si ' + fd(pl.yayim) + '’te açıklanınca kendiliğinden hesaplanır.' : '') + '</div>') +
+            : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ' — ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si resmî kaynaktan alınınca kendiliğinden hesaplanır.' : '') + '</div>') +
           '<p class="note">TÜFE değerleri her gün TÜİK’ten otomatik alınır (Veriler sayfası). Takvim yılına düşen dönem: ' + (p.yil_esas === 'Dönem başı' ? 'o yıl başlayan dönem.' : 'o yılın 31 Mart’ına kadar başlamış dönem (muhasebe uygulaması).') + '</p>');
       }
     } else if (S.tool === 'g') {
@@ -2424,19 +2424,19 @@
     const satir = (t) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(t.park) + '" data-k="' + esc(t.park) + '" data-go="park" style="font-weight:600">' + esc(t.park) + '</a>', '', 'lead') +
       td(t.donem ? t.donem + '. dönem<br><span class="muted n" style="font-size:12.5px">' + fd(t.bas) + '</span>' : '—', 'Dönem') +
       td(t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + '<br><span class="n">' + (t.tufe != null ? E.pct(t.tufe) : 'açıklanmadı') + '</span>' : (t.donem === 1 ? 'İhale bedeli' : '—'), 'TÜFE') +
-      td(t.kira != null ? '<b>' + tl(t.kira) + '</b>' : (t.kod === 'tufe' ? '<span class="amb-t">' + fd(t.yayim) + '’te</span>' : '—'), 'Yıllık kira', 'n r') +
+      td(t.kira != null ? '<b>' + tl(t.kira) + '</b>' : (t.kod === 'tufe' ? '<span class="amb-t">Veri bekleniyor</span>' : '—'), 'Yıllık kira', 'n r') +
       td(t.kira != null ? tl(t.agac) + '<br><span class="muted">' + tl(t.kdv) + '</span>' : '—', 'Ağaç. / KDV', 'n r') +
       td((t.vadeler || []).map((v) => '<span class="n">' + fd(v.vade).slice(0, 5) + ' · ' + tl(v.kira) + '</span>').join('<br>') || '—', 'Taksitler', 'n', ' style="white-space:nowrap"') +
       td(t.muhasebede ? tl(t.muhKira) + (t.kod === 'fark' ? '<br><span class="red-t">fark ' + tl(t.fark) + '</span>' : '') + (t.muhKist ? '<br><span class="muted" style="font-size:12px">+ kıst/dönem arası ' + tl(t.muhKist) + '</span>' : '') : '—', 'Muhasebe', 'n r') +
       td('<span class="badge ' + (durumC[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span>', 'Durum') +
       td('<button class="btn sm" data-a="tAyr" data-k="' + esc(t.park) + '">Hesap</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEt" data-k="' + esc(t.park) + '">Tahakkuk et</button>' : '') +
         (t.kod === 'oto' ? ' <button class="btn sm red own-only" data-a="tGeri" data-k="' + esc(t.park) + '">Geri al</button>' : ''), '', 'noprint') + '</tr>';
-    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>Yıllık kira Tebliğ Md. 31–32 zincirinden hesaplanır: dönem kirası = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE). Takvim yılının kirası, o yılın 31 Mart’ına kadar başlamış dönemin kirasıdır (dönem başı esaslı parklarda o yıl başlayan dönem). “Dökümde tespit edilemedi” yalnız yüklü döküme göredir; döküm tarihinden sonraki kayıtlar muhasebeden teyit edilir. Ödeme günleri önceki yılın tahakkukundan, yoksa Md. 32/3’ten alınır; ağaçlandırma %5 (Md. 33), KDV %20 ilk taksitle. TÜFE açıklanmadıkça tutar hesaplanmaz; açıklandığı gün otomatik tamamlanır.</p></div>' +
+    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>Yıllık kira Tebliğ Md. 31–32 zincirinden hesaplanır: dönem kirası = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE). Takvim yılının kirası, o yılın 31 Mart’ına kadar başlamış dönemin kirasıdır (dönem başı esaslı parklarda o yıl başlayan dönem). “Dökümde tespit edilemedi” yalnız yüklü döküme göredir; döküm tarihinden sonraki kayıtlar muhasebeden teyit edilir. Ödeme günleri önceki yılın tahakkukundan, yoksa Md. 32/3’ten alınır; ağaçlandırma %5 (Md. 33), KDV %20 ilk taksitle. Gerekli TÜFE açıklanmadıkça tutar hesaplanmaz; resmî veri başarıyla alındığında otomatik tamamlanır.</p></div>' +
       '<label class="year-picker" for="tYear">Yıl <select class="fld" id="tYear">' + years.map((v) => '<option' + (v === Y ? ' selected' : '') + '>' + v + '</option>').join('') + '</select><small>' + years[0] + '–' + years[years.length - 1] + ' · sözleşmelere göre</small></label></div>' +
       '<section class="kpis"><div class="kpi"><span>' + Y + ' yıllık kira (hesaplanan)</span><strong class="n">' + tl(top) + '</strong><em>' + L.filter((t) => t.kira != null).length + ' park</em></div>' +
       '<div class="kpi"><span>Tahakkuk edilmiş</span><strong class="n">' + (say('tamam') + say('fark') + say('oto')) + '</strong><em>' + say('fark') + ' parkta Tebliğ hesabından farklı</em></div>' +
       '<div class="kpi"><span>Dökümde tahakkuku tespit edilemeyen</span><strong class="n" style="color:' + (say('bekliyor') ? 'var(--red)' : 'var(--ink)') + '">' + say('bekliyor') + '</strong><em>' + (Y > y0 ? say('plan') + ' park hesaplandı, zamanı gelmedi' : (say('kapsam') ? say('kapsam') + ' parkta döküm tarihi kapsamıyor' : '120 son yevmiye ' + fd(E.dokumSon(S.veri)['120']))) + '</em></div>' +
-      '<div class="kpi"><span>TÜFE bekleyen</span><strong class="n">' + say('tufe') + '</strong><em>' + (say('tufe') ? 'ilk açıklama ' + fd(L.filter((t) => t.yayim).map((t) => t.yayim).sort()[0]) : 'hepsi hesaplandı') + '</em></div></section>' +
+      '<div class="kpi"><span>TÜFE bekleyen</span><strong class="n">' + say('tufe') + '</strong><em>' + (say('tufe') ? 'Resmî veri bekleyen aylar izleniyor' : 'hepsi hesaplandı') + '</em></div></section>' +
       '<section class="card"><div class="ch"><h2>' + Y + ' yılı kira ve tahakkuk planı</h2><button class="btn sm" data-a="tTalimat">Tahakkuk talimatı (yazdır)</button></div><div class="scroll"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Dönem</th><th>TÜFE</th><th class="r">Yıllık kira</th><th class="r">Ağaç. / KDV</th><th>Taksitler</th><th class="r">Muhasebe</th><th>Durum</th><th class="noprint"></th></tr></thead><tbody>' +
       L.map(satir).join('') + '</tbody></table></div><p class="muted" style="margin:10px 22px 16px;font-size:13.5px">“Tahakkuk et” kayıtları programın muhasebe defterine işlenir; muhasebe dökümü yüklendiğinde aynı park ve yılın gerçek tahakkuku gelirse program kaydı kendiliğinden devreden çıkar. İşlenmiş tahakkuk, sonradan değişen oranlardan etkilenmez.</p></section>';
   };
@@ -2458,7 +2458,7 @@
         '<div class="sl"><table><thead><tr><th>Vade</th><th class="r">Kira</th><th class="r">Ağaç.</th><th class="r">KDV</th></tr></thead><tbody>' + pl.vadeler.map((v) => '<tr><td class="n">' + fd(v.vade) + '</td><td class="r n">' + tl(v.kira) + '</td><td class="r n">' + (v.agac ? tl(v.agac) : '–') + '</td><td class="r n">' + (v.kdv ? tl(v.kdv) : '–') + '</td></tr>').join('') + '</tbody></table></div>' +
         (pl.guv != null ? '<div class="kv"><span>Güvence (kira × ' + E.pct(p.guv, 0) + ', Md. 10/1)</span><span class="n">' + tl(pl.guv) + (pl.guvFark != null ? ' · artış ' + tl(pl.guvFark) : '') + '</span></div>' : '') +
         (pl.dep != null ? '<div class="kv"><span>Depozito (kira × ' + E.pct(p.dep, 0) + ', Md. 10/2)</span><span class="n">' + tl(pl.dep) + (pl.depFark != null ? ' · artış ' + tl(pl.depFark) : '') + '</span></div>' : '')
-        : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ': ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si TÜİK tarafından ' + fd(pl.yayim) + ' tarihinde açıklanır; açıklandığı gün hesap kendiliğinden tamamlanır.' : '') + '</div>'),
+        : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ': ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si resmî kaynaktan alındığında hesap kendiliğinden tamamlanır. Kesin yayım tarihi TÜİK takvimine bağlıdır.' : '') + '</div>'),
       '<button class="btn pri" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Kapat</button>');
   };
   AKSIYON.tEt = (t) => {

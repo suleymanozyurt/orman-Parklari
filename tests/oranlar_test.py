@@ -7,7 +7,7 @@ import json
 import pathlib
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 spec = importlib.util.spec_from_file_location('oranlar', pathlib.Path(__file__).parents[1] / 'scripts/oran_guncelle.py')
 rates = importlib.util.module_from_spec(spec)
@@ -66,6 +66,18 @@ class RatesTests(unittest.TestCase):
         text += ' Bu Karar yayımı tarihinde yürürlüğe girer.'
         with patch.object(rates, 'get', return_value=(text.encode(), 'text/html')), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(rates.karar_oran('https://www.resmigazete.gov.tr/test.htm'), .037)
+
+    def test_temporary_transport_failure_is_retried_but_http_error_is_not(self):
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b'ok'
+        response.__enter__.return_value.headers = {'Content-Type': 'text/plain'}
+        with patch.object(rates.urllib.request, 'urlopen', side_effect=[rates.urllib.error.URLError('temporary'), response]) as request, patch.object(rates.time, 'sleep'):
+            self.assertEqual(rates.get('https://example.test')[0], b'ok')
+            self.assertEqual(request.call_count, 2)
+        failure = rates.urllib.error.HTTPError('https://example.test', 404, 'not found', {}, None)
+        with patch.object(rates.urllib.request, 'urlopen', side_effect=failure) as request, patch.object(rates.time, 'sleep'):
+            with self.assertRaises(rates.urllib.error.HTTPError): rates.get('https://example.test')
+            self.assertEqual(request.call_count, 1)
 
     def test_wrong_tufe_series_is_rejected(self):
         dataset = {'id': ['TIME_PERIOD'], 'size': [7], 'dimension': {'DEGISIM': {'label': 'On iki aylık ortalamalara göre değişim'}, 'TIME_PERIOD': {'category': {'index': [f'2026-{i:02}' for i in range(1, 8)]}}}, 'value': [99] * 7}

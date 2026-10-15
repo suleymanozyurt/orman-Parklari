@@ -7,7 +7,7 @@
    Yeni ay ancak bulunan seri tablodaki bilinen aylarla birebir tutuyorsa kabul edilir (yanlış seri alınmasın diye).
 Kullanım: python oran_guncelle.py [--gun YYYY-AA-GG] [--geri N]
 """
-import json, os, re, sys, datetime as dt, urllib.request, urllib.parse, ssl, html, io, math
+import json, os, re, sys, datetime as dt, urllib.request, urllib.parse, urllib.error, ssl, html, io, math, time
 
 YOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'oranlar.json')
 UA = {'User-Agent': 'Mozilla/5.0 (orman-parklari oran guncelleme; +https://github.com/suleymanozyurt/orman-Parklari)'}
@@ -18,8 +18,13 @@ def log(*a):
 def get(url, headers=None, data=None, timeout=40):
     h = dict(UA); h.update(headers or {})
     req = urllib.request.Request(url, headers=h, data=data)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read(), r.headers.get('Content-Type', '')
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read(), r.headers.get('Content-Type', '')
+        except (urllib.error.URLError, TimeoutError) as e:
+            if isinstance(e, urllib.error.HTTPError) or attempt == 2: raise
+            time.sleep(1 + attempt)
 
 def metin(b):
     for enc in ('utf-8', 'windows-1254', 'iso-8859-9'):
