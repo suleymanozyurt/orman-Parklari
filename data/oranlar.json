@@ -1,5 +1,5 @@
 {
- "guncelleme": "2026-10-16T15:16:54+03:00",
+ "guncelleme": "2026-10-16T17:45:04+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
@@ -204,15 +204,15 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-16 15:16",
+  "son_kontrol": "2026-10-16 17:45",
   "kayit": {},
-  "son_deneme": "2026-10-16 15:16",
-  "son_basarili_kontrol": "2026-10-16 15:16"
+  "son_deneme": "2026-10-16 17:45",
+  "son_basarili_kontrol": "2026-10-16 17:45"
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
   "son_kontrol": "2026-10-16 15:16",
-  "durum": "Resmî Gazete: 7 günlük tarama tamamlandı; yeni oran varsa yürürlük tablosuna işlendi.",
+  "durum": "Tarama eksik: 6/7 günlük fihriste erişildi; 0 karar okunamadı. Son kayıtlı oranlar korunuyor.",
   "oranlar": [
    [
     "2010-10-19",
@@ -251,17 +251,20 @@
     0.037
    ]
   ],
-  "son_deneme": "2026-10-16 15:16",
+  "son_deneme": "2026-10-16 17:45",
   "tarama": {
    "istenen": 7,
-   "ok": 7,
-   "eksik": [],
+   "ok": 6,
+   "eksik": [
+    "2026-10-16"
+   ],
    "karar_eksik": []
   },
   "son_basarili_kontrol": "2026-10-16 15:16"
  },
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
+  "RG 2026-10-16 alınamadı: <urlopen error [Errno -5] No address associated with hostname>",
   "TÜFE (portal): TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 21 bilinen ayla doğrulandı"
  ]
 }
