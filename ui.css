@@ -89,6 +89,8 @@
  .park-options[hidden]{display:none}.park-options button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:10px 12px;text-align:left;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:0;border-radius:7px;cursor:pointer}
  .park-options button:hover,.park-options button.active{background:var(--soft);box-shadow:inset 3px 0 #50BAD2}.park-options button[aria-selected="true"]{color:var(--pine);font-weight:600}.park-options small{font-size:11px;color:var(--mute)}
  .source-cell{display:block;color:var(--mute);font-size:11px;margin-top:5px}
+ .h-gps{max-width:min(280px,65vw);padding:10px 12px;border:1px solid var(--line);border-left:3px solid #46B3FF;border-radius:10px;background:var(--paper);color:var(--ink);box-shadow:var(--elevation);font:12px/1.45 "Barlow",sans-serif}
+ .h-gps[hidden]{display:none}.h-gps strong,.h-gps span,.h-gps small{display:block}.h-gps span{color:var(--ink2);margin-top:3px}.h-gps small{color:var(--mute);margin-top:6px;font-size:10px}.h-gps .btn{margin-top:7px}.h-gps.gps-stale{border-left-color:var(--amb)}
  .park-no-result{font-size:13px;color:var(--mute);padding:8px 10px}
  @media(max-width:600px){.park-picker{width:auto}.hselr{align-items:stretch}.htool>.btn{min-height:40px}}
 

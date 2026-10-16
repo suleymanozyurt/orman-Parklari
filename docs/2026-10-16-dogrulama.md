@@ -35,3 +35,8 @@ GİB sayısal örnekleri bağımsız sabit beklenen sonuçlarla test edildi: 20,
 Önceki veri yedeğinde aynı oran/döküm ve 16.10.2026 hesap tarihiyle 103 parça karşılaştırıldı: 69 GZ sonucu değişti, eksik oran kapsamı yok. Açık ana para her iki hesapta 17.762.958,87 TL. GZ+KDV toplamı eski yöntemde 1.692.246,92 TL, düzeltilen yöntemde 1.695.518,44 TL. Bu fark yeni tahakkuk veya güncel borç belgesi değildir. Şifreli kaynak kayıtlar değiştirilmedi.
 
 Devam eden kontroller: park/sözleşme bazında kira dönemi dayanakları, muhasebe dökümünün güncel kapsamı, ek tesis onayları, tüm kaynakların harita eşleştirmesi ve asgari GZ gibi kalem/ödeme bazında ayrıca değerlendirilmesi gereken özel hükümler. Tam mevzuat uygunluğu henüz ilan edilmez.
+
+## v21 – Saha konum takibi
+Tek seferlik konum sorgusu, kullanıcı başlattığında devamlı watchPosition takibine dönüştürüldü. Konum işareti ve doğruluk çemberi güncellenir; konum zamanı, düşük hassasiyet ve 30 saniyeden eski sinyal gösterilir. Harita elle sürüklendiğinde takip kamerası serbest kalır; Konuma dön ile yeniden izlenebilir. Durdurma, izin reddi ve sayfadan ayrılmada takip temizlenir; geç gelen callback haritayı değiştiremez. Konum uygulama tarafından sunucuya kaydedilmez.
+
+63 JavaScript testi başarılı. GPS testi sahte cihaz callback'leriyle güncelleme/çember/takip durdurma/eski konum/izin reddi senaryolarını gerçekten çalıştırır; gerçek arazi GPS ölçümü değildir.

@@ -500,7 +500,7 @@
     const sel = $('#sSel'); if (sel) sel.value = S.park;
   }
   function sayfaCiz() {
-    if (S._hmap) { S._hmap.remove(); S._hmap = null; S._hIdx = null; }
+    if (S._hmap) { hKonumDurdur(); S._hmap.remove(); S._hmap = null; S._hIdx = null; }
     baglamBaglantilari();
     const showPark = S.page !== 'genel';
 
@@ -1573,7 +1573,7 @@
     kon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/></svg>' };
   function hAraclar(m) {
     const C = L.Control.extend({ options: { position: 'topleft' }, onAdd: () => { const d = L.DomUtil.create('div', 'leaflet-bar htools');
-      d.innerHTML = '<a href="#" role="button" data-t="fit" title="Seçili parka sığdır" aria-label="Seçili parka sığdır">' + SVG.fit + '</a><a href="#" role="button" data-t="full" title="Tam ekran" aria-label="Tam ekran">' + SVG.full + '</a><a href="#" role="button" data-t="ol" title="Mesafe ölç" aria-label="Mesafe ölç">' + SVG.ol + '</a><a href="#" role="button" data-t="al" title="Alan ölç" aria-label="Alan ölç">' + SVG.al + '</a><a href="#" role="button" data-t="kon" title="Konumum" aria-label="Konumum">' + SVG.kon + '</a>';
+      d.innerHTML = '<a href="#" role="button" data-t="fit" title="Seçili parka sığdır" aria-label="Seçili parka sığdır">' + SVG.fit + '</a><a href="#" role="button" data-t="full" title="Tam ekran" aria-label="Tam ekran">' + SVG.full + '</a><a href="#" role="button" data-t="ol" title="Mesafe ölç" aria-label="Mesafe ölç">' + SVG.ol + '</a><a href="#" role="button" data-t="al" title="Alan ölç" aria-label="Alan ölç">' + SVG.al + '</a><a href="#" role="button" data-t="kon" title="Konumumu izle" aria-label="Konumumu izle" aria-pressed="false">' + SVG.kon + '</a>';
       L.DomEvent.disableClickPropagation(d); L.DomEvent.on(d, 'click', (e) => { L.DomEvent.preventDefault(e); const a = e.target.closest('a'); if (!a) return; const t = a.dataset.t;
         if (t === 'fit') hSigdir(); else if (t === 'full') hTamEkran(); else if (t === 'kon') hKonum(); else hOlcum(t, a); }); return d; } });
     m.addControl(new C());
@@ -1584,10 +1584,40 @@
   function hTamEkran() { const w = $('#hwrap'); if (!w) return; const on = !w.classList.contains('hfull'); w.classList.toggle('hfull', on); document.body.classList.toggle('hfull-on', on);
     setTimeout(() => S._hmap && S._hmap.invalidateSize(), 60); if (on) toast('Tam ekrandan çıkmak için aynı düğmeye ya da Esc tuşuna basın.'); }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const w = $('#hwrap'); if (w && w.classList.contains('hfull')) hTamEkran(); if (S._hOl) hOlcumBitir(); } });
-  function hKonum() { if (!navigator.geolocation) { toast('Bu cihaz konum vermiyor.', true); return; }
-    navigator.geolocation.getCurrentPosition((p) => { const m = S._hmap; if (!m) return; const ll = [p.coords.latitude, p.coords.longitude];
-      if (S._hKon) S._hKon.forEach((x) => m.removeLayer(x)); S._hKon = [L.circle(ll, { radius: p.coords.accuracy, color: '#2b7bd6', weight: 1, fillOpacity: 0.1 }).addTo(m), L.circleMarker(ll, { radius: 7, color: '#fff', weight: 2, fillColor: '#2b7bd6', fillOpacity: 1 }).bindTooltip('Konumunuz (±' + Math.round(p.coords.accuracy) + ' m)').addTo(m)];
-      m.setView(ll, Math.max(m.getZoom(), 16)); }, (e) => toast('Konum alınamadı: ' + e.message, true), { enableHighAccuracy: true, timeout: 15000 }); }
+  function hGpsDurum(run) {
+    const el = $('#hGps'); if (!el || S._hGpsRun !== run) return;
+    const age = run.time ? Math.max(0, Date.now() - run.time) : null;
+    el.hidden = false;
+    el.classList.toggle('gps-stale', age != null && age > 30000);
+    el.innerHTML = run.ll ? '<strong>' + (age > 30000 ? 'Konum eski · güncel sinyal bekleniyor' : 'Konum izleniyor') + '</strong><span>GPS doğruluğu ±' + Math.round(run.accuracy) + ' m · ' + esc(new Date(run.time).toLocaleTimeString('tr-TR')) + (run.accuracy > 100 ? ' · Düşük hassasiyet' : '') + '</span><span>' + esc(hKoorMetin(run.ll)) + '</span><button class="btn sm" data-a="hGpsCenter">Konuma dön</button><small>GPS ve çizim doğruluğu ayrı değerlendirilir. Konum sunucuya kaydedilmez.</small>' : '<strong>Konum bekleniyor…</strong><span>Cihazınızın konum iznini açın.</span>';
+  }
+  function hKonumDurdur(message) {
+    const run = S._hGpsRun;
+    if (run) { if (run.watch != null && navigator.geolocation) navigator.geolocation.clearWatch(run.watch); clearInterval(run.timer); (run.layers || []).forEach((x) => run.map.removeLayer(x)); }
+    S._hGpsRun = null;
+    const btn = document.querySelector('.htools [data-t="kon"]'); if (btn) { btn.classList.remove('on'); btn.setAttribute('aria-pressed','false'); btn.setAttribute('aria-label','Konumumu izle'); btn.title='Konumumu izle'; }
+    const el = $('#hGps'); if (el) { el.hidden = !message; el.textContent = message || ''; }
+  }
+  function hKonum() {
+    if (S._hGpsRun) { hKonumDurdur('Konum izleme durduruldu.'); return; }
+    if (!navigator.geolocation) { toast('Bu cihaz konum vermiyor.', true); return; }
+    const m = S._hmap; if (!m) return;
+    const run = { map:m, layers:[], follow:true, watch:null, time:null }, btn = document.querySelector('.htools [data-t="kon"]'); S._hGpsRun = run;
+    if (btn) { btn.classList.add('on'); btn.setAttribute('aria-pressed','true'); btn.setAttribute('aria-label','Konum izlemeyi durdur'); btn.title='Konum izlemeyi durdur'; }
+    hGpsDurum(run);
+    run.watch = navigator.geolocation.watchPosition((p) => {
+      if (S._hGpsRun !== run || S._hmap !== m) return;
+      const ll = [p.coords.latitude,p.coords.longitude], accuracy = p.coords.accuracy;
+      if (!OPGeo.coordinate(ll) || !Number.isFinite(accuracy) || accuracy < 0) return;
+      run.ll=ll; run.accuracy=accuracy; run.time=p.timestamp || Date.now();
+      if (!run.layers.length) run.layers=[L.circle(ll,{radius:accuracy,color:'#46B3FF',weight:1,fillOpacity:.10}).addTo(m),L.circleMarker(ll,{radius:7,color:'#fff',weight:2,fillColor:'#2B8FE3',fillOpacity:1}).bindTooltip('Cihaz konumu').addTo(m)];
+      else { run.layers[0].setLatLng(ll).setRadius(accuracy); run.layers[1].setLatLng(ll); }
+      if (run.follow) { if (!run.centered) { m.setView(ll,Math.max(m.getZoom(),17)); run.centered=true; } else m.panTo(ll,{animate:false}); }
+      hGpsDurum(run);
+    },(e)=>{ if(S._hGpsRun!==run)return; const message=e.code===1?'Konum izni verilmedi. Tarayıcı ayarından izin verebilirsiniz.':e.code===3?'GPS zaman aşımı; yeni konum bekleniyor.':'GPS konumu alınamadı; cihazın konum hizmetini kontrol edin.'; if(e.code===1)hKonumDurdur(message);else {const el=$('#hGps');if(el){el.hidden=false;el.textContent=message+(run.ll?' Son konum güncel olmayabilir.':'');}} },{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+    run.timer=setInterval(()=>{if(S._hGpsRun===run&&run.ll)hGpsDurum(run);},5000);
+  }
+  AKSIYON.hGpsCenter=()=>{const run=S._hGpsRun;if(run&&run.ll){run.follow=true;run.map.setView(run.ll,Math.max(run.map.getZoom(),17));}};
   function hOlcum(tur, btn) {
     const m = S._hmap; if (S._hOl) { const ayni = S._hOl.tur === tur; hOlcumBitir(); if (ayni) return; }
     const o = S._hOl = { tur, pts: [], ly: null, et: null, btn }; btn.classList.add('on'); m.getContainer().style.cursor = 'crosshair'; m.doubleClickZoom.disable();
@@ -1620,6 +1650,8 @@
     L.control.scale({ imperial: false }).addTo(m);
     L.control.layers(ALT, { 'Yer adları (uydu üstü)': etk }, { collapsed: true, position: 'topright' }).addTo(m);
     hAraclar(m);
+    const gpsControl=L.control({position:'bottomleft'}); gpsControl.onAdd=()=>{const d=L.DomUtil.create('div','h-gps');d.id='hGps';d.hidden=true;d.setAttribute('role','status');d.setAttribute('aria-live','polite');L.DomEvent.disableClickPropagation(d);d.addEventListener('click',tikla);return d;};gpsControl.addTo(m);
+    m.on('dragstart',()=>{if(S._hGpsRun)S._hGpsRun.follow=false;});
     if (!navigator.onLine) { const d = L.control({ position: 'topright' }); d.onAdd = () => { const x = L.DomUtil.create('div', 'hcevr'); x.textContent = 'Çevrimdışı: yalnız daha önce açılmış altlık karoları görünür; sınır ve tesis verisi cihazdaki kopyadandır.'; return x; }; d.addTo(m); }
     S._hG = L.layerGroup().addTo(m); S._hB = {};
     S.veri.parks.forEach((p) => { const h = p.harita; if (!h || !h.sinir) return; const k = alanKontrol(p), renk = k && !k.ok ? '#E07A3A' : '#5BD18B';
