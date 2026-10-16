@@ -28,19 +28,33 @@
   E.month = (s) => P(s)[1];
 
   // ---------- gecikme zammı (6183 s.K. m.51; Tebliğ Md. 39/1) ----------
-  // Süre oran değişikliği tarihlerinde dilimlenir; her dilimde: tutar × aylık oran × (tam ay + kalan gün ÷ 30)
+  // Kaynak: GİB, Tahsilat Genel Tebliği (Seri A/1), GZ hesabı 4/e, 30 günlük kesir ve 6.
+  // Vade hariç, ödeme dahil. Tam aylarda dönem başındaki oran; yalnız günlük kesirde değişim ayrılır.
+  // Günlük oran = aylık / 30, altı ondalığa yukarı tamamlanır. Ay sonu vadeleri ay sonunda korunur.
+  E.gzGunluk = (oran) => Math.ceil(oran / 30 * 1e6 - 1e-9) / 1e6;
   E.gzDilimler = function (bas, bit, oranlar) {
     const out = [];
     if (!bas || !bit || bit <= bas) return out;
-    for (let k = 0; k < oranlar.length; k++) {
-      const tk = oranlar[k][0], tk1 = k + 1 < oranlar.length ? oranlar[k + 1][0] : '9999-12-31';
-      const s = bas > tk ? bas : tk, e = bit < tk1 ? bit : tk1;
-      if (e <= s) continue;
-      const [sy, sm] = P(s), [ey, em] = P(e);
-      let n0 = (ey - sy) * 12 + em - sm;
-      if (E.addMonths(s, n0) > e) n0--;
-      const g = days(E.addMonths(s, n0), e);
-      out.push({ bas: s, bit: e, oran: oranlar[k][1], ay: n0, gun: g, faktor: oranlar[k][1] * (n0 + g / 30) });
+    const rates = (oranlar || []).filter((x) => x && x[0] && Number.isFinite(x[1]) && x[1] >= 0).slice().sort((a, b) => a[0].localeCompare(b[0]));
+    const rateAt = (date) => { for (let i = rates.length - 1; i >= 0; i--) if (rates[i][0] <= date) return rates[i][1]; return null; };
+    const [by, bm, bd] = P(bas), monthEnd = bd === lastDay(by, bm);
+    const boundary = (n) => { const [y, m] = mk(by, bm + n, 1); return iso(y, m, monthEnd ? lastDay(y, m) : Math.min(bd, lastDay(y, m))); };
+    const push = (s, e, ay, gun, oran) => {
+      const gunluk = oran == null ? null : E.gzGunluk(oran);
+      const faktor = oran == null ? NaN : ay * oran + gun * gunluk;
+      const last = out[out.length - 1];
+      if (last && ay && last.ay && last.oran === oran && E.addDays(last.bit, 1) === s) { last.bit = e; last.ay += ay; last.faktor += faktor; }
+      else out.push({ bas: s, bit: e, oran, ay, gun, gunluk, faktor, esas: ay ? 'Aylık' : 'Günlük', eksik: oran == null });
+    };
+    let cursor = bas, n = 1;
+    while (boundary(n) <= bit) { const end = boundary(n), start = E.addDays(cursor, 1); push(start, end, 1, 0, rateAt(start)); cursor = end; n++; }
+    if (cursor === bit) return out;
+    const start = E.addDays(cursor, 1), count = days(cursor, bit);
+    if (count === 30) { push(start, bit, 1, 0, rateAt(start)); return out; }
+    // Günlük kalan süre: değişikliğin yürürlüğe girdiği gün yeni oranla hesaplanır.
+    let day = start;
+    for (const date of rates.map((x) => x[0]).filter((x) => x > start && x <= bit).concat(E.addDays(bit, 1))) {
+      const end = E.addDays(date, -1); push(day, end, 0, days(day, date), rateAt(day)); day = date;
     }
     return out;
   };

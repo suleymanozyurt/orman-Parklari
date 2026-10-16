@@ -24,3 +24,14 @@ Bu testler bütün uygulamanın her cihazda hatasız olduğuna dair iddia değil
 
 ## Yeni Ek-10 kaynağının karşılaştırılması
 EK-10 Denetim Raporları(5).xlsm makroları çalıştırılmadan XML içerikleri okundu. 14 raporun uygulamada kullanılan 15 denetim alanı, önceki veri yedeğiyle karşılaştırıldı; 210 alan eşleşti. Karşılaştırma canlı veritabanının tamamının birebir doğrulandığı anlamına gelmez. Mükerrer rapor eklenmedi, mali alanlar veya güncel sınırlar bu dosyayla değiştirilmedi. Kurtyolu için içindekilerdeki 2,77 ha değeri ve İmrahor genel kanaatindeki sınır değişikliği tarihi gibi kaynak çelişkileri resmî onay üzerinden teyit edilmelidir.
+
+## v20 – Gecikme zammı motorunun dayanakla düzeltilmesi
+GİB Tahsilat Genel Tebliği Seri A/1 (01.10.2024 tarihli konsolide PDF), Gecikme Zammı bölümünde: tam ay içinde değişen oranın tam ayı bölmemesi, günlük kalan sürenin yürürlük gününde bölünmesi, günlük katsayının altı ondalığa yukarı tamamlanması, ay sonu vadelerinin ay sonunda korunması ve 30 günlük kesrin aylık hesaplanması kontrol edildi. Resmî PDF: https://cdn.gib.gov.tr/api/gibportal-file/file/getFileResources?objectKey=arsiv/fileadmin/mevzuatek/eski/Tahsilat_Genel_Tebligi_A1_01102024_1.pdf . Oran değişim açıklaması: https://gib.gov.tr/mevzuat/kanun/442/teblig/10351 . Güncel oran tablosu: https://cdn.gib.gov.tr/api/gibportal-file/file/getFileResources?objectKey=arsiv/yardim-kaynaklar/yararli-bilgiler/gecikme-zammi-orani.pdf .
+
+Önceki motor oran değişiminde ay hesabını yeniden başlatıyor ve günlük katsayıyı yuvarlamadan kullanıyordu. Yeni motor vade dönemlerini koruyor, günlük kesri ayrı hesaplıyor. Eksik tarihsel oran artık sıfır gecikme gibi hesaplanmıyor; sonuç hesaplanamaz olarak kalıyor. Alacak ayrıntısı ve hesap aracı açıklamaları aynı yönteme göre güncellendi.
+
+GİB sayısal örnekleri bağımsız sabit beklenen sonuçlarla test edildi: 20,28 TL; 32.000,50 TL; 541,70 TL; 21,68 TL; 187,55 TL; 30 günlük kesirde 25,00 / 125,00 TL. Artık yıl, ay sonu ve oran başlangıç günü sınırları ayrıca test edildi. 62 JavaScript + 6 Python testi başarılı. Bu testler, tüm parkların sözleşme/vergi rejiminin veya resmî muhasebe dökümünün idari teyidi değildir.
+
+Önceki veri yedeğinde aynı oran/döküm ve 16.10.2026 hesap tarihiyle 103 parça karşılaştırıldı: 69 GZ sonucu değişti, eksik oran kapsamı yok. Açık ana para her iki hesapta 17.762.958,87 TL. GZ+KDV toplamı eski yöntemde 1.692.246,92 TL, düzeltilen yöntemde 1.695.518,44 TL. Bu fark yeni tahakkuk veya güncel borç belgesi değildir. Şifreli kaynak kayıtlar değiştirilmedi.
+
+Devam eden kontroller: park/sözleşme bazında kira dönemi dayanakları, muhasebe dökümünün güncel kapsamı, ek tesis onayları, tüm kaynakların harita eşleştirmesi ve asgari GZ gibi kalem/ödeme bazında ayrıca değerlendirilmesi gereken özel hükümler. Tam mevzuat uygunluğu henüz ilan edilmez.
