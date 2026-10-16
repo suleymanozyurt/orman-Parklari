@@ -1154,9 +1154,9 @@
     const rows = w.items.filter((i) => !S.islemEksik || ['incelenmedi', 'yok'].includes(islemKayit(p, w, i).durum));
     return '<div class="pagehead"><div><h1>İşlem ve Belge Kontrolü</h1><p>' + esc(p.ad || p.kisa) + ' · Belge kontrolü ve kaynak takibi</p></div></div>' + mpick() + parkIslemBaglari(p) +
       '<section class="panel"><label for="islemTip"><b>İşlem türü</b></label><select class="fld" id="islemTip">' + OPWorkflows.map((x) => '<option value="' + x.id + '"' + (x.id === w.id ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('') + '</select>' +
-      '<p class="muted hnote">Kaynak: ORMAN PARKLARI VAR-YOK TABLOLARI.xlsx, “' + esc(w.name) + '” sayfası. Bu belge kontrol şablonudur; güncel mevzuat, işlem tarihi ve resmî talep ayrıca değerlendirilir. “Var”, belgenin onaylı veya işleme yeterli olduğu anlamına gelmez.</p>' +
+      '<p class="muted hnote">Kaynak: ' + esc((w.source || {}).file || 'ORMAN PARKLARI VAR-YOK TABLOLARI.xlsx') + ', “' + esc(w.name) + '” sayfası. Bu belge kontrol şablonudur; güncel mevzuat, işlem tarihi ve resmî talep ayrıca değerlendirilir. “Var”, belgenin onaylı veya işleme yeterli olduğu anlamına gelmez.</p>' +
       '<div class="hfr" role="status">' + Object.keys(counts).map((k) => '<span class="hchip">' + ISLEM_D[k] + ' <b>' + counts[k] + '</b></span>').join('') + '</div><label class="hchip"><input id="islemEksik" type="checkbox"' + (S.islemEksik ? ' checked' : '') + '> Yalnız yok / incelenmemiş belgeler</label></section>' +
-      '<section class="panel"><h2>' + esc(w.name) + '</h2><div class="checklist">' + rows.map((i) => { const c = islemKayit(p, w, i), url = OPGeo.safeURL(c.kaynak); return '<article class="checklist-item"><div><strong>' + esc(i.id + '. ' + i.name) + '</strong><p><span class="badge ' + (c.durum === 'var' ? 'b-ok' : c.durum === 'yok' ? 'b-amb' : 'b-gray') + '">' + esc(ISLEM_D[c.durum] || ISLEM_D.incelenmedi) + '</span></p>' + (c.kaynak ? '<p class="hnote">Kaynak: ' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">Belgeyi aç</a>' : esc(c.kaynak)) + '</p>' : '') + (c.not ? '<p class="hnote">' + esc(c.not) + '</p>' : '') + (c.tarih ? '<small class="muted">Son kontrol: ' + fd(c.tarih.slice(0, 10)) + ' · ' + esc(c.kim || '') + '</small>' : '') + '</div><button class="btn sm duz-only" data-a="islemDuzenle" data-i="' + i.id + '">Kontrolü kaydet</button></article>'; }).join('') + (!rows.length ? '<p>Bu filtrede belge kalemi yok.</p>' : '') + '</div>' +
+      '<section class="panel"><h2>' + esc(w.name) + '</h2><p class="muted hnote">Şablonda park bazında doldurulmuş VAR/YOK tespiti bulunmuyor. Kontroller her park için ayrı saklanır.</p><div class="checklist">' + rows.map((i) => { const c = islemKayit(p, w, i), url = OPGeo.safeURL(c.kaynak); return '<article class="checklist-item"><div><strong>' + esc(i.id + '. ' + i.name) + '</strong>' + (i.source_cell ? '<small class="source-cell">Kaynak hücre: ' + esc(w.name + '!' + i.source_cell) + '</small>' : '') + '<p><span class="badge ' + (c.durum === 'var' ? 'b-ok' : c.durum === 'yok' ? 'b-amb' : 'b-gray') + '">' + esc(ISLEM_D[c.durum] || ISLEM_D.incelenmedi) + '</span></p>' + (c.kaynak ? '<p class="hnote">Kaynak: ' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">Belgeyi aç</a>' : esc(c.kaynak)) + '</p>' : '') + (c.not ? '<p class="hnote">' + esc(c.not) + '</p>' : '') + (c.tarih ? '<small class="muted">Son kontrol: ' + fd(c.tarih.slice(0, 10)) + ' · ' + esc(c.kim || '') + '</small>' : '') + '</div><button class="btn sm duz-only" data-a="islemDuzenle" data-i="' + i.id + '">Kontrolü kaydet</button></article>'; }).join('') + (!rows.length ? '<p>Bu filtrede belge kalemi yok.</p>' : '') + '</div>' +
       (w.notes || []).map((n) => '<p class="muted hnote">Şablon notu: ' + esc(n) + '</p>').join('') + '<div class="hbtns"><button class="btn sm" data-a="islemCsv">Kontrol listesini indir</button></div></section>';
   };
   AFTER.islem = () => { $('#islemTip').onchange = (e) => { S.islemTip = e.target.value; sayfaCiz(); $('#islemTip').focus(); }; $('#islemEksik').onchange = (e) => { S.islemEksik = e.target.checked; sayfaCiz(); $('#islemEksik').focus(); }; };
@@ -1268,7 +1268,7 @@
     const F = S.hF;
     return '<div class="pagehead"><div><h1>Harita ve Tesis Envanteri</h1><p>Orman parkı sınırları, Gelişim ve Yönetim Planı / vaziyet planı tesisleri ve tesis envanteri. Parkı seçin; tesise dokununca bilgi kutusu açılır.</p></div></div>' +
       '<div id="hwrap" class="hwrap"><div class="htool">' +
-      '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><input id="hPark" class="fld" list="hParkL" placeholder="Park adı yazın ya da seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><datalist id="hParkL">' + S.veri.parks.map((p) => '<option value="' + esc(p.kisa) + '">' + esc(p.ad || '') + '</option>').join('') + '</datalist>' +
+      '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><div class="park-picker" id="hPicker"><div class="park-picker-field"><input id="hPark" class="fld" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hParkL" placeholder="Park arayın veya listeden seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><button type="button" class="park-picker-toggle" id="hParkOpen" aria-label="Bütün orman parklarını göster" aria-expanded="false" aria-controls="hParkL">⌄</button></div><div id="hParkL" class="park-options" role="listbox" aria-label="Orman parkları" hidden></div></div>' +
       '<button class="btn sm" data-a="hTum">Tüm parklar</button></div></div>' +
       '<div class="hsel hq"><label for="hQ">Tesis ara</label><input id="hQ" class="fld" type="search" placeholder="Ad, plan kodu ya da tür" value="' + esc(F.q) + '"></div>' +
       '<button class="btn sm" data-a="hFiltreSifirla">Filtreleri temizle</button>' +
@@ -1438,6 +1438,33 @@
       b.alt.forEach((a) => { const g2 = gor && F.alt; if (g2 && !m.hasLayer(a)) { a.addTo(m); a.bringToBack(); } else if (!g2 && m.hasLayer(a)) m.removeLayer(a); }); });
     hEnvCiz();
   }
+  // Seçim adı arama filtresi değildir: yeniden açıldığında her park erişilebilir.
+  function hParkSeciciKur() {
+    const root = $('#hPicker'), input = $('#hPark'), list = $('#hParkL'), toggle = $('#hParkOpen');
+    if (!root || !input || !list || !toggle) return;
+    let shown = [], active = -1;
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); input.value = S.hP || ''; };
+    const mark = (i) => { active = i; list.querySelectorAll('[role="option"]').forEach((el, n) => { el.classList.toggle('active', n === i); }); if (i >= 0) { const el = list.children[i]; input.setAttribute('aria-activedescendant', el.id); if (el.scrollIntoView) el.scrollIntoView({block:'nearest'}); } else input.removeAttribute('aria-activedescendant'); };
+    const open = (query = '') => {
+      const q = OPGeo.normal(query.trim()); shown = S.veri.parks.filter((p) => !q || OPGeo.normal(p.kisa + ' ' + (p.ad || '')).includes(q));
+      list.innerHTML = shown.length ? shown.map((p, i) => '<button type="button" role="option" tabindex="-1" id="hParkOption' + i + '" data-k="' + esc(p.kisa) + '" aria-selected="' + (p.kisa === S.hP) + '"><span>' + esc(p.kisa) + '</span>' + (p.kisa === S.hP ? '<small>Seçili</small>' : '') + '</button>').join('') : '<p class="park-no-result">Eşleşen park bulunamadı.</p>';
+      list.hidden = false; input.setAttribute('aria-expanded', 'true'); toggle.setAttribute('aria-expanded', 'true'); mark(-1);
+    };
+    const choose = (k) => { hParkSec(k); close(); input.focus(); close(); };
+    input.addEventListener('focus', () => { open(); input.select(); });
+    input.addEventListener('click', () => { if (list.hidden) { open(); input.select(); } });
+    input.addEventListener('input', () => open(input.value));
+    toggle.addEventListener('click', () => { const wasOpen = !list.hidden; input.focus(); if (wasOpen) close(); else { open(); input.select(); } });
+    list.addEventListener('mousedown', (e) => e.preventDefault());
+    list.addEventListener('click', (e) => { const option = e.target.closest('[role="option"]'); if (option) choose(option.dataset.k); });
+    root.addEventListener('focusout', (e) => { if (!root.contains(e.relatedTarget)) close(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (list.hidden) open(); if (shown.length) mark(active < 0 ? (e.key === 'ArrowDown' ? 0 : shown.length - 1) : (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (!list.hidden && shown.length) choose(shown[active >= 0 ? active : 0].kisa); }
+      else if (e.key === 'Tab') close();
+    });
+  }
   function hParkSec(k, sigdir) {
     const changed = (S.pBy[k] ? k : '') !== S.hP;
     S.hP = S.pBy[k] ? k : ''; if (S.hP) S.park = S.hP;
@@ -1606,10 +1633,7 @@
     let zt0 = null; m.on('moveend', () => { if (S.hP) return; clearTimeout(zt0); zt0 = setTimeout(hUygula, 120); });
     el.addEventListener('click', tikla);
     // seçim ve filtre olayları
-    const ip = $('#hPark'); const bul = (v) => { const s = v.trim().toLocaleLowerCase('tr-TR'); return S.veri.parks.find((p) => p.kisa.toLocaleLowerCase('tr-TR') === s || (p.ad || '').toLocaleLowerCase('tr-TR') === s); };
-    const ipSec = () => { const v = ip.value.trim(), k = bul(v); if (k && k.kisa !== S.hP) hParkSec(k.kisa); else if (!v && S.hP) hParkSec(''); };
-    ip.addEventListener('change', ipSec); ip.addEventListener('input', () => { if (bul(ip.value)) ipSec(); });
-    ip.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; const s = ip.value.trim().toLocaleLowerCase('tr-TR'); const k = bul(ip.value) || S.veri.parks.find((p) => (p.kisa + ' ' + (p.ad || '')).toLocaleLowerCase('tr-TR').includes(s)); if (k) hParkSec(k.kisa); });
+    hParkSeciciKur();
     let zt = null; $('#hQ').addEventListener('input', (e) => { clearTimeout(zt); zt = setTimeout(() => { S.hF.q = e.target.value.trim(); hUygula(); }, 180); });
     $('#hfil').addEventListener('change', (e) => { const t = e.target, F = S.hF;
       if (t.dataset.hd) F.d[t.dataset.hd] = t.checked ? 1 : 0; else if (t.dataset.hs) F.kapali[t.dataset.hs] = !t.checked; else if (t.id === 'hTur') F.tur = t.value; else if (t.id === 'hArs') { F.arsiv = t.checked ? 1 : 0; F.pk = {}; hFiltreCiz(); hPanelCiz(); } else if (t.id === 'hAlt') F.alt = t.checked ? 1 : 0;
