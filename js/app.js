@@ -1174,7 +1174,7 @@
   // Plan çizimleri data/harita.enc (şifreli) dosyasından bir kez açılır; çizim katmanları ancak gösterilecekleri zaman kurulur.
   const DUR = { M: ['Mevcut', '#3CCB7F'], P: ['Planlanan', '#FFD34E'], O: ['Önceki onaylı planda – inşa edilmemiş', '#F29A4A'], V: ['Onaylı vaziyet planında (inşa durumu belirtilmemiş)', '#7FC8F8'],
     S: ['Sahada tespit – planla doğrulanmamış', '#FF8FB1'], K: ['Kaldırılan / eski konum', '#E5534B'], Y: ['Yol, otopark ve diğer plan çizimleri', '#B8C2CC'], A: ['Bilgi alanı (izinli alan, taşkın, parça, nokta listesi)', '#C792EA'], B: ['Durumu belirtilmemiş', '#5AA9E6'] };
-  const PLD = { guncel: ['Güncel onaylı plan', 'b-ok'], arsiv: ['Arşiv – önceki plan', 'b-gray'], belirsiz: ['Onayı belgede görülmedi', 'b-amb'], bilgi: ['Bilgi katmanı', 'b-gray'] };
+  const PLD = { guncel: ['Güncel onaylı plan', 'b-ok'], arsiv: ['Arşiv – önceki plan', 'b-gray'], belirsiz: ['Onay ve güncel sürüm teyidi gerekli', 'b-amb'], bilgi: ['Bilgi katmanı', 'b-gray'] };
   const BYOK = 'Belgede belirtilmemiş';
   const belgeIncelemesi = (p) => p.harita && p.harita.belge_incelemesi;
   const belgeEksikleri = (p, g) => { const b = belgeIncelemesi(p); return b && Array.isArray(b.eksik) ? b.eksik : (g.eksik || []); };
@@ -1305,7 +1305,7 @@
     el.innerHTML = '<section class="panel hps"><h3>' + esc(p.ad || p.kisa) + '</h3>' +
       kv('Konum', esc([p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · '))) + kv('İşletmeci', esc(p.isletmeci || p.durum || '')) +
       kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '') +
-      (h.onay_tarihi ? kv('Belgedeki onay', fd(h.onay_tarihi)) : '') +
+      (h.onay_tarihi || h.onay ? kv('Belgedeki onay', fd(h.onay_tarihi || h.onay)) : '') +
       (h.sinir_kapsam ? kv('Sınırın kapsamı', esc(h.sinir_kapsam)) : '') +
       kv('Kayıtlı alan', p.alan != null ? haMetin(p.alan) : 'Kayıtta yok') +
       kv('Haritadan alan', h.alan_ha != null ? haMetin(h.alan_ha) + (k ? (k.ok ? ' <i class="ok-t">uyumlu</i>' : ' <i class="red-t">fark %' + (k.f * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + '</i>') : '') : '<i class="amb-t">sınır koordinatı yok</i>') +

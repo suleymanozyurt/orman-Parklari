@@ -128,3 +128,6 @@ test('Tesis and plan KML preview preserve point, line and polygon with hole; lat
   current=xml.replace('28.51,41.01</coordinates></LineString>','32,41.01</coordinates></LineString>');w.document.querySelector('#hkDen').click();await new Promise(setImmediate);assert.match(w.document.querySelector('#hk_on').textContent,/1 çizim İstanbul dışına/);assert.equal(w.document.querySelector('#hkOk').disabled,true);
  }finally{dom.window.close();}
 });
+
+
+test('unverified latest plan status does not falsely claim that its documented historical approval was never seen',()=>{const {dom,a,p,g}=app();try{g.planlar=[{id:'plan',ad:'2020 onaylı kaynak plan; güncel son sürüm ayrı teyit',durum:'belirsiz',onay:'10.04.2020 onayı kaynak belgede',tarih:'2020-04-10'}];const f={g:'N',c:[41,28.5],t:'Çeşme',ad:'M15',d:'M',p:'plan',id:'test',s:'source'};g.f=[f];a.gypHazirla(g,p.kisa);const html=a.gypPopup(p,f);assert.match(html,/10.04.2020 onayı kaynak belgede/);assert.match(html,/Onay ve güncel sürüm teyidi gerekli/);assert.doesNotMatch(html,/Onayı belgede görülmedi|Güncel onaylı plan/);}finally{dom.window.close();}});

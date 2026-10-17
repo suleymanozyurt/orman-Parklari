@@ -73,3 +73,10 @@ PDF vektörlerinden oturum/çizgi çıkarmada ilk coğrafi eşleştirme denemesi
 - Kurtyolu incelemesi 7 belge, mevcut 50 cetvel satırı ve 7 teyit konusuyla kaydedildi. Önceki inceleme arşivlendi. Sunucudan yeniden okunduğunda 19,98 ha harita, 19,90 ha kayıt ve mevcut sözleşme korundu.
 - v23 gerçek yükleme penceresi denemesi: Kurtyolu KMZ'si Tesis seçeneğinde 5 alan / 0 çizgi / 0 nokta olarak önizlendi. Üretim verisine katman eklenmeden Vazgeç ile kapatıldı.
 - Fiziksel saha GPS doğruluğu, tüm mobil cihazlarda PWA kurulumu ve bütün parkların eksiksiz tesis geometrileri bu testlerle tamamlandı sayılmaz.
+
+
+## 17.10.2026 — v24 bilgi kutusu onay ifadesi
+
+- Canlı M15 araması doğru tek nesneyi ve ona ait bilgi kutusunu açtı; saha mevcudiyeti ayrıca teyit edilmedi uyarısı korundu.
+- Tarihsel plan onayı görülmüşken son geçerli sürüm araştırmasının bitmemesi, onayın hiç görülmemesi anlamına gelmez. Belirsiz plan etiketi “Onay ve güncel sürüm teyidi gerekli” olarak düzeltildi; tarih girmek planı otomatik güncel onaylı yapmıyor.
+- Sınır panelinde önceki sürümün onay alanı geriye dönük okunuyor; Hacı'nın kaydedilen 10.04.2020 belge tarihi panelde gösterilebilir.
