@@ -49,3 +49,14 @@ Hacı Bektaş-i Veli araştırması: imzalı tarama s.43 ile sayısal özgün PD
 SADE klasöründeki KOORLIST.CKS'nin 150 köşesi, ED50_6 NCZ içindeki sayısal değerlerle 150/150 eşleşti. Aynı projenin WGS84_6 NCZ dosyasında eşlenik köşeler (tekrarlı kayıt kontrolü 0,001 m altında) bulundu. Kaynağın WGS84 UTM35N değerleri coğrafi WGS84'e dönüştürüldü. Poligon geçerli, kendini kesmiyor; düzeltilen 82 referans noktası içeride. Hesaplanan alanlar kaynak ED50 düzleminde 77,484211 ha, WGS84 UTM35N'de 77,483245 ha, ITRF96 TM30'da 77,511846 ha, jeodezik 77,495977 ha. Plan lejantı 77,48 ha, park kayıt alanı 77,47 ha; değerler aynı diye zorlanmadı. Bu 2020 plan tasdik sınırıdır; güncel hukuki sınır araştırması ayrı sürer.
 
 PDF vektörlerinden oturum/çizgi çıkarmada ilk coğrafi eşleştirme denemesinde yaklaşık 4,2 m RMSE bulundu; yeterli görülmedi ve bu denemeden tesis poligonu yayımlanmadı. Sayısal çizim veya yeterli doğrulukta kaynak eşleştirmesi olmadan oturum alanı uydurulmaz.
+
+
+## 17.10.2026 — v22 yayın ve v23 geometri düzeltmesi
+
+- v22 GitHub yayını 7e8b9c530f1d4b632f853efd14c8cc226425b849; uygulama kontrolleri ve Pages başarılı. Canlı tarayıcıdaki kaynaklar v22 olarak görüldü.
+- Tesis KML/KMZ yüklemesi artık Tesis seçeneğinde de plan aktarımıyla aynı geometri yolunu kullanıyor. Poligon veya çizgiden ortalama nokta üretme kaldırıldı. Elle girilen gerçek nokta listesi desteklenmeye devam eder.
+- Her çizginin ve alanın bütün köşeleri İstanbul aralığında denetleniyor; yalnız ilk köşeye bakılmıyor.
+- Kaynak bağlantısı ve belgedeki onay tarihi plan katmanına kaydediliyor; bir tarih girmek kendiliğinden güncel/onaylı plan statüsü vermiyor.
+- Eski sınırın onay tarihi, sayısı ve koordinat cetveli bağlantısı arşivleniyor; yeni sınır bu eski bilgileri devralmıyor. Sınırın belge kapsamı park panelinde görünür.
+- Gerçek yükleme penceresiyle otomatik test: Tesis ve Plan seçeneğinin ikisinde de aynı KML içindeki 1 delikli poligon, 1 çizgi, 1 nokta korunarak önizlendi; ilk noktası doğru, sonraki noktası İstanbul dışındaki çizgi kaydı engellendi.
+- Hacı Bektaş-i Veli 150 köşeli 2020 plan sınırının canlı kaydı bu notun yazıldığı anda henüz tamamlanmadı. Oturum yenilendiğinde veri aktarımı ve yeniden okuma ayrıca doğrulanacak.
