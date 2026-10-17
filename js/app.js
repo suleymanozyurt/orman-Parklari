@@ -1703,12 +1703,17 @@
     return out;
   }
   function kmlSinir(txt) { const polys = kmlOzellik(txt, {}).filter((f) => f.g === 'A'); if (!polys.length) throw new Error('Sınır için kapalı poligon bulunamadı.'); if (polys.some((f) => f.holes && f.holes.length)) throw new Error('İç halkalı sınırlar mevcut kayıt şemasına aktarılamaz; boşluk doldurularak kaydedilmedi.'); return polys.map((f) => f.c); }
+  function sinirKaydiUygula(h, sonuc, kaynak) {
+    if ((h.sinir || []).length) { h.alt=h.alt||[]; h.alt.push({ad:'Önceki sınır · '+bugun(),sinir:JSON.parse(JSON.stringify(h.sinir)),alan_ha:h.alan_ha,kaynak:h.kaynak||'',url:h.kaynak_url||'',onay:h.onay||'',crs:h.crs||'',kapsam:h.sinir_kapsam||''}); }
+    h.sinir=sonuc.sinir;h.alan_ha=r2(sonuc.alan);h.kaynak=kaynak.ad;h.kaynak_url=OPGeo.safeURL(kaynak.url)||'';h.onay=kaynak.onay||'';h.sinir_kapsam=kaynak.kapsam||'Teyit gerekli';h.crs=sonuc.crs;h.sinir_tm=sonuc.tm||null;
+    h.kontrol=h.sinir_kapsam+' · Kaynak koordinat sistemi: '+sonuc.crs+'; düzlem alan '+h.alan_ha.toLocaleString('tr-TR')+' ha. Kaynağın tarih ve onay kapsamı ayrıca değerlendirilir.';
+  }
   AKSIYON.haritaYukle = async () => {
     const p = S.pBy[S.park]; if (!p) return;
     try { await haritaYukle(); } catch (e) { toast(e.message, true); return; }
     modal('Koordinat / KML yükle · ' + p.kisa, fi('hk_t', 'Ne yükleniyor', 'Sınır', null, ['Sınır', 'Tesis', PLAN_T]) + fi('hk_c', 'Koordinat sistemi', 'ITRF96 TM 3° DOM 30', null, Object.keys(KS)) +
       fi('hk_v', 'Koordinatlar — her satır: nokta (ya da tesis kodu)  Y  X   [WGS84 için: ad enlem boylam]; Excel’den kopyalayıp yapıştırabilirsiniz', '', 'area') +
-      '<div class="f"><label for="hk_f">ya da KML / KMZ dosyası (WGS84)</label><input class="fld" id="hk_f" type="file" accept=".kml,.kmz"></div>' + fi('hk_k', 'Kaynak belge (ör. “II. Revize GYP sınır koordinatları, Bölge onayı 16.09.2026”)', '') +
+      '<div class="f"><label for="hk_f">ya da KML / KMZ dosyası (WGS84)</label><input class="fld" id="hk_f" type="file" accept=".kml,.kmz"></div>' + fi('hk_k', 'Kaynak belge (ör. “II. Revize GYP sınır koordinatları, Bölge onayı 16.09.2026”)', '') + fi('hk_url','Kaynak belge bağlantısı (HTTPS, varsa)','') + fi('hk_onay','Belgedeki onay tarihi (varsa)','','date') + fi('hk_kapsam','Sınırın belge kapsamı','Teyit gerekli',null,['Teyit gerekli','Plan tasdik sınırı (onaylı plan kapsamı)','Onaylı hukuki park sınırı']) +
       '<label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin:4px 0 8px"><input type="checkbox" id="hk_r"> Yeni planı esas al; önceki planları arşivde sakla (işaretlenmezse eklenir)</label>' +
       '<div id="hk_on" class="muted" style="font-size:13.5px"></div>', '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn" id="hkDen">Önizle ve denetle</button><button class="btn pri" id="hkOk" disabled>Kaydet</button>');
     let sonuc = null;
@@ -1756,13 +1761,13 @@
     };
     $('#hkDen').onclick = () => den().catch((e) => { $('#hk_on').innerHTML = '<span class="red-t">' + esc(e.message) + '</span>'; });
     $('#hkOk').onclick = () => {
-      if (!sonuc) return; const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
+      if (!sonuc) return; const sourceURL=gv('hk_url'); if(sourceURL&&!/^https:\/\//i.test(sourceURL)||sourceURL&&!OPGeo.safeURL(sourceURL)){ $('#hk_on').textContent='Geçerli HTTPS kaynak bağlantısı girin.';return;} const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
       if (sonuc.plan) { (async () => { await gypAl(); const g = S.gyp.parklar[p.kisa] || (S.gyp.parklar[p.kisa] = { kaynak: [], f: [], not: [] }); const k = 'U' + Date.now().toString(36);
         if ($('#hk_r').checked) { gypHazirla(g, p.kisa); (g.planlar || []).forEach((pl) => { pl.durum = 'arsiv'; pl.not = (pl.not || '') + ' · Yeni plan yüklenince arşive alındı (' + bugun() + ').'; }); }
         g.kaynak.push({ k, ad: sonuc.dosya, url: '', tarih: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: bugun(), durum: 'belirsiz', k, onay: '', not: 'Programdan yüklendi (' + sonuc.dosya + '); onay bilgisi belgeden teyit edilmeli.' }); sonuc.plan.forEach((x) => { x.s = k; x.p = k; g.f.push(x); });
         modalKapat(); try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan tesis katmanı yüklendi (' + sonuc.dosya + ', ' + sonuc.plan.length + ' çizim; kaynak: ' + kayn + ')'); toast('Plan katmanı kaydedildi.'); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } })(); return; }
       const h = p.harita = p.harita || {};
-      if (sonuc.sinir) { if ((h.sinir || []).length) { h.alt = h.alt || []; h.alt.push({ ad: 'Önceki sınır · ' + bugun(), sinir: JSON.parse(JSON.stringify(h.sinir)), alan_ha: h.alan_ha, kaynak: h.kaynak || '', url: h.kaynak_url || '', onay: h.onay || '', crs: h.crs || '' }); } h.sinir = sonuc.sinir; h.alan_ha = r2(sonuc.alan); h.kaynak = kayn; h.crs = sonuc.crs; h.sinir_tm = sonuc.tm || null; h.kontrol = 'Program içinde ' + sonuc.crs + ' → WGS84 dönüştürüldü; düzlem alan ' + h.alan_ha.toLocaleString('tr-TR') + ' ha. Onay belgesiyle eşleştirme gerekli.'; }
+      if (sonuc.sinir) sinirKaydiUygula(h,sonuc,{ad:kayn,url:sourceURL,onay:gv('hk_onay'),kapsam:gv('hk_kapsam')});
       else { h.tesis = sonuc.tesis; h.tesis_tm = sonuc.tm || null; h.tesis_kaynak = kayn; if (!h.crs) h.crs = sonuc.crs; }
       h.kim = S.kim; h.t = bugun();
       modalKapat(); degisti(p.kisa + ' ' + (sonuc.sinir ? 'sınır' : 'tesis') + ' koordinatları yüklendi (' + sonuc.crs + '; kaynak: ' + kayn + ')', p.kisa);

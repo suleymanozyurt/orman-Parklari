@@ -40,3 +40,12 @@ Devam eden kontroller: park/sözleşme bazında kira dönemi dayanakları, muhas
 Tek seferlik konum sorgusu, kullanıcı başlattığında devamlı watchPosition takibine dönüştürüldü. Konum işareti ve doğruluk çemberi güncellenir; konum zamanı, düşük hassasiyet ve 30 saniyeden eski sinyal gösterilir. Harita elle sürüklendiğinde takip kamerası serbest kalır; Konuma dön ile yeniden izlenebilir. Durdurma, izin reddi ve sayfadan ayrılmada takip temizlenir; geç gelen callback haritayı değiştiremez. Konum uygulama tarafından sunucuya kaydedilmez.
 
 63 JavaScript testi başarılı. GPS testi sahte cihaz callback'leriyle güncelleme/çember/takip durdurma/eski konum/izin reddi senaryolarını gerçekten çalıştırır; gerçek arazi GPS ölçümü değildir.
+
+## v22 – Sınır kaynaklarının karışmasını önleme
+Sınır yükleme aracına kaynak belge URL'si, belgedeki onay tarihi ve sınırın kapsamı (plan tasdik sınırı / hukuki park sınırı / teyit gerekli) eklendi. Önceki sınır ve kendi kaynağı arşivlenir. Yeni kayda önceki sınırın URL veya onay bilgisi miras kalmaz. Geriye dönük kayıtlar korunur. Gerçek davranış testiyle kaynak değişiminde eski URL/onayın temizlendiği ve arşivde korunduğu doğrulandı. 64 JavaScript testi geçti.
+
+Hacı Bektaş-i Veli araştırması: imzalı tarama s.43 ile sayısal özgün PDF'deki 82 koordinat karşılaştırıldı; M15, M19, T9, T10, T34, T43 aktarım değerleri düzeltildi. Eski 82 nokta arşivde, düzeltilen 82 nokta esas plan gösteriminde; kayıt canlı siteye kaydedildi. Referans noktaları tesis oturum geometrisi olarak sunulmaz.
+
+SADE klasöründeki KOORLIST.CKS'nin 150 köşesi, ED50_6 NCZ içindeki sayısal değerlerle 150/150 eşleşti. Aynı projenin WGS84_6 NCZ dosyasında eşlenik köşeler (tekrarlı kayıt kontrolü 0,001 m altında) bulundu. Kaynağın WGS84 UTM35N değerleri coğrafi WGS84'e dönüştürüldü. Poligon geçerli, kendini kesmiyor; düzeltilen 82 referans noktası içeride. Hesaplanan alanlar kaynak ED50 düzleminde 77,484211 ha, WGS84 UTM35N'de 77,483245 ha, ITRF96 TM30'da 77,511846 ha, jeodezik 77,495977 ha. Plan lejantı 77,48 ha, park kayıt alanı 77,47 ha; değerler aynı diye zorlanmadı. Bu 2020 plan tasdik sınırıdır; güncel hukuki sınır araştırması ayrı sürer.
+
+PDF vektörlerinden oturum/çizgi çıkarmada ilk coğrafi eşleştirme denemesinde yaklaşık 4,2 m RMSE bulundu; yeterli görülmedi ve bu denemeden tesis poligonu yayımlanmadı. Sayısal çizim veya yeterli doğrulukta kaynak eşleştirmesi olmadan oturum alanı uydurulmaz.
