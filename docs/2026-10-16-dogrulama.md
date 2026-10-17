@@ -80,3 +80,10 @@ PDF vektörlerinden oturum/çizgi çıkarmada ilk coğrafi eşleştirme denemesi
 - Canlı M15 araması doğru tek nesneyi ve ona ait bilgi kutusunu açtı; saha mevcudiyeti ayrıca teyit edilmedi uyarısı korundu.
 - Tarihsel plan onayı görülmüşken son geçerli sürüm araştırmasının bitmemesi, onayın hiç görülmemesi anlamına gelmez. Belirsiz plan etiketi “Onay ve güncel sürüm teyidi gerekli” olarak düzeltildi; tarih girmek planı otomatik güncel onaylı yapmıyor.
 - Sınır panelinde önceki sürümün onay alanı geriye dönük okunuyor; Hacı'nın kaydedilen 10.04.2020 belge tarihi panelde gösterilebilir.
+
+
+## 17.10.2026 — v24 yayın sonucu ve Kitaplık karşılaştırması
+
+- 66 JavaScript testi başarılı (0 hata). v24 39dbaf55df939414d6d4295e580bd1e7a0f4e4d9 yayınının uygulama kontrolleri ve Pages sonucu başarılı.
+- Kitaplıktaki 750 sayfalık 1 (13)(1).pdf dosyasının Kurtyolu ile eşleşen 709–712. sayfaları okundu: Mart 2022 revize plan talebi, komisyon incelemesi/sevk yazıları. Bunlar 14.04.2023 tarihli 5. revize planın nihai onay belgesi olarak kabul edilmedi. Tarih/5. revize metni için sonuç vermeyen metin araması belgenin bulunmadığına kanıt sayılmadı; taranmış asıl pafta araştırması hâlâ gerekli.
+- Bu oturumda bütün Kitaplık PDF'leri veya 17 parkın bütün sürümleri incelenmiş sayılmaz; kaydedilen adetler gerçek yapılan incelemelerle sınırlıdır.
