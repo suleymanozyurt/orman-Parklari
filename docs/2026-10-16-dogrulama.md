@@ -60,3 +60,16 @@ PDF vektörlerinden oturum/çizgi çıkarmada ilk coğrafi eşleştirme denemesi
 - Eski sınırın onay tarihi, sayısı ve koordinat cetveli bağlantısı arşivleniyor; yeni sınır bu eski bilgileri devralmıyor. Sınırın belge kapsamı park panelinde görünür.
 - Gerçek yükleme penceresiyle otomatik test: Tesis ve Plan seçeneğinin ikisinde de aynı KML içindeki 1 delikli poligon, 1 çizgi, 1 nokta korunarak önizlendi; ilk noktası doğru, sonraki noktası İstanbul dışındaki çizgi kaydı engellendi.
 - Hacı Bektaş-i Veli 150 köşeli 2020 plan sınırının canlı kaydı bu notun yazıldığı anda henüz tamamlanmadı. Oturum yenilendiğinde veri aktarımı ve yeniden okuma ayrıca doğrulanacak.
+
+
+## 17.10.2026 — canlı kayıt ve dışa aktarım doğrulaması
+
+- v23 yayını b95cd812b0ff88b27e715df5cca25bc707d36b55; uygulama kontrolleri ve Pages başarılı. Canlı tarayıcı kaynak dosyası js/app.js?v=23 olarak doğrulandı.
+- Son kontroller: 65 JavaScript testi başarılı; bu oturum başında 6 Python testi başarılı. JavaScript sözdizimi ve git diff boşluk kontrolü başarılı.
+- Hacı Bektaş-i Veli: 150 benzersiz köşeli 2020 plan tasdik sınırı gerçek yönetici arayüzünden yüklendi. Kaynak, 10.04.2020 belge tarihi ve plan tasdik kapsamı kaydedildi. Eski 71,63 ha sınır kaynağıyla arşivlendi; önceki sınır sayısı 2 oldu. Kayıtlı park alanı 77,47 ha korundu. Şifreli kayıt sonrası Kaydedildi işareti ve Verileri yenile ile sunucudan yeniden okuma doğrulandı.
+- Uygulamadan KML indirildi ve XML/geometri yeniden açıldı: güncel sınır kapalı, 151 koordinat / 150 benzersiz köşe; topoloji geçerli; ITRF96 TM30 alanı 77,511846 ha. Güncel planın 82 referans noktasından 82'si içinde, 0'ı dışında. Arşivle beraber çıktı 164 referans noktası ve 2 geçerli poligon içeriyor; 164 benzersiz saha tesisi anlamına gelmez. Önceden bozuk arşiv sınırı dışa aktarım doğrulamasında hariç kalmaya devam etti.
+- Hacı kaynak incelemesi 17.10.2026 tarihli 6 belgeyle güncellendi; datum eşleştirmesi çözümü ve projeksiyon alan farkları açıklandı. Güncel hukuki sınırın tüm onay zinciri ve tesis oturumları henüz tamamlanmadı.
+- Kurtyolu: teklif raporu, NCZ, KMZ ve Nihai Sınır.XLS içerikleri incelendi. Teklif raporunda 39,72 ha; NCZ metninde 39,80 ha; KMZ birleşik çiziminde 42,2847 ha (TM30) farkı bulundu. 230 koordinatlı XLS'nin tek halka kabul edilmesi geçersiz geometri üretiyor; parça/sürüm çözümlemesi gerekli. Bu dosyalar mevcut onaylı sınır yerine geçirilmedi.
+- Kurtyolu incelemesi 7 belge, mevcut 50 cetvel satırı ve 7 teyit konusuyla kaydedildi. Önceki inceleme arşivlendi. Sunucudan yeniden okunduğunda 19,98 ha harita, 19,90 ha kayıt ve mevcut sözleşme korundu.
+- v23 gerçek yükleme penceresi denemesi: Kurtyolu KMZ'si Tesis seçeneğinde 5 alan / 0 çizgi / 0 nokta olarak önizlendi. Üretim verisine katman eklenmeden Vazgeç ile kapatıldı.
+- Fiziksel saha GPS doğruluğu, tüm mobil cihazlarda PWA kurulumu ve bütün parkların eksiksiz tesis geometrileri bu testlerle tamamlandı sayılmaz.
