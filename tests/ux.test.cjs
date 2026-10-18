@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require('jsdom');
-function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
+function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={gateGoster,gypAl,gypKaydet,BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
 function fill(g,n){g.f=Array.from({length:n},(_,i)=>({id:'id'+String(i).padStart(4,'0'),ad:'M'+String(i).padStart(4,'0'),g:'N',c:[41,28+i/1e6],t:'Büfe',d:'M',p:'plan'}));}
 test('all 501 inventory records remain reachable including final record',()=>{const {dom,w,a,g}=app();fill(g,501);a.gypHazirla(g,'İmrahor');a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,60);a.S.hEnvPage=8;a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,21);assert.match(w.document.querySelector('#henv').textContent,/M0500/);assert.match(w.document.querySelector('#henv').textContent,/481–501 \/ 501/);dom.window.close();});
 test('changing search resets pagination and Turkish spelling folds accents',()=>{const {dom,w,a,g}=app();fill(g,501);g.f[500].ad='Yağmur Barınağı';a.hEnvCiz();a.S.hEnvPage=8;a.S.hF.q='yagmur barinagi';a.hEnvCiz();assert.equal(a.S.hEnvPage,0);assert.equal(w.document.querySelectorAll('#henv tbody tr').length,1);dom.window.close();});
@@ -156,8 +156,8 @@ test('legacy import dates remain upload dates in source panels, popups and KML w
 });
 test('new KML imports keep approval and upload dates separate, retaining original geometry and uncertain approval status',async()=>{
  const {dom,w,a,p,g}=app();try{
-  a.BETIK['vendor/leaflet/leaflet.js']=Promise.resolve();a.BETIK['vendor/proj4.js']=Promise.resolve();a.S.veri.meta={};a.S.gypS='1';a.S.owner=true;a.S.rol={duzenle:true};
-  w.K.sifrele=async()=>{throw Error('TEST stop before network write');};
+  a.BETIK['vendor/leaflet/leaflet.js']=Promise.resolve();a.BETIK['vendor/proj4.js']=Promise.resolve();a.S.veri.meta={};a.S.gypS='1';a.S.gypSHA='a'.repeat(40);a.S.owner=true;a.S.rol={duzenle:true};
+  let candidate;w.K.sifrele=async v=>{candidate=v;throw Error('TEST stop before network write');};
   await a.AKSIYON.haritaYukle();const form=w.document;
   form.querySelector('#hk_t').value='Plan tesis katmanı (KML/KMZ – GYP / vaziyet planı)';
   const xml='<kml><Placemark><name>T1</name><Point><coordinates>28.123456789,41.123456789</coordinates></Point></Placemark></kml>';
@@ -165,8 +165,8 @@ test('new KML imports keep approval and upload dates separate, retaining origina
   form.querySelector('#hk_k').value='Kaynak plan';form.querySelector('#hk_onay').value='2023-04-14';
   form.querySelector('#hkDen').click();await new Promise(resolve=>setImmediate(resolve));assert.equal(form.querySelector('#hkOk').disabled,false);
   form.querySelector('#hkOk').click();await new Promise(resolve=>setImmediate(resolve));
-  const pl=g.planlar.find(x=>x.ad==='Kaynak plan'),ky=g.kaynak.find(x=>x.k===pl.k);assert.equal(pl.tarih,'');assert.equal(pl.onay,'2023-04-14');assert.match(pl.yukleme_tarihi,/^\d{4}-\d{2}-\d{2}$/);assert.equal(pl.durum,'belirsiz');assert.equal(ky.tarih,'');assert.equal(ky.onay_tarihi,pl.onay);assert.equal(ky.yukleme_tarihi,pl.yukleme_tarihi);assert.equal(g.f[0].c[0],41.123456789);assert.equal(g.f[0].c[1],28.123456789);
-  a.gypHazirla(g,p.kisa);form.querySelector('#page').innerHTML=a.hPlanPanel(p,g);const text=form.querySelector('#page').textContent;assert.match(text,/Onay tarihi: 14\.04\.2023/);assert.match(text,/Yükleme:/);assert.doesNotMatch(text,/Belge tarihi:/);
+  assert.equal(g.f.length,0);const ng=candidate.parklar[p.kisa],pl=ng.planlar.find(x=>x.ad==='Kaynak plan'),ky=ng.kaynak.find(x=>x.k===pl.k);assert.equal(pl.tarih,'');assert.equal(pl.onay,'2023-04-14');assert.match(pl.yukleme_tarihi,/^\d{4}-\d{2}-\d{2}$/);assert.equal(pl.durum,'belirsiz');assert.equal(ky.tarih,'');assert.equal(ky.onay_tarihi,pl.onay);assert.equal(ky.yukleme_tarihi,pl.yukleme_tarihi);assert.equal(ng.f[0].c[0],41.123456789);assert.equal(ng.f[0].c[1],28.123456789);
+  a.gypHazirla(ng,p.kisa);form.querySelector('#page').innerHTML=a.hPlanPanel(p,ng);const text=form.querySelector('#page').textContent;assert.match(text,/Onay tarihi: 14\.04\.2023/);assert.match(text,/Yükleme:/);assert.doesNotMatch(text,/Belge tarihi:/);
  }finally{dom.window.close();}
 });
 test('older KML sources without a plan record cannot turn upload date into document date',()=>{
@@ -174,5 +174,70 @@ test('older KML sources without a plan record cannot turn upload date into docum
   g.planlar=[];g.kaynak=[{k:'Uold',ad:'Eski aktarım.kml',tarih:'2026-10-18',not:'Yetkili tarafından programdan yüklendi'}];g.f=[{id:'f1',g:'N',c:[41,28],t:'Büfe',d:'P',s:'Uold'}];a.gypHazirla(g,p.kisa);
   assert.equal(g.planlar[0].tarih,'');assert.equal(g.planlar[0].yukleme_tarihi,'2026-10-18');
   w.document.querySelector('#page').innerHTML=a.hPlanPanel(p,g);const text=w.document.querySelector('#page').textContent;assert.match(text,/Yükleme: 18\.10\.2026/);assert.doesNotMatch(text,/(Belge|Kaynak) tarihi: 18\.10\.2026/);
+ }finally{dom.window.close();}
+});
+
+test('map loading retains exact encrypted blob identity and retries a failed load rather than caching an empty map',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  const text=JSON.stringify({parklar:{Test:{f:[],kaynak:[],planlar:[]}}});let fail=true,reads=0;
+  a.S.gyp=null;w.fetch=async()=>{reads++;if(fail)throw Error('TEST network failure');return{ok:true,text:async()=>text};};
+  const failed=await a.gypAl();assert.ok(failed.hata);assert.equal(a.S.gypSHA,null);
+  fail=false;const loaded=await a.gypAl();assert.equal(loaded.hata,undefined);assert.ok(loaded.parklar.Test);assert.equal(a.S.gypSHA,require('node:crypto').createHash('sha1').update(Buffer.from('blob '+Buffer.byteLength(text)+'\0'+text)).digest('hex'));assert.ok(reads>=2);
+ }finally{dom.window.close();}
+});
+test('map conflict cannot write, replace cached geometry or archive existing plans',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.owner=true;a.S.gyp={parklar:{Test:{f:[],kaynak:[],planlar:[{id:'old',durum:'guncel'}]}}};a.S.gypSHA='a'.repeat(40);const original=a.S.gyp,before=JSON.stringify(original),next=JSON.parse(before);next.parklar.Test.planlar[0].durum='arsiv';
+  const calls=[];w.K.sifrele=async v=>JSON.stringify(v);w.fetch=async(u,o)=>{calls.push(o.method||'GET');return{ok:true,json:async()=>({sha:'b'.repeat(40)})};};
+  await assert.rejects(a.gypKaydet(a.S.pBy.Test,'Test map',next),/sunucuda değişti/);assert.deepEqual(calls,['GET']);assert.equal(a.S.gyp,original);assert.equal(JSON.stringify(original),before);assert.equal(a.S.gypSHA,'a'.repeat(40));assert.equal(a.S.gypSaving,false);
+ }finally{dom.window.close();}
+});
+test('unavailable map source blocks every save and cannot overwrite existing encrypted data',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.owner=true;a.S.gyp={parklar:{},hata:'TEST offline'};a.S.gypSHA='a'.repeat(40);w.fetch=()=>{throw Error('must not write');};w.K.sifrele=()=>{throw Error('must not encrypt empty fallback');};
+  await assert.rejects(a.gypKaydet(a.S.pBy.Test,'Test',{}),/kaynağı doğrulanmadan/);assert.equal(a.S.dirty,0);
+ }finally{dom.window.close();}
+});
+test('successful map save writes against the loaded blob and preserves other parks and geometry before updating summary',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.owner=true;a.S.rol={duzenle:true};a.S.gyp={parklar:{Test:{f:[],kaynak:[],planlar:[]},Other:{f:[{id:'keep',g:'N',c:[41,28],t:'Büfe',d:'P'}],kaynak:[],planlar:[]}}};a.S.gypSHA='a'.repeat(40);a.S.sha='main-base';
+  const next=JSON.parse(JSON.stringify(a.S.gyp));next.parklar.Test.f.push({id:'add',g:'N',c:[41.123456789,28.123456789],t:'Büfe',d:'P'});const bodies=[];
+  w.K.sifrele=async v=>JSON.stringify(v);w.K.b64=v=>Buffer.from(v).toString('base64');w.fetch=async(u,o)=>{if(o.method==='PUT'){bodies.push([u,JSON.parse(o.body)]);return{ok:true,json:async()=>({content:{sha:u.includes('/harita.enc')?'c'.repeat(40):'main-after'}})};}return{ok:true,json:async()=>({sha:u.includes('/harita.enc')?'a'.repeat(40):'main-base'})};};
+  const ok=await a.gypKaydet(a.S.pBy.Test,'Test map',next);assert.equal(ok,true);assert.equal(bodies.length,2);assert.equal(bodies[0][1].sha,'a'.repeat(40));assert.equal(a.S.gypSHA,'c'.repeat(40));assert.equal(a.S.gyp.parklar.Test.f[0].c[0],41.123456789);assert.equal(a.S.gyp.parklar.Other.f[0].id,'keep');assert.equal(a.S.pBy.Test.harita.gyp,1);assert.equal(a.S.dirty,0);assert.equal(a.S.gypSaving,false);
+ }finally{dom.window.close();}
+});
+test('archive import is explicit and cannot archive the current plan when importing a historical layer',async()=>{
+ const {dom,w,a,p,g}=app();try{
+  a.BETIK['vendor/leaflet/leaflet.js']=Promise.resolve();a.BETIK['vendor/proj4.js']=Promise.resolve();a.S.veri.meta={};a.S.gypS='1';a.S.gypSHA='a'.repeat(40);a.S.owner=true;a.S.rol={duzenle:true};g.planlar[0].durum='guncel';let candidate;w.K.sifrele=async v=>{candidate=v;throw Error('TEST before write');};
+  await a.AKSIYON.haritaYukle();const d=w.document,t=d.querySelector('#hk_t');t.value='Plan tesis katmanı (KML/KMZ – GYP / vaziyet planı)';t.dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#hkPlanFields').hidden,false);
+  d.querySelector('#hk_r').checked=true;d.querySelector('#hk_pd').value='Arşiv — önceki plan';d.querySelector('#hk_pd').dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#hk_r').disabled,true);assert.equal(d.querySelector('#hk_r').checked,false);
+  Object.defineProperty(d.querySelector('#hk_f'),'files',{value:[{name:'old.kml',text:async()=>'<kml><Placemark><name>T1</name><Point><coordinates>28,41</coordinates></Point></Placemark></kml>'}]});d.querySelector('#hk_k').value='Eski plan';d.querySelector('#hkDen').click();await new Promise(r=>setImmediate(r));d.querySelector('#hkOk').click();await new Promise(r=>setImmediate(r));assert.equal(candidate.parklar[p.kisa].planlar[0].durum,'guncel');assert.equal(candidate.parklar[p.kisa].planlar.at(-1).durum,'arsiv');assert.equal(g.planlar.length,1);assert.equal(g.f.length,0);assert.match(d.querySelector('#hk_on').textContent,/Kaydedilemedi/);
+ }finally{dom.window.close();}
+});
+test('access decryption failure and application startup failure have distinct messages',async()=>{
+ for(const encryptedOK of [false,true]){const {dom,w,a}=app();try{
+  w.document.body.innerHTML='<div id="gate"></div><div id="app"></div>';a.S.veri=null;a.S.oran=null;a.gateGoster('parola');w.document.querySelector('#gpw').value='TEST_ONLY';w.document.querySelector('#gkeep').checked=false;
+  w.K.coz=async()=>{if(!encryptedOK)throw Error('TEST authentication');return{parks:[],muhasebe:[]};};await w.document.querySelector('#gform').onsubmit({preventDefault(){}});
+  const text=w.document.querySelector('#gate').textContent;if(encryptedOK){assert.match(text,/Erişim doğrulandı ancak uygulama başlatılamadı/);assert.doesNotMatch(text,/Parola yanlış/);}else assert.match(text,/Parola yanlış veya şifreli veri doğrulanamadı/);
+ }finally{dom.window.close();}}
+});
+test('manual refresh and PWA update wait while map save is in progress',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.gypSaving=true;w.fetch=()=>{throw Error('must wait for map save');};assert.equal(await a.yenile(),false);assert.match(w.document.querySelector('#toast').textContent,/Devam eden işlem/);
+  const sent=[],reg={waiting:{postMessage:x=>sent.push(x)},update:async()=>{},addEventListener:()=>{}};Object.defineProperty(w.navigator,'serviceWorker',{value:{register:async()=>reg,addEventListener:()=>{}}});a.swKur();await Promise.resolve();w.document.querySelector('#band-guncel button').click();assert.equal(sent.length,0);
+ }finally{dom.window.close();}
+});
+test('server race after map preflight still preserves cached geometry and the expected blob in the write',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.owner=true;a.S.gyp={parklar:{Test:{f:[],kaynak:[],planlar:[]}}};a.S.gypSHA='a'.repeat(40);const before=a.S.gyp,next=JSON.parse(JSON.stringify(before));next.parklar.Test.not=['TEST new note'];let payload;
+  w.K.sifrele=async v=>JSON.stringify(v);w.K.b64=v=>Buffer.from(v).toString('base64');w.fetch=async(u,o)=>{if(o.method==='PUT'){payload=JSON.parse(o.body);return{ok:false,status:409,json:async()=>({message:'TEST SHA conflict'})};}return{ok:true,json:async()=>({sha:'a'.repeat(40)})};};
+  await assert.rejects(a.gypKaydet(a.S.pBy.Test,'TEST map',next),/SHA conflict/);assert.equal(payload.sha,'a'.repeat(40));assert.equal(a.S.gyp,before);assert.equal(a.S.gyp.parklar.Test.not,undefined);assert.equal(a.S.gypSaving,false);
+ }finally{dom.window.close();}
+});
+test('a saved map with failed summary save remains a visible pending summary and is never reported fully saved',async()=>{
+ const {dom,w,a}=preparedApp();try{
+  a.S.owner=true;a.S.rol={duzenle:true};a.S.gyp={parklar:{Test:{f:[],kaynak:[],planlar:[]}}};a.S.gypSHA='a'.repeat(40);a.S.sha='main-base';const next=JSON.parse(JSON.stringify(a.S.gyp));next.parklar.Test.not=['TEST new note'];
+  w.K.sifrele=async v=>JSON.stringify(v);w.K.b64=v=>Buffer.from(v).toString('base64');w.fetch=async(u,o)=>{if(o.method==='PUT')return u.includes('/harita.enc')?{ok:true,json:async()=>({content:{sha:'c'.repeat(40)}})}:{ok:false,status:500,json:async()=>({message:'TEST summary failure'})};return{ok:true,json:async()=>({sha:u.includes('/harita.enc')?'a'.repeat(40):'main-base'})};};
+  assert.equal(await a.gypKaydet(a.S.pBy.Test,'TEST map',next),false);assert.equal(a.S.gypSHA,'c'.repeat(40));assert.equal(a.S.gyp.parklar.Test.not[0],'TEST new note');assert.ok(a.S.dirty);assert.match(w.document.querySelector('#toast').textContent,/Kaydedilemedi/);
  }finally{dom.window.close();}
 });

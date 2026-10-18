@@ -130,7 +130,7 @@
     const durum = (text) => { S.syncText = text; const el = $('#syncStatus'); if (el) el.textContent = text; };
     S.sync = OPSync.create({
       available: () => !!S.veri && navigator.onLine && document.visibilityState !== 'hidden',
-      blocked: () => !!S.dirty || !!S.saving || !!S.refreshing || !!$('#modal.on') || !!document.activeElement?.closest('input,textarea,select,[contenteditable="true"]'),
+      blocked: () => !!S.dirty || !!S.saving || !!S.gypSaving || !!S.refreshing || !!$('#modal.on') || !!document.activeElement?.closest('input,textarea,select,[contenteditable="true"]'),
       revision: kaynakSurumu,
       read: async (revision) => { const [text, oran] = await Promise.all([veriGetir(revision), oranGetir(revision)]); return { text, oran, ref: revision, veri: text === S.enc ? S.veri : await K.coz(text, S.pw), sha: await veriSHA(text) }; },
       pending: () => durum('Yeni veri var; düzenlemeniz bitince alınacak.'),
@@ -185,7 +185,7 @@
     const vardi = !!navigator.serviceWorker.controller;
     let updateRequested = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (updateRequested && !S.dirty) { location.reload(); return; }
+      if (updateRequested && !S.dirty && !S.gypSaving && !S.saving) { location.reload(); return; }
       if (vardi) bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile');
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
@@ -194,7 +194,7 @@
         bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle');
         const b = $('#band-guncel button');
         if (b) b.onclick = () => {
-          if (S.dirty) { toast('Önce değişikliklerinizi kaydedin.', true); return; }
+          if (S.dirty || S.gypSaving || S.saving) { toast('Önce değişikliklerinizi kaydedin; devam eden kaydın tamamlanmasını bekleyin.', true); return; }
           const worker = reg.waiting;
           if (!worker) { bandGoster('guncel', 'Programın yeni sürümü yüklendi.', 'Yenile'); return; }
           updateRequested = true;
@@ -212,7 +212,7 @@
     if (!msg) { if (b) b.remove(); return; }
     if (!b) { b = document.createElement('div'); b.id = 'band-' + id; b.className = 'band band-' + id; b.setAttribute('role', 'status'); document.body.appendChild(b); }
     b.innerHTML = '<span>' + esc(msg) + '</span>' + (dugme ? '<button type="button">' + esc(dugme) + '</button>' : '');
-    const bt = b.querySelector('button'); if (bt) bt.onclick = () => { if (S.dirty) { toast('Önce değişikliklerinizi kaydedin.', true); return; } location.reload(); };
+    const bt = b.querySelector('button'); if (bt) bt.onclick = () => { if (S.dirty || S.gypSaving || S.saving || S.refreshing) { toast('Önce değişikliklerinizi kaydedin; devam eden işlemin tamamlanmasını bekleyin.', true); return; } location.reload(); };
   }
   function agDurum() { bandGoster('cevrimdisi', navigator.onLine ? '' : 'Bağlantı yok. Yalnız önceden kaydedilmiş veriler ve harita karoları açılabilir; eksik kopyalar yüklenemez.'); }
   async function basla() {
@@ -242,7 +242,7 @@
     if(!S._takvimTimer){S._takvimTimer=setInterval(takvimKontrol,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)takvimKontrol();});}
   }
   function takvimKontrol(){
-    if(!S.veri||bugun()===S.rapor||S.dirty||S.saving||S.refreshing||$('#modal.on')||document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return false;
+    if(!S.veri||bugun()===S.rapor||S.dirty||S.saving||S.gypSaving||S.refreshing||$('#modal.on')||document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return false;
     hesapla();kabukDurum();sayfaCiz();return true;
   }
   function gateGoster(t, msg) {
@@ -258,8 +258,11 @@
     $('#gkul').onclick = (e) => { e.preventDefault(); kulGirisFormu($('#gate .box'), true); };
     $('#gform').onsubmit = async (ev) => {
       ev.preventDefault(); const pw = $('#gpw').value; $('#gerr').textContent = 'Açılıyor…';
-      try { S.veri = await K.coz(S.enc, pw); S.pw = pw; S.rol = {}; if ($('#gkeep').checked) ls.set('op_pw', pw); await acildi(); }
-      catch (e) { $('#gerr').textContent = 'Parola yanlış. Tekrar deneyin.'; }
+      let veri; try { veri = await K.coz(S.enc, pw); }
+      catch (e) { $('#gerr').textContent = 'Parola yanlış veya şifreli veri doğrulanamadı. Tekrar deneyin.'; return; }
+      const keep = $('#gkeep').checked; S.veri = veri; S.pw = pw; S.rol = {};
+      try { await acildi(); if (keep) ls.set('op_pw', pw); }
+      catch (e) { gateGoster('hata', 'Erişim doğrulandı ancak uygulama başlatılamadı. Hesap ve veri kontrolü gerekli. Sayfayı yenileyerek tekrar deneyin.'); }
     };
   }
 
@@ -292,8 +295,9 @@
     csvYukle: 'muhasebe', kayitEkle: 'muhasebe', kayitSil: 'muhasebe', tahsilat: 'muhasebe', tahakkuk: 'muhasebe', tEt: 'muhasebe', tEtP: 'muhasebe', tGeri: 'muhasebe', vadeDuz: 'muhasebe', vadeSil: 'muhasebe',
     gzGir: 'yonetim', gzSil: 'yonetim', tufeGir: 'yonetim', sifreDegis: 'yonetim', yPwDegis: 'yonetim', anahtarYenile: 'yonetim', yedekYukle: 'yonetim', kulEkle: 'yonetim', kulDuz: 'yonetim', kulSil: 'yonetim' };
   async function shaAl(yol) { try { return (await gh('/contents/' + yol + '?ref=' + CFG.branch, { cache: 'no-store' })).sha; } catch (e) { return null; } }
-  async function dosyaYaz(yol, txt, mesaj) {
+  async function dosyaYaz(yol, txt, mesaj, beklenenSHA) {
     const sha = await shaAl(yol);
+    if (beklenenSHA !== undefined && sha !== beklenenSHA) throw new Error('Harita verisi sunucuda değişti veya güncel sürüm doğrulanamadı. Hiçbir dosyanın üzerine yazılmadı; Verileri yenile ile güncel sürümü alın.');
     const body = { message: mesaj, content: K.b64(new TextEncoder().encode(txt)), branch: CFG.branch };
     if (sha) body.sha = sha;
     const j = await gh('/contents/' + yol, { method: 'PUT', body: JSON.stringify(body) });
@@ -301,7 +305,7 @@
   }
   async function kaydet() {
     if (!S.owner) { yoneticiGiris(); return; }
-    if (S.saving) return;
+    if (S.saving || S.gypSaving) return;
     S.saving = true;
     const btn = $('#bKaydet'); if (btn) { btn.disabled = true; btn.textContent = 'Kaydediliyor…'; }
     try {
@@ -413,7 +417,7 @@
     modalKapat(); sayfaCiz();
   }
   async function yenile(zorla) {
-    if (S.refreshing || S.saving) { toast('Devam eden işlem tamamlanınca yeniden deneyin.'); return false; }
+    if (S.refreshing || S.saving || S.gypSaving) { toast('Devam eden işlem tamamlanınca yeniden deneyin.'); return false; }
     if (!navigator.onLine) { toast('Bağlantı yok; yeni veri alınamadı. Mevcut kayıtlar korunuyor.', true); return false; }
     if (!zorla && S.dirty && !confirm('Kaydedilmemiş değişiklikleriniz var. Sunucudaki son hâl yüklenirse bu değişiklikler kaybolur. Devam edilsin mi?')) return false;
     const edit = S.dirty, previous = S.enc; S.refreshing = true; toast('Sunucudaki kayıt ve oranlar denetleniyor…');
@@ -421,7 +425,7 @@
       const ref = await kaynakSurumu();
       const [vt, or] = await Promise.all([veriGetir(ref), oranGetir(ref)]);
       const candidate = await K.coz(vt, S.pw), sha = await veriSHA(vt);
-      if (S.dirty !== edit || S.enc !== previous || S.saving) { toast('Yenileme sırasında yeni işlem başladı; taslağınız korundu.', true); return false; }
+      if (S.dirty !== edit || S.enc !== previous || S.saving || S.gypSaving) { toast('Yenileme sırasında yeni işlem başladı; taslağınız korundu.', true); return false; }
       kaynakUygula({ text:vt, oran:or, veri:candidate, sha, ref }); S.dirty = 0;
       S.lastRefresh = new Date().toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
       S.gyp = null; S.gypS = null; S.ekB = null; S.fV = null; S.fW = null; S.wordP = null;
@@ -1186,8 +1190,9 @@
   const haMetin = (n) => Number.isFinite(n) ? n.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ha' : 'Belgede belirtilmemiş';
   async function gypAl() {
     const s = (S.veri.meta && S.veri.meta.harita_surum) || '1';
-    if (S.gyp && S.gypS === s) return S.gyp;
-    try { S.gyp = await K.coz(await veriGetir(S.dataRef, CFG.harita), S.pw); } catch (e) { S.gyp = { parklar: {}, hata: e.message }; }
+    if (S.gyp && !S.gyp.hata && S.gypS === s) return S.gyp;
+    try { const text = await veriGetir(S.dataRef, CFG.harita), g = await K.coz(text, S.pw); if (!g || !g.parklar || typeof g.parklar !== 'object' || Array.isArray(g.parklar)) throw new Error('Harita kayıt yapısı geçersiz.'); S.gypSHA = await veriSHA(text); S.gyp = g; }
+    catch (e) { S.gyp = { parklar: {}, hata: e.message }; S.gypSHA = null; }
     S.gyp.parklar = S.gyp.parklar || {}; S.gypS = s; S._hIdx = null;
     Object.keys(S.gyp.parklar).forEach((k) => gypHazirla(S.gyp.parklar[k], k));
     return S.gyp;
@@ -1276,7 +1281,7 @@
       '<table>' + ana.map((x) => '<tr><th>' + esc(x[0]) + '</th><td' + (x[1] === BYOK ? ' class="hbyok"' : '') + '>' + esc(x[1]) + '</td></tr>').join('') + '</table>' +
       '<div class="hkoor"><span>' + (f.g === 'N' ? 'Kaynak noktası' : 'Çizimin ortalama referans noktası') + ': WGS84 ' + c[0].toFixed(6) + ', ' + c[1].toFixed(6) + '</span><span>ITRF96 TM30 ' + esc(hTM(c)) + '</span></div>' +
       '<div class="hpb"><button type="button" data-a="hZoom" data-id="' + esc(f.id) + '">Yakınlaş</button><button type="button" data-a="hKopya" data-id="' + esc(f.id) + '">Koordinat kopyala</button>' + (ky.url ? '<a href="' + esc(ky.url) + '" target="_blank" rel="noopener">Belgeyi aç</a>' : '') + '<button type="button" data-a="hPaylas" data-id="' + esc(f.id) + '">Paylaş</button><button type="button" data-a="hKapat">Kapat</button></div>' +
-      '<div class="hpk">Kaynak: ' + (ky.url ? '<a href="' + esc(ky.url) + '" target="_blank" rel="noopener">' + esc(ky.ad) + '</a>' : esc(ky.ad || BYOK)) + (ky.tarih ? ' · Drive ' + fd(ky.tarih) : '') + '</div>' +
+      '<div class="hpk">Kaynak: ' + (ky.url ? '<a href="' + esc(ky.url) + '" target="_blank" rel="noopener">' + esc(ky.ad) + '</a>' : esc(ky.ad || BYOK)) + (kaynakTarihMetin(ky) ? ' · ' + esc(kaynakTarihMetin(ky)) : '') + '</div>' +
       '<details><summary>Ayrıntılar ve belgedeki diğer bilgiler</summary><table>' + ay.map((x) => '<tr><th>' + esc(x[0]) + '</th><td' + (x[1] === BYOK ? ' class="hbyok"' : '') + '>' + esc(x[1]) + '</td></tr>').join('') + '</table></details></div>';
   }
   // ---- sayfa iskeleti ----
@@ -1545,7 +1550,7 @@
     const st = Object.keys(DUR).map((d) => '<Style id="d' + d + '"><LineStyle><color>' + kRenk(DUR[d][1], 'ff') + '</color><width>2</width></LineStyle><PolyStyle><color>' + kRenk(DUR[d][1], '88') + '</color></PolyStyle><IconStyle><color>' + kRenk(DUR[d][1], 'ff') + '</color><scale>0.8</scale><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>').join('') +
       '<Style id="sinir"><LineStyle><color>ff4ed3ff</color><width>3</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style><Style id="alt"><LineStyle><color>ffffffff</color><width>2</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style><Style id="ars"><LineStyle><color>ff9e9e9e</color><width>1.5</width></LineStyle><PolyStyle><color>40c0c0c0</color></PolyStyle></Style>';
     const pm = (p, g, f, stil) => { const ky = gypKaynak(g, f), pl = plOf(g, f);
-      return '<Placemark><name>' + xe(f.ad || f.t) + '</name><styleUrl>#' + stil + '</styleUrl><description>' + tablo([['Tesis kodu (program)', f.id || '']].concat(gypSatir(p, f)).concat([['Alan (çizimden)', f.m2 != null ? m2(f.m2) : (f.g === 'A' ? BYOK : '')], ['Kaynak', ky.ad + (ky.tarih ? ' (' + fd(ky.tarih) + ')' : '') + (ky.url ? ' ' + ky.url : '')]]).filter((r) => r[1] !== '')) + '</description>' +
+      return '<Placemark><name>' + xe(f.ad || f.t) + '</name><styleUrl>#' + stil + '</styleUrl><description>' + tablo([['Tesis kodu (program)', f.id || '']].concat(gypSatir(p, f)).concat([['Alan (çizimden)', f.m2 != null ? m2(f.m2) : (f.g === 'A' ? BYOK : '')], ['Kaynak', ky.ad + (kaynakTarihMetin(ky) ? ' · ' + kaynakTarihMetin(ky) : '') + (ky.url ? ' ' + ky.url : '')]]).filter((r) => r[1] !== '')) + '</description>' +
         ext({ id: f.id, park: p.kisa, tur: f.t, op_status: f.d, durum: (DUR[f.d] || DUR.B)[0], kod: f.ad, plan: pl.ad, plan_durum: (PLD[pl.durum] || PLD.belirsiz)[0], katman: f.k, alan_m2: f.m2, kaynak: ky.ad }) + geo(f.g, f.c, f.holes || []) + '</Placemark>'; };
     const govde = parklar.map((p) => { const h = p.harita || {}, g = (S.gyp && S.gyp.parklar[p.kisa]) || { f: [], kaynak: [], planlar: [] };
       const sn = OPGeo.boundaries(h).map((r,i)=>({...r,part:i})).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' sınırı' + (h.sinir.length > 1 ? ' – ' + ((h.parca || [])[r.part] || (r.part + 1)) : '')) + '</name><styleUrl>#sinir</styleUrl><description>' + tablo([['Park', p.ad || p.kisa], ['Haritadan alan', h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : ''], ['Kayıtlı alan', p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : '—'], ['Kaynak', h.kaynak || ''], ['Koordinat sistemi', h.crs || ''], ['Kontrol', h.kontrol || '']]) + '</description>' + ext({ park: p.kisa, alan_ha: h.alan_ha, kaynak: h.kaynak }) + geo('A', r.c, r.holes) + '</Placemark>').join('');
@@ -1576,15 +1581,20 @@
   };
   AKSIYON.gypSil = async (t) => { const p = S.pBy[S.hP || S.park], g = S.gyp && S.gyp.parklar[p.kisa], s = t.dataset.s; if (!g) return;
     const ky = g.kaynak.find((x) => x.k === s); if (!ky || !confirm((ky.ad || s) + ' dosyasından eklenen ' + g.f.filter((f) => f.s === s).length + ' çizim kaldırılsın mı?')) return;
-    g.f = g.f.filter((f) => f.s !== s); g.kaynak = g.kaynak.filter((x) => x.k !== s); g.planlar = (g.planlar || []).filter((x) => g.f.some((f) => f.p === x.id) || x.k !== s);
-    try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan katmanından “' + ky.ad + '” kaldırıldı'); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } };
-  async function gypKaydet(p, mesaj) {
+    const next=JSON.parse(JSON.stringify(S.gyp)), ng=next.parklar[p.kisa]; ng.f = ng.f.filter((f) => f.s !== s); ng.kaynak = ng.kaynak.filter((x) => x.k !== s); ng.planlar = (ng.planlar || []).filter((x) => ng.f.some((f) => f.p === x.id) || x.k !== s);
+    try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan katmanından “' + ky.ad + '” kaldırıldı',next); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } };
+  async function gypKaydet(p, mesaj, next) {
     if (!S.owner) { yoneticiGiris(); throw new Error('Kaydetmek için giriş gerekli'); }
-    const g0 = S.gyp.parklar[p.kisa]; if (g0) gypHazirla(g0, p.kisa);
-    await dosyaYaz(CFG.harita, await K.sifrele(S.gyp, S.pw), mesaj);
+    if (!S.gyp || S.gyp.hata || !/^[a-f0-9]{40}$/.test(S.gypSHA || '')) throw new Error('Harita kaynağı doğrulanmadan kayıt yapılamaz. Önce Verileri yenile ile haritayı yeniden açın.');
+    if (S.gypSaving || S.saving || S.refreshing) throw new Error('Devam eden kayıt veya yenileme tamamlanınca yeniden deneyin.');
+    const gyp=next||S.gyp, g0 = gyp.parklar[p.kisa]; if (g0) gypHazirla(g0, p.kisa);
+    S.gypSaving=true;
+    try { const expected=S.gypSHA, sha = await dosyaYaz(CFG.harita, await K.sifrele(gyp, S.pw), mesaj, expected); S.gyp=gyp;S.gypSHA=sha; }
+    finally { S.gypSaving=false; }
     const sur = bugun() + '-' + Date.now().toString(36); S.veri.meta.harita_surum = sur; S.gypS = sur; S._hIdx = null;
     p.harita = p.harita || {}; p.harita.gyp = (S.gyp.parklar[p.kisa] || { f: [] }).f.length;
     degisti(mesaj, p.kisa); await kaydet();
+    return !S.dirty;
   }
   // ---- harita araçları: ölçüm, koordinat, konum, tam ekran ----
   const SVG = { fit: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
@@ -1736,11 +1746,13 @@
     modal('Koordinat / KML yükle · ' + p.kisa, fi('hk_t', 'Ne yükleniyor', 'Sınır', null, ['Sınır', 'Tesis', PLAN_T]) + fi('hk_c', 'Koordinat sistemi', 'ITRF96 TM 3° DOM 30', null, Object.keys(KS)) +
       fi('hk_v', 'Koordinatlar — her satır: nokta (ya da tesis kodu)  Y  X   [WGS84 için: ad enlem boylam]; Excel’den kopyalayıp yapıştırabilirsiniz', '', 'area') +
       '<div class="f"><label for="hk_f">ya da KML / KMZ dosyası (WGS84)</label><input class="fld" id="hk_f" type="file" accept=".kml,.kmz"></div>' + fi('hk_k', 'Kaynak belge (ör. “II. Revize GYP sınır koordinatları, Bölge onayı 16.09.2026”)', '') + fi('hk_url','Kaynak belge bağlantısı (HTTPS, varsa)','') + fi('hk_onay','Belgedeki onay tarihi (varsa)','','date') + fi('hk_kapsam','Sınırın belge kapsamı','Teyit gerekli',null,['Teyit gerekli','Plan tasdik sınırı (onaylı plan kapsamı)','Onaylı hukuki park sınırı']) +
-      '<label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin:4px 0 8px"><input type="checkbox" id="hk_r"> Yeni planı esas al; önceki planları arşivde sakla (işaretlenmezse eklenir)</label>' +
+      '<div id="hkPlanFields" hidden>' + fi('hk_pd','Plan katmanının kapsamı','Onay ve güncel sürüm teyidi gerekli',null,['Onay ve güncel sürüm teyidi gerekli','Arşiv — önceki plan','Bilgi katmanı']) + '<label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin:4px 0 8px"><input type="checkbox" id="hk_r"> Önceki planları arşive al (işaretlenmezse ayrı katman eklenir)</label><p class="hnote">Onay tarihi yazılması güncelliği doğrulamaz. Eski planlar arşiv katmanı olarak yüklenebilir; mevcut tesislerle karışmaz.</p></div>' +
       '<div id="hk_on" class="muted" style="font-size:13.5px"></div>', '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn" id="hkDen">Önizle ve denetle</button><button class="btn pri" id="hkOk" disabled>Kaydet</button>');
     let sonuc = null;
     const invalidate = () => { sonuc = null; $('#hkOk').disabled = true; $('#hk_on').textContent = 'Değişiklikten sonra yeniden önizleyin.'; };
     ['#hk_v', '#hk_f', '#hk_c', '#hk_t'].forEach((id) => { $(id).addEventListener('input', invalidate); $(id).addEventListener('change', invalidate); });
+    $('#hk_t').addEventListener('change',()=>{$('#hkPlanFields').hidden=gv('hk_t')==='Sınır';});
+    $('#hk_pd').addEventListener('change',()=>{const archive=gv('hk_pd')!=='Onay ve güncel sürüm teyidi gerekli';$('#hk_r').disabled=archive;if(archive)$('#hk_r').checked=false;});
     const coz = (crs, satir) => { const pr = crs === 'WGS84' ? null : proj4(crs, 'WGS84'); return satir.map((r) => { if (!pr) return [r[0], r[1], r[2]]; const q = pr.forward([r[1], r[2]]); return [r[0], q[1], q[0]]; }); };
     const oku = () => { const t = ($('#hk_v').value || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean); const out = [];
       t.forEach((l, i) => { const a = l.split(/[\t;]+|\s{2,}|\s+(?=-?\d)/).map((x) => x.trim()).filter(Boolean); const nums = a.filter((x) => /^-?\d+([.,]\d+)?$/.test(x.replace(/\s/g, ''))).map((x) => +x.replace(',', '.'));
@@ -1780,10 +1792,12 @@
     $('#hkDen').onclick = () => den().catch((e) => { $('#hk_on').innerHTML = '<span class="red-t">' + esc(e.message) + '</span>'; });
     $('#hkOk').onclick = () => {
       if (!sonuc) return; const sourceURL=gv('hk_url'); if(sourceURL&&!/^https:\/\//i.test(sourceURL)||sourceURL&&!OPGeo.safeURL(sourceURL)){ $('#hk_on').textContent='Geçerli HTTPS kaynak bağlantısı girin.';return;} const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
-      if (sonuc.plan) { (async () => { await gypAl(); const g = S.gyp.parklar[p.kisa] || (S.gyp.parklar[p.kisa] = { kaynak: [], f: [], not: [] }); const k = 'U' + Date.now().toString(36);
-        if ($('#hk_r').checked) { gypHazirla(g, p.kisa); (g.planlar || []).forEach((pl) => { pl.durum = 'arsiv'; pl.not = (pl.not || '') + ' · Yeni plan yüklenince arşive alındı (' + bugun() + ').'; }); }
-        g.kaynak.push({ k, ad: sonuc.dosya, url: sourceURL, tarih: '', onay_tarihi: gv('hk_onay'), yukleme_tarihi: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: '', yukleme_tarihi: bugun(), durum: 'belirsiz', k, onay: gv('hk_onay'), not: 'Programdan yüklendi (' + sonuc.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); sonuc.plan.forEach((x) => { x.s = k; x.p = k; g.f.push(x); });
-        modalKapat(); try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan tesis katmanı yüklendi (' + sonuc.dosya + ', ' + sonuc.plan.length + ' çizim; kaynak: ' + kayn + ')'); toast('Plan katmanı kaydedildi.'); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } })(); return; }
+      if (sonuc.plan) { const pending=sonuc, onay=gv('hk_onay'), pd=gv('hk_pd'), durum=pd==='Arşiv — önceki plan'?'arsiv':pd==='Bilgi katmanı'?'bilgi':'belirsiz', arsiveAl=$('#hk_r').checked && durum==='belirsiz'; $('#hkOk').disabled=true;
+        (async () => { try { const loaded=await gypAl(); if(loaded.hata)throw new Error('Kaynak harita alınamadı; mevcut kayıtlar korunuyor. Yenileyip yeniden deneyin.'); const next=JSON.parse(JSON.stringify(loaded)), g = next.parklar[p.kisa] || (next.parklar[p.kisa] = { kaynak: [], f: [], not: [] }); const k = 'U' + Date.now().toString(36);
+        if (arsiveAl) { gypHazirla(g, p.kisa); (g.planlar || []).forEach((pl) => { pl.durum = 'arsiv'; pl.not = (pl.not || '') + ' · Yeni plan yüklenince arşive alındı (' + bugun() + ').'; }); }
+        g.kaynak.push({ k, ad: pending.dosya, url: sourceURL, tarih: '', onay_tarihi: onay, yukleme_tarihi: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: '', yukleme_tarihi: bugun(), durum, k, onay, not: 'Programdan yüklendi (' + pending.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); pending.plan.forEach((x) => { g.f.push({...x,s:k,p:k}); });
+        const tam=await gypKaydet(p, 'Harita: ' + p.kisa + ' plan tesis katmanı yüklendi (' + pending.dosya + ', ' + pending.plan.length + ' çizim; kaynak: ' + kayn + ')', next); modalKapat(); toast(tam?'Plan katmanı kaydedildi.':'Harita katmanı kaydedildi; park özetindeki değişiklikler henüz kaydedilemedi. Kayıt uyarısını çözün ve Değişiklikleri kaydet düğmesini kullanın.',!tam);
+        } catch (e) { if($('#hk_on'))$('#hk_on').textContent='Kaydedilemedi: '+e.message;toast('Kaydedilemedi: ' + e.message, true); } finally { if($('#hkOk'))$('#hkOk').disabled=!sonuc; } })(); return; }
       const h = p.harita = p.harita || {};
       if (sonuc.sinir) sinirKaydiUygula(h,sonuc,{ad:kayn,url:sourceURL,onay:gv('hk_onay'),kapsam:gv('hk_kapsam')});
       else { h.tesis = sonuc.tesis; h.tesis_tm = sonuc.tm || null; h.tesis_kaynak = kayn; if (!h.crs) h.crs = sonuc.crs; }

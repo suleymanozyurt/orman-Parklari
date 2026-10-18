@@ -72,3 +72,27 @@ v27 uygulama kontrolü ve Pages yayını başarılı; canlı sayfada `app.js?v=2
 - `npm test`: 86 başarılı, 0 başarısız. Yeni testler eski/yeni plan aktarımını, tarihlerin arayüz ve KML anlamını, mükerrer/geçersiz vade reddini kapsar. Python kontrolleri: 6 başarılı. JavaScript sözdizimi ve fark/boşluk denetimi başarılı.
 
 Bu sürümde yeni tesis geometrisi veya özel muhasebe verisi yayımlanmadı. Kurtyolu tesis geometrilerinin imzalı planla eşleştirilmesi, tüm parkların hukuki sınır/onay zinciri, canlı oturum kontrolleri ve gerçek cihaz/saha kabulü tamamlanmış değildir. Kıst hesabı karşılaştırma taslağıdır; resmî muhasebe kaydı oluşturmaz.
+
+## v30 canlı sürüm ve renk kontrolü
+
+`cfb3a3198cbbbeecbe5a5582d7d38b00bd1e014d` için CI ve Pages başarılı. Tarayıcı güncellemesi etkinleştirildi; canlı belgede v30 betikleri görüldü. Oturum içi ekran denetimi giriş engeli nedeniyle tamamlanmadı. Etiket ve tutar metinleri için gerçek CSS değişkenlerinden hesaplanan açık/koyu kontrast oranları: başarı 5,59/7,17; nötr 7,90/9,17; ihale 6,51/8,33; tahsilat 6,51/10,03. Bunlar hedef renk çiftlerinin sayısal kontrolüdür; bütün sayfaların tarayıcı ve cihaz incelemesi değildir.
+
+## v31 — harita kaydını koruma ve arşiv aktarımı
+
+Harita yüklendiği anda şifreli dosyanın Git blob kimliği hesaplanır. Kaydetme bu kimliğe karşı yapılır. Kaynak alınamadığında boş hata kopyası mevcut haritayı değiştiremez; başarısız yükleme yeniden denenebilir. Sunucuda başka bir harita kaydı oluşmuşsa, yazma öncesinde durulur; kontrol ile yazma arasındaki bir değişiklik de GitHub'ın aynı blob kimliği şartıyla reddedilir. Ekleme ve kaldırma önce ayrı bir kopyada hazırlanır; harita yazması başarısızsa mevcut geometriler ve plan durumları korunur.
+
+Harita kaydı sürerken arka plan yenileme, elle yenileme, yıl değişimi hesabı ve PWA etkinleştirme bekler. Harita dosyası kaydolup park özet dosyası kaydolamazsa özet taslağı korunur ve bütün işlem kaydedilmiş gibi bildirilmez. Bu iki dosyanın kaydı ayrı işlemlerdir; çok dosyalı atomik işlem iddiası yoktur.
+
+Tesis içe aktarımında arşiv/önceki plan ve bilgi katmanı açıkça seçilebilir. Arşiv veya bilgi eklerken mevcut planları arşivleme seçeneği kapatılır. Bu seçimler onay veya güncel plan teyidi yerine geçmez. Kaynak tarih ayrımı bilgi kutusunun alt satırında ve KML'nin kaynak açıklamasında da tamamlandı.
+
+Erişim parolası çözümlemesi ile uygulamanın başlatılma hataları ayrıldı. Çözümleme başarılı olup hesap/arayüz açılışı başarısız olduğunda artık kullanıcıya parola yanlış denmez. Hiçbir gerçek parola test dosyasına veya kaynak koda eklenmedi.
+
+### Uygulanan testler
+
+- `npm test`: 95 başarılı, 0 başarısız. Harita yükleme/yeniden deneme, kaynak kimliği, yazma öncesi çakışma, kontrol sonrası sunucu yarışı, diğer parkların korunması, özet kaydı başarısızlığı, arşiv aktarımı, giriş hata ayrımı ve kayıt sırasında yenileme/güncelleme kontrolleri uygulandı.
+- Python kontrolleri: 6 başarılı. JavaScript sözdizimi ve fark kontrolü başarılı.
+- Kurtyolu 2023 5. revizyon Y34–Y53 için 20 gerçek oturum poligonu hazırlandı. Tüm kodlar vektör çalışma çizimi ve 14.04.2023 imzalı paftada görsel karşılaştırıldı. Koordinatlar yerel WGS84 UTM35 CAD kaydından alınmıştır; tarama üzerinden tahmini çizim üretilmedi. Kaynak alanları 15,75 m²; projeksiyon farkıyla TM30 alanı yaklaşık 15,7545 m². Alanlar eşit görünsün diye geometri değiştirilmedi.
+- 20 poligonun tamamı geçerli ve teslim sınırı içinde; ters dönüşümde en büyük sayısal fark yaklaşık 0,00000000188 m. Bu fark kaynak verinin saha doğruluğunu ifade etmez.
+- Gerçek uygulama okuyucusu, geometrik denetimi, bilgi kutuları ve KML dışa aktarımı yerel ortamda uygulandı: 20 poligon, 0 nokta, 0 geometri hatası; 20 kaynak bağlantısı; bütün koordinatlar KML gidiş-dönüşünde birebir aynı. Bu katman canlı uygulamaya henüz aktarılmadı. 2023 planda öngörülmüş olması güncel sahada mevcut olduğu veya son hukuki plan olduğu anlamına gelmez.
+
+Tam park/tesis envanteri, tüm onay zincirleri, son sürüm oturum içi tarayıcı incelemesi, saha GPS ve gerçek cihaz PWA kabulü halen tamamlanmış değildir. Yılbaşı geçiş kıstı karşılaştırma taslağıdır. Yapay zekâ yanıt servisi henüz bağlı değildir.
