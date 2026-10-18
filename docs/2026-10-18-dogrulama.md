@@ -41,3 +41,11 @@ Koyu harita bilgi kutularındaki sabit koyu yeşil başlık rengi tema metin ren
 `npm test`: 70/70 başarılı; yeni test açılır bölümde bütün kaynakların korunmasını ve düzenleme düğmesinin erişilebilirliğini denetler. Sözdizimi ve diff kontrolleri başarılı.
 
 v27 uygulama kontrolü ve Pages yayını başarılı; canlı sayfada `app.js?v=27` görüldü. Yeniden girişten sonra Çiçekçiler 122 unsurla açıldı. Belge bölümü başlangıçta kapalı, açılınca dört kaynak ve yedi teyit konusu erişilebilir. Kurtyolu → Hacı Bektaş-i Veli → Çiçekçiler geçişleri “Tüm parklar” adımı olmadan yapıldı; harita seçicisinde 17 seçenek bulundu. Canlı hesaplanmış renklerden metin kontrastı başlıklarda 10,50:1, kaynak uyarısında 8,18:1; her ikisi de 4,5:1 kontrolünü geçti. Gerçek harita ve kaynak uyarılı bilgi kutusu ekran görüntüsü özel çalışma çıktısı olarak kaydedildi.
+
+### v28 — İç halkalı park sınırları
+
+- Park sınırları için geriye dönük uyumlu `sinir_holes` alanı eklendi. Her dış parçaya ait iç halkalar haritada, önceki sınır arşivinde ve KML çıktısında korunur.
+- KML önizlemesinde net alan, dış alan eksi iç halkalar olarak gerçek projeksiyonla hesaplanır. Geçersiz iç halkalar kaydı engeller; başarısız değiştirme mevcut kaydı veya arşivi değiştirmez.
+- Konum kontrolü iç halka içindeki noktaları, hariç alandan geçen çizgileri ve hariç alanı çevreleyen tesis poligonlarını tespit eder. Sonuç hukuki aykırılık veya sahada mevcudiyet teyidi değildir.
+- Otomatik test: 74/74 başarılı. Yeni kontroller: hassas koordinatlarla sınır aktarımı/dışa aktarımı, arşiv, atomik geçersiz kayıt reddi, gerçek projeksiyonla net alan, nokta/çizgi/poligonun hariç alana taşması ve eski şema uyumu.
+- Canlı tarayıcı doğrulaması ve kaynak cetvelleriyle veri eşleştirmesi sürüyor; bütün parkların sınırları doğrulandı veya çalışma bütünü tamamlandı anlamına gelmez.

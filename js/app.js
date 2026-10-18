@@ -1211,8 +1211,8 @@
   }
   function hKonumDisinda(p, f) {
     const rings = p.harita && p.harita.sinir;
-    if (!rings || !rings.length || rings.some((r) => OPGeo.ringIssues(r).length) || OPGeo.validate(f).length) return null;
-    return OPGeo.points(f).some((q) => !rings.some((r) => OPGeo.inside(q, r)));
+    if (!rings || !rings.length || OPGeo.boundaryIssues(p.harita).length || OPGeo.validate(f).length) return null;
+    return OPGeo.outsideBoundary(p.harita, f, true);
   }
   function planMetin(pl) { return [pl.ad, pl.tarih ? fd(pl.tarih) : '', pl.onay].filter(Boolean).join(' · ') || BYOK; }
   function gypSatir(p, f) {
@@ -1379,8 +1379,8 @@
   function hDogrulamaPanel(p, g) {
     const kt = g.kontrol || {}, ek = belgeEksikleri(p, g), k = alanKontrol(p), bul = [];
     const current = OPGeo.inventory([p], {parklar:{[p.kisa]:g}}), outside = current.filter((x) => hKonumDisinda(p, x.f));
-    (p.harita && p.harita.sinir || []).forEach((r, i) => OPGeo.ringIssues(r).forEach((msg) => bul.push({ tur: 'Sınır geometrisi', msg: (i + 1) + '. parça: ' + msg + ' · Hatalı parça haritada ve KML çıktısında gösterilmez.' })));
-    (p.harita && p.harita.alt || []).forEach((a) => (a.sinir || []).forEach((r) => OPGeo.ringIssues(r).forEach((msg) => bul.push({ tur: 'Arşiv sınırı', msg: a.ad + ': ' + msg }))));
+    OPGeo.boundaries(p.harita).forEach((r, i) => OPGeo.validate(r).forEach((msg) => bul.push({ tur: 'Sınır geometrisi', msg: (i + 1) + '. parça: ' + msg + ' · Hatalı parça haritada ve KML çıktısında gösterilmez.' })));
+    (p.harita && p.harita.alt || []).forEach((a) => OPGeo.boundaries(a).forEach((r) => OPGeo.validate(r).forEach((msg) => bul.push({ tur: 'Arşiv sınırı', msg: a.ad + ': ' + msg }))));
     if (k && !k.ok) bul.push({ tur: 'Sınır', msg: 'Haritadan alan ' + p.harita.alan_ha.toLocaleString('tr-TR') + ' ha, kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha.' });
     if (!(p.harita && p.harita.sinir)) bul.push({ tur: 'Sınır', msg: 'Sınır koordinatı yok.' });
     const gpl = (g.planlar || []).find((x) => x.durum === 'guncel'); if (gpl && /^yok/i.test(p.plan || '')) bul.push({ tur: 'Kayıt', msg: 'Park kaydında plan “' + p.plan + '” yazıyor; Drive’da onaylı plan var: ' + planMetin(gpl) + '. Park kaydı güncellenmeli.' });
@@ -1528,8 +1528,8 @@
       return '<Placemark><name>' + xe(f.ad || f.t) + '</name><styleUrl>#' + stil + '</styleUrl><description>' + tablo([['Tesis kodu (program)', f.id || '']].concat(gypSatir(p, f)).concat([['Alan (çizimden)', f.m2 != null ? m2(f.m2) : (f.g === 'A' ? BYOK : '')], ['Kaynak', ky.ad + (ky.tarih ? ' (' + fd(ky.tarih) + ')' : '') + (ky.url ? ' ' + ky.url : '')]]).filter((r) => r[1] !== '')) + '</description>' +
         ext({ id: f.id, park: p.kisa, tur: f.t, op_status: f.d, durum: (DUR[f.d] || DUR.B)[0], kod: f.ad, plan: pl.ad, plan_durum: (PLD[pl.durum] || PLD.belirsiz)[0], katman: f.k, alan_m2: f.m2, kaynak: ky.ad }) + geo(f.g, f.c, f.holes || []) + '</Placemark>'; };
     const govde = parklar.map((p) => { const h = p.harita || {}, g = (S.gyp && S.gyp.parklar[p.kisa]) || { f: [], kaynak: [], planlar: [] };
-      const sn = (h.sinir || []).filter((r) => !OPGeo.ringIssues(r).length).map((r, i) => '<Placemark><name>' + xe(p.kisa + ' sınırı' + (h.sinir.length > 1 ? ' – ' + ((h.parca || [])[i] || (i + 1)) : '')) + '</name><styleUrl>#sinir</styleUrl><description>' + tablo([['Park', p.ad || p.kisa], ['Haritadan alan', h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : ''], ['Kayıtlı alan', p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : '—'], ['Kaynak', h.kaynak || ''], ['Koordinat sistemi', h.crs || ''], ['Kontrol', h.kontrol || '']]) + '</description>' + ext({ park: p.kisa, alan_ha: h.alan_ha, kaynak: h.kaynak }) + geo('A', r) + '</Placemark>').join('');
-      const al = (h.alt || []).map((a) => a.sinir.filter((r) => !OPGeo.ringIssues(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r) + '</Placemark>').join('')).join('');
+      const sn = OPGeo.boundaries(h).map((r,i)=>({...r,part:i})).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' sınırı' + (h.sinir.length > 1 ? ' – ' + ((h.parca || [])[r.part] || (r.part + 1)) : '')) + '</name><styleUrl>#sinir</styleUrl><description>' + tablo([['Park', p.ad || p.kisa], ['Haritadan alan', h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : ''], ['Kayıtlı alan', p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : '—'], ['Kaynak', h.kaynak || ''], ['Koordinat sistemi', h.crs || ''], ['Kontrol', h.kontrol || '']]) + '</description>' + ext({ park: p.kisa, alan_ha: h.alan_ha, kaynak: h.kaynak }) + geo('A', r.c, r.holes) + '</Placemark>').join('');
+      const al = (h.alt || []).map((a) => OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r.c, r.holes) + '</Placemark>').join('')).join('');
       const plk = (g.planlar || []).map((pl) => { const fs = g.f.filter((f) => f.p === pl.id && !(f._geo || OPGeo.validate(f)).length); if (!fs.length) return ''; const ar = pl.durum === 'arsiv';
         const kl = Object.keys(DUR).map((d) => { const x = fs.filter((f) => f.d === d); return x.length ? '<Folder><name>' + xe(DUR[d][0]) + ' (' + x.length + ')</name>' + x.map((f) => pm(p, g, f, ar ? 'ars' : 'd' + d)).join('') + '</Folder>' : ''; }).join('');
         return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad + (pl.tarih ? ' (' + fd(pl.tarih) + ')' : '')) + '</name>' + (ar ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], pl.onay, pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
@@ -1656,12 +1656,12 @@
     if (!navigator.onLine) { const d = L.control({ position: 'topright' }); d.onAdd = () => { const x = L.DomUtil.create('div', 'hcevr'); x.textContent = 'Çevrimdışı: yalnız daha önce açılmış altlık karoları görünür; sınır ve tesis verisi cihazdaki kopyadandır.'; return x; }; d.addTo(m); }
     S._hG = L.layerGroup().addTo(m); S._hB = {};
     S.veri.parks.forEach((p) => { const h = p.harita; if (!h || !h.sinir) return; const k = alanKontrol(p), renk = k && !k.ok ? '#E07A3A' : '#5BD18B';
-      const valid = h.sinir.filter((r) => !OPGeo.ringIssues(r).length); if (!valid.length) return;
-      const pol = L.polygon(valid.map((r) => [r]), { color: renk, weight: 2, fillOpacity: 0.05 });
+      const valid = OPGeo.boundaries(h).filter((r) => !OPGeo.validate(r).length); if (!valid.length) return;
+      const pol = L.polygon(valid.map((r) => [r.c, ...r.holes]), { color: renk, weight: 2, fillOpacity: 0.05 });
       pol.bindTooltip(esc(p.kisa), { sticky: true });
       pol.on('click', (e) => { if (S._hOl) return; if (S.hP !== p.kisa) { L.DomEvent.stop(e); hParkSec(p.kisa, true); return; }
         L.popup({ maxWidth: Math.min(340, window.innerWidth - 60) }).setLatLng(e.latlng).setContent('<div class="hpop"><div class="hpt" style="border-color:#FFD34E">' + esc(p.ad || p.kisa) + '</div><table><tr><th>Haritadan alan</th><td>' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : BYOK) + '</td></tr><tr><th>Kayıtlı alan</th><td>' + (p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : BYOK) + '</td></tr><tr><th>Sınır kaynağı</th><td>' + esc(h.kaynak || BYOK) + '</td></tr><tr><th>Tıklanan nokta</th><td>' + esc(hKoorMetin([e.latlng.lat, e.latlng.lng])) + '</td></tr></table>' + (h.kaynak_url ? '<div class="hpb"><a href="' + esc(h.kaynak_url) + '" target="_blank" rel="noopener">Sınır belgesini aç</a></div>' : '') + '</div>').openOn(m); });
-      const alt = (h.alt || []).filter((a) => (a.sinir || []).some((r) => !OPGeo.ringIssues(r).length)).map((a) => L.polygon(a.sinir.filter((r) => !OPGeo.ringIssues(r).length).map((r) => [r]), { color: '#fff', weight: 1.6, dashArray: '6 5', fill: false }).bindPopup('<b>' + esc(p.kisa) + ' – ' + esc(a.ad) + '</b><br>Alan: ' + a.alan_ha.toLocaleString('tr-TR') + ' ha' + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha)' : '') + '<br>Kaynak: <a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.kaynak) + '</a>'));
+      const alt = (h.alt || []).filter((a) => OPGeo.boundaries(a).some((r) => !OPGeo.validate(r).length)).map((a) => L.polygon(OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => [r.c, ...r.holes]), { color: '#fff', weight: 1.6, dashArray: '6 5', fill: false }).bindPopup('<b>' + esc(p.kisa) + ' – ' + esc(a.ad) + '</b><br>Alan: ' + a.alan_ha.toLocaleString('tr-TR') + ' ha' + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha)' : '') + '<br>Kaynak: <a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.kaynak) + '</a>'));
       S._hB[p.kisa] = { pol, alt, renk }; });
     let zt0 = null; m.on('moveend', () => { if (S.hP) return; clearTimeout(zt0); zt0 = setTimeout(hUygula, 120); });
     el.addEventListener('click', tikla);
@@ -1703,10 +1703,11 @@
     });
     return out;
   }
-  function kmlSinir(txt) { const polys = kmlOzellik(txt, {}).filter((f) => f.g === 'A'); if (!polys.length) throw new Error('Sınır için kapalı poligon bulunamadı.'); if (polys.some((f) => f.holes && f.holes.length)) throw new Error('İç halkalı sınırlar mevcut kayıt şemasına aktarılamaz; boşluk doldurularak kaydedilmedi.'); return polys.map((f) => f.c); }
+  function kmlSinir(txt) { const polys = kmlOzellik(txt, {}).filter((f) => f.g === 'A'); if (!polys.length) throw new Error('Sınır için kapalı poligon bulunamadı.'); return polys.map((f) => ({ pts: f.c, holes: f.holes || [] })); }
   function sinirKaydiUygula(h, sonuc, kaynak) {
-    if ((h.sinir || []).length) { h.alt=h.alt||[]; h.alt.push({ad:'Önceki sınır · '+bugun(),sinir:JSON.parse(JSON.stringify(h.sinir)),alan_ha:h.alan_ha,kaynak:h.kaynak||'',url:h.kaynak_url||'',onay:h.onay||'',crs:h.crs||'',kapsam:h.sinir_kapsam||'',onay_tarihi:h.onay_tarihi||'',onay_sayisi:h.onay_sayisi||'',koordinat_url:h.koordinat_url||''}); }
-    h.sinir=sonuc.sinir;h.alan_ha=r2(sonuc.alan);h.kaynak=kaynak.ad;h.kaynak_url=OPGeo.safeURL(kaynak.url)||'';h.onay=kaynak.onay||'';h.onay_tarihi=kaynak.onay||'';h.onay_sayisi='';h.koordinat_url='';h.sinir_kapsam=kaynak.kapsam||'Teyit gerekli';h.crs=sonuc.crs;h.sinir_tm=sonuc.tm||null;
+    const next={sinir:sonuc.sinir,sinir_holes:sonuc.sinir_holes||[]};const errors=OPGeo.boundaryIssues(next);if(errors.length)throw new Error(errors.join(' · '));
+    if ((h.sinir || []).length) { h.alt=h.alt||[]; h.alt.push({ad:'Önceki sınır · '+bugun(),sinir:JSON.parse(JSON.stringify(h.sinir)),sinir_holes:JSON.parse(JSON.stringify(h.sinir_holes||[])),alan_ha:h.alan_ha,kaynak:h.kaynak||'',url:h.kaynak_url||'',onay:h.onay||'',crs:h.crs||'',kapsam:h.sinir_kapsam||'',onay_tarihi:h.onay_tarihi||'',onay_sayisi:h.onay_sayisi||'',koordinat_url:h.koordinat_url||''}); }
+    h.sinir=next.sinir;h.sinir_holes=next.sinir_holes;h.alan_ha=r2(sonuc.alan);h.kaynak=kaynak.ad;h.kaynak_url=OPGeo.safeURL(kaynak.url)||'';h.onay=kaynak.onay||'';h.onay_tarihi=kaynak.onay||'';h.onay_sayisi='';h.koordinat_url='';h.sinir_kapsam=kaynak.kapsam||'Teyit gerekli';h.crs=sonuc.crs;h.sinir_tm=sonuc.tm||null;
     h.kontrol=h.sinir_kapsam+' · Kaynak koordinat sistemi: '+sonuc.crs+'; düzlem alan '+h.alan_ha.toLocaleString('tr-TR')+' ha. Kaynağın tarih ve onay kapsamı ayrıca değerlendirilir.';
   }
   AKSIYON.haritaYukle = async () => {
@@ -1736,23 +1737,23 @@
             '<br><span class="muted">Dosyada açıkça kayıtlı plan durumu korunur. Böyle bir kayıt yoksa klasör / katman adı değerlendirilir; belirlenemezse “durumu belirtilmemiş” kullanılır. Aktarım, belgenin onayını, güncelliğini veya tesisin sahada bulunduğunu doğrulamaz. Kaynak bilgiler bilgi kutusuna aktarılır.</span>' +
             (dis ? '<br><span class="red-t">' + dis + ' çizim İstanbul dışına düşüyor; dosya WGS84 olmalıdır.</span>' : '');
           $('#hkOk').disabled = !!dis || !fs.length; return; }
-        const rings = kmlSinir(txt); kmlP = rings.map((pts) => ({ pts, ad: '' })); }
-      let sinir = null, tesis = null, tm = null;
+        kmlP = kmlSinir(txt); }
+      let sinir = null, sinir_holes = [], tesis = null, tm = null;
       if (kmlP) {
-        sinir = kmlP.map((x) => x.pts);
+        sinir = kmlP.map((x) => x.pts); sinir_holes = kmlP.map((x) => x.holes);
       } else {
         if (!ham.length) { $('#hk_on').innerHTML = '<span class="red-t">Koordinat okunamadı.</span>'; return; }
         const w = coz(KS[crsAd], ham); tm = ham;
         if (tur === 'Sınır') sinir = [w.map((q) => [q[1], q[2]])]; else tesis = w.map((q) => [q[0], q[1], q[2], '', '']);
       }
-      if (sinir) { const issues = sinir.flatMap(OPGeo.ringIssues); if (issues.length) throw new Error(issues.join(' · ')); }
-      const pts = sinir ? sinir.flat() : (tesis || []).map((q) => [q[1], q[2]]);
+      if (sinir) { const issues = OPGeo.boundaryIssues({sinir,sinir_holes}); if (issues.length) throw new Error(issues.join(' · ')); }
+      const pts = sinir ? sinir.flat().concat(sinir_holes.flat(2)) : (tesis || []).map((q) => [q[1], q[2]]);
       const dis = pts.filter((q) => !IST(q[0], q[1])).length;
       let oneri = '';
       if (dis && ham.length && !kmlP) { const uy = Object.keys(KS).filter((k) => k !== crsAd && KS[k] !== 'WGS84').filter((k) => coz(KS[k], ham).every((q) => IST(q[1], q[2]))); if (uy.length) oneri = ' Uygun düşen sistem(ler): ' + uy.join(', ') + '.'; }
-      const al = sinir ? sinir.reduce((a, r) => a + alanHa(r), 0) : null;
-      sonuc = { tur, sinir, tesis, tm, crs: kmlP ? 'WGS84 (KML/KMZ)' : crsAd, alan: al };
-      $('#hk_on').innerHTML = (sinir ? sinir[0].length + ' sınır noktası · alan <b>' + al.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ha</b>' + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha, fark %' + ((al - p.alan) / p.alan * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ')' : '') : (tesis || []).length + ' tesis noktası') +
+      const al = sinir ? sinir.reduce((a, r, i) => a + alanHa(r) - (sinir_holes[i] || []).reduce((b,h)=>b+alanHa(h),0), 0) : null;
+      sonuc = { tur, sinir, sinir_holes, tesis, tm, crs: kmlP ? 'WGS84 (KML/KMZ)' : crsAd, alan: al };
+      $('#hk_on').innerHTML = (sinir ? sinir.reduce((n,r)=>n+r.length,0) + ' dış halka noktası · ' + sinir_holes.flat().length + ' iç halka · net alan <b>' + al.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ha</b>' + (p.alan ? ' (kayıt ' + p.alan.toLocaleString('tr-TR') + ' ha, fark %' + ((al - p.alan) / p.alan * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ')' : '') : (tesis || []).length + ' tesis noktası') +
         (dis ? '<br><span class="red-t">' + dis + ' nokta İstanbul dışına düşüyor: koordinat sistemi ya da Y/X sırası yanlış olabilir.' + oneri + '</span>' : '<br><span class="ok-t">Bütün noktalar İstanbul sınırları içinde.</span>');
       $('#hkOk').disabled = !!dis || !(sinir || (tesis && tesis.length));
     };

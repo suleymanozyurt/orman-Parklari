@@ -34,7 +34,10 @@
     if (f.g === 'L') return a.length < 2 || a.every((q) => eq(q, a[0])) ? ['Çizgi için iki farklı nokta gerekli'] : [];
     if (f.g !== 'A') return ['Desteklenmeyen geometri türü'];
     const e = G.ringIssues(a), holes = f.holes || [];
-    holes.forEach((h) => { e.push(...G.ringIssues(h)); if (h.some((q) => !G.inside(q, a))) e.push('İç halka dış sınırın dışında'); });
+    if (e.length) return e;
+    if (!Array.isArray(holes)) return ['İç halka listesi geçersiz'];
+    for (const h of holes) { const he = G.ringIssues(h); if (he.length) return he; }
+    holes.forEach((h) => { if (h.some((q) => !G.inside(q, a))) e.push('İç halka dış sınırın dışında'); });
     // Halka sınırlarının kesişmesi ve iç halkaların birbirine taşması geçersizdir.
     const rings = [a, ...holes].map(G.close);
     for (let i = 0; i < rings.length; i++) for (let j = i + 1; j < rings.length; j++) {
@@ -43,6 +46,32 @@
       if (i > 0 && (G.inside(x[0], y) || G.inside(y[0], x))) e.push('İç halkalar birbiriyle örtüşüyor');
     }
     return [...new Set(e)];
+  };
+  // Eski kayıtlarda yalnız dış halkalar bulunur; iç halkalar aynı parça sırasıyla saklanır.
+  G.boundaries = (h) => ((h && h.sinir) || []).map((c, i) => ({ g: 'A', c, holes: (h.sinir_holes || [])[i] || [] }));
+  G.boundaryIssues = (h) => G.boundaries(h).flatMap(G.validate);
+  G.boundaryContains = (h, q, checked = false) => G.boundaries(h).some((f) => (checked || !G.validate(f).length) && G.inside(q, f.c) && !f.holes.some((r) => G.inside(q, r)));
+  G.outsideBoundary = (h, f, checked = false) => {
+    if (!(h && h.sinir && h.sinir.length) || (!checked && G.boundaryIssues(h).length) || G.validate(f).length) return null;
+    const contains = (q) => G.boundaryContains(h, q, true), pts = G.points(f);
+    if (pts.some((q) => !contains(q))) return true;
+    if (f.g === 'N') return false;
+    const edges = f.g === 'A' ? G.close(pts) : pts, boundaries = G.boundaries(h), rings = boundaries.flatMap((b) => [b.c, ...b.holes]).map(G.close);
+    // Köşeler içerideyken bir kenar boşluğu veya içbükey dış sınırı kesebilir.
+    for (let i = 1; i < edges.length; i++) {
+      const a = edges[i - 1], b = edges[i], ts = [0, 1], dx = b[1] - a[1], dy = b[0] - a[0];
+      for (const ring of rings) for (let j = 1; j < ring.length; j++) {
+        const c = ring[j - 1], d = ring[j], ex = d[1] - c[1], ey = d[0] - c[0], den = dx * ey - dy * ex;
+        if (!den) continue;
+        const cx = c[1] - a[1], cy = c[0] - a[0], t = (cx * ey - cy * ex) / den, u = (cx * dy - cy * dx) / den;
+        if (t > 0 && t < 1 && u >= 0 && u <= 1) ts.push(t);
+      }
+      ts.sort((x, y) => x - y);
+      for (let j = 1; j < ts.length; j++) { if (ts[j] - ts[j - 1] < 1e-12) continue; const t = (ts[j] + ts[j - 1]) / 2; if (!contains([a[0] + dy * t, a[1] + dx * t])) return true; }
+    }
+    // Oturum alanı bir hariç alanı çevreleyebilir; yalnız kenar denetimi bunu bulamaz.
+    if (f.g === 'A' && boundaries.some((b) => b.holes.some((r) => r.some((q) => G.inside(q, f.c) && !(f.holes || []).some((inner) => G.inside(q, inner)))))) return true;
+    return false;
   };
   G.distance = (a, b) => { const x = rad(b[0] - a[0]), y = rad(b[1] - a[1]); const h = Math.sin(x / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(y / 2) ** 2; return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))); };
   G.length = (a) => a.slice(1).reduce((s, q, i) => s + G.distance(a[i], q), 0);
@@ -54,11 +83,11 @@
     return [min(a), min(a.slice().reverse())].sort()[0]; };
   G.geometryKey = (f) => f.g + ':' + (f.g === 'A' ? canonicalRing(f.c || []) + '|' + (f.holes || []).map(canonicalRing).sort().join('|') : JSON.stringify(f.c));
   G.inventory = (parks, data) => { const result = [], geo = new Map(), exact = new Map();
-    parks.forEach((p) => { const g = (data.parklar || {})[p.kisa] || { f: [], kaynak: [] };
+    parks.forEach((p) => { const g = (data.parklar || {})[p.kisa] || { f: [], kaynak: [] }, boundaryOK = p.harita && p.harita.sinir && p.harita.sinir.length && !G.boundaryIssues(p.harita).length;
       (g.f || []).forEach((f, i) => { const source = (g.kaynak || []).find((s) => s.k === f.s) || {}, issues = G.validate(f);
         const key = p.kisa + ':' + G.geometryKey(f), identity = JSON.stringify([key, f.s, f.ad, f.t, f.d, f.b || []]);
         const row = { p, f, i, id: G.id(p.kisa, f), source, issues, duplicate: exact.has(identity), geometryPeer: geo.has(key), outside: false };
-        if (!issues.length && p.harita && p.harita.sinir && p.harita.sinir.length) row.outside = G.points(f).some((q) => !p.harita.sinir.some((r) => G.inside(q, r)));
+        if (!issues.length && boundaryOK) row.outside = G.outsideBoundary(p.harita, f, true);
         if (!row.duplicate) exact.set(identity, row.id); if (!geo.has(key)) geo.set(key, row.id); result.push(row);
       });
     }); return result; };
@@ -76,7 +105,7 @@
     geometri_hatasi: rows.filter((r) => r.issues.length).length, birebir_tekrar: rows.filter((r) => r.duplicate).length, ayni_geometri: rows.filter((r) => r.geometryPeer).length,
     aciklama: 'Geometrik kontrol hukuki onay veya saha mevcudiyeti teyidi değildir. Sınır dışı çizimler arşiv, altyapı veya farklı sınır sürümüne ait olabilir.',
     parklar: parks.map((p) => ({ park: p.kisa, kayitli_alan_ha: p.alan, geometrik_alan_ha: p.harita && p.harita.alan_ha,
-      sinir_kontrolu: (p.harita && p.harita.sinir || []).flatMap(G.ringIssues), diger_sinirlar: (p.harita && p.harita.alt || []).map((a) => ({ ad: a.ad, sorunlar: (a.sinir || []).flatMap(G.ringIssues), kaynak: a.kaynak })), kaynak: p.harita && p.harita.kaynak, onay: p.harita && p.harita.onay || 'Onay belgesiyle eşleştirme gerekli', belge_incelemesi: p.harita && p.harita.belge_incelemesi || null })),
+      sinir_kontrolu: G.boundaryIssues(p.harita), diger_sinirlar: (p.harita && p.harita.alt || []).map((a) => ({ ad: a.ad, sorunlar: G.boundaryIssues(a), kaynak: a.kaynak })), kaynak: p.harita && p.harita.kaynak, onay: p.harita && p.harita.onay || 'Onay belgesiyle eşleştirme gerekli', belge_incelemesi: p.harita && p.harita.belge_incelemesi || null })),
     cizimler: rows.map((r) => ({ id: r.id, park: r.p.kisa, kod: r.f.ad, tur: r.f.t, durum: r.f.d, kaynak: r.source.ad, kaynak_url: G.safeURL(r.source.url),
       sorunlar: r.issues, birebir_tekrar: r.duplicate, ayni_geometri: r.geometryPeer, sinir_disina_tasma: r.outside,
       onay: r.f.onay || r.source.onay || 'Teyit gerekli', saha: r.f.saha || 'Saha mevcudiyeti teyit edilmedi' })) }; };
