@@ -279,7 +279,9 @@
     const ctx=context||{}, count=p.odeme==='4 taksit'?4:p.odeme==='Peşin'?1:null;
     if(count&&ctx.esl&&ctx.veri)for(let y=Y-1;y>=Math.max(2026,sy);y--){
       const items=ctx.esl.items.filter(it=>it.park===p.kisa&&it.tur==='Kira'&&it.grup===y+' tahakkuku'&&!(ctx.veri.muhasebe[it.row]||{}).oto&&!/k[ıi]st|\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}/i.test(it.aciklama||''));
-      if(new Set(items.map(it=>it.vade).filter(Boolean)).size===count&&items.every(it=>Number.isFinite(it.tutar)&&it.tutar>0)&&(y>by||!Number.isFinite(b))){by=y;b=r2(items.reduce((sum,it)=>sum+it.tutar,0));break;}
+      const dates = items.map(it => it.vade);
+      const validDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v && E.year(v) === y;
+      if(items.length===count&&new Set(dates).size===count&&dates.every(validDate)&&items.every(it=>Number.isFinite(it.tutar)&&it.tutar>0)&&(y>by||!Number.isFinite(b))){by=y;b=r2(items.reduce((sum,it)=>sum+it.tutar,0));break;}
     }
     if (sy >= 2027 && (!Number.isFinite(b) || by < sy)) { by = sy; b = p.ihale_b; }
     if (!Number.isInteger(by) || by > Y || by < sy || !Number.isFinite(b) || b <= 0) return Object.assign(out, { bekleme: 'Belgeli yıllık kira ve yılı gerekli', esasEksik: true });

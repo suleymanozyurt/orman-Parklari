@@ -1,8 +1,8 @@
 /* v19: lacivert ve grafit yüzeyler, işlevsel renk vurguları. Resmî baskı şablonları ayrı kalır. */
 @media screen{
  :root{--pine:#073E34;--pine2:#075A47;--moss:#087C5E;--leaf:#E6BE6A;--elevation:0 6px 22px rgba(0,30,20,.12);--accent:#EDBA60}
- :root[data-tema="koyu"]{--pine:#75CDE2;--pine2:#A0DDEC;--mist:#0C1220;--paper:#151F30;--soft:#1D2A3F;--ink:#F0F4FC;--ink2:#C3CFE2;--mute:#99ABC4;--line:#34455F;--line2:#26364E;--ok:#73DEA8;--okbg:#153E38;--amb:#E5B650;--ambbg:#3E321D;--ambt:#F0CD7C;--red:#F07864;--redt:#FFAA98;--redbg:#41282E;--fldbg:#1D2A3F;--blbg:#1C354F;--glass:rgba(12,18,32,.96);color-scheme:dark}
- @media(prefers-color-scheme:dark){:root:not([data-tema="acik"]){--pine:#75CDE2;--pine2:#A0DDEC;--mist:#0C1220;--paper:#151F30;--soft:#1D2A3F;--ink:#F0F4FC;--ink2:#C3CFE2;--mute:#99ABC4;--line:#34455F;--line2:#26364E;--ok:#73DEA8;--okbg:#153E38;--amb:#E5B650;--ambbg:#3E321D;--ambt:#F0CD7C;--red:#F07864;--redt:#FFAA98;--redbg:#41282E;--fldbg:#1D2A3F;--blbg:#1C354F;--glass:rgba(12,18,32,.96);color-scheme:dark}}
+ :root[data-tema="koyu"]{--pine:#75CDE2;--pine2:#A0DDEC;--mist:#0C1220;--paper:#151F30;--soft:#1D2A3F;--ink:#F0F4FC;--ink2:#C3CFE2;--mute:#99ABC4;--line:#34455F;--line2:#26364E;--ok:#73DEA8;--okt:#73DEA8;--infofg:#A3D9FF;--okbg:#153E38;--amb:#E5B650;--ambbg:#3E321D;--ambt:#F0CD7C;--red:#F07864;--redt:#FFAA98;--redbg:#41282E;--fldbg:#1D2A3F;--blbg:#1C354F;--glass:rgba(12,18,32,.96);color-scheme:dark}
+ @media(prefers-color-scheme:dark){:root:not([data-tema="acik"]){--pine:#75CDE2;--pine2:#A0DDEC;--mist:#0C1220;--paper:#151F30;--soft:#1D2A3F;--ink:#F0F4FC;--ink2:#C3CFE2;--mute:#99ABC4;--line:#34455F;--line2:#26364E;--ok:#73DEA8;--okt:#73DEA8;--infofg:#A3D9FF;--okbg:#153E38;--amb:#E5B650;--ambbg:#3E321D;--ambt:#F0CD7C;--red:#F07864;--redt:#FFAA98;--redbg:#41282E;--fldbg:#1D2A3F;--blbg:#1C354F;--glass:rgba(12,18,32,.96);color-scheme:dark}}
  body,.app,.gate{font-family:"Barlow",system-ui,sans-serif}
  .main{display:flex;flex-direction:column;min-height:100vh;background:radial-gradient(ellipse at 100% 0,rgba(70,115,190,.12),transparent 55%)}
  .main>.wrap{flex:1}

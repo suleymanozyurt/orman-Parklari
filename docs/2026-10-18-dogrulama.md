@@ -58,3 +58,17 @@ v27 uygulama kontrolü ve Pages yayını başarılı; canlı sayfada `app.js?v=2
 - Türkiye tarih değişimi, açık düzenleme veya kaydedilmemiş taslak yokken hesapları yeniden kurar. Sayfa açık kalsa da yılbaşı geçişi izlenir.
 - Otomatik test:82/82 başarılı. Önceki testlere ek olarak yılbaşı öncesi veri bulunsa bile tutarın bekletilmesi, farklı sözleşme aylarında ortak başlangıç, resmî oran yokluğu, belgeli kira yılı, yeni tam/eksik muhasebe yılı, vade önceliği, taksit kuruş toplamı, artık yıl/tek gün/yıl geçişi kıstı, hatalı tarihler, kaynaklı kıst taslağının muhasebeyi değiştirmemesi ve düzenleme sırasında tarih geçişi kontrol edildi.
 - v28 canlı veri kanıtı:230köşeli kaynak sınır kaydedildi; “Verileri yenile” sunucudan dönüşü doğrulandı. Canlı KML dışa aktarımında218/6/9 kapalı halka noktaları kaynakla birebir eşleşti; bir önceki sınır arşivde korundu. Alan farkı yüzde kontrol eşiği içinde olsa da artık eşitlik/onay anlamındaki “uyumlu” yerine sayısal fark gösterilir.
+
+## v29 yayın doğrulaması
+
+`6f1e181f34403e905d35b054361477171ec3d5ce` için Uygulama kontrolleri ve Pages yayını başarılı. Canlı giriş ekranının yüklediği betiklerde v29 görüldü; güncelleme bildirimi, etkinleştirme ve yenileme çalıştı. Bu devam oturumunda güvenli giriş denemesi uygulamadan “Parola yanlış” yanıtı aldı. Oturum içindeki v29 ekranları bu nedenle henüz canlı doğrulanmış sayılmaz. Parola değiştirilmedi veya kaynak koda eklenmedi.
+
+## v30 — kaynak tarihi, okunurluk ve yıllık esas kontrolü
+
+- KML içe aktarımında belge tarihi, onay tarihi ve yükleme tarihi ayrı tutuluyor. Kaynakta bulunmayan belge tarihi boş kalır. Onay tarihi girilmesi, katmanı otomatik güncel/onaylı yapmaz.
+- Önceki uygulama içe aktarımlarında yükleme gününün plan tarihi gibi gösterildiği kayıtlar, kayıtları yeniden yazmadan doğru etiketlenir. Bu ayrım bilgi kutusunda, plan panelinde ve KML açıklamalarında korunur. Plan kaydı bulunmayan eski aktarım kaynakları da kapsanır.
+- Park adının iki satırlı bağlantısı hücre genişliğinde tıklanabilir oldu. Koyu temada Kirada, Ödendi, nötr etiketler, ihale durumu ve tahsilat göstergeleri temaya uygun metin renklerini kullanır. Resmî baskı alanlarının tasarımı değiştirilmedi.
+- Yeni muhasebe yılının kira esasını otomatik değiştirebilmesi için satır sayısı ve benzersiz vade sayısı ödeme düzeniyle tam eşleşmeli; vadeler gerçek ve aynı yıl içinde olmalı. Mükerrer satırlar, 30 Şubat gibi geçersiz tarihler ve başka yılın vadeleri yıllık toplamı değiştiremez. Son geçerli belgeli esas ve onun yılı görünür kalır.
+- `npm test`: 86 başarılı, 0 başarısız. Yeni testler eski/yeni plan aktarımını, tarihlerin arayüz ve KML anlamını, mükerrer/geçersiz vade reddini kapsar. Python kontrolleri: 6 başarılı. JavaScript sözdizimi ve fark/boşluk denetimi başarılı.
+
+Bu sürümde yeni tesis geometrisi veya özel muhasebe verisi yayımlanmadı. Kurtyolu tesis geometrilerinin imzalı planla eşleştirilmesi, tüm parkların hukuki sınır/onay zinciri, canlı oturum kontrolleri ve gerçek cihaz/saha kabulü tamamlanmış değildir. Kıst hesabı karşılaştırma taslağıdır; resmî muhasebe kaydı oluşturmaz.

@@ -554,7 +554,7 @@
       '<div class="big"><span>Vadesi geçmiş alacak</span><strong class="n">' + tl(vgec) + ' TL</strong><div class="row"><div>Gecikme zammı ve KDV’si<b class="n">' + tl(gz) + '</b></div><div>En eski vade<b class="n">' + fd(enEski) + '</b></div></div></div>' +
       treeSvg(7, 31) + '</section>';
     const kp = [['Bu yıl vadeli kira', tl(kira), 'Dökümdeki ek tahakkuklar dahil', 'var(--ink)', 100, '#3F7D4E'],
-      ['Tahsil edilen', tl(tah), 'Dökümdeki ' + tl(tum) + ' TL tahakkukun %' + (tum ? (tah / tum * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : 0) + '’i', '#1E6B3E', tum ? Math.round(tah / tum * 100) : 0, '#2F8A55'],
+      ['Tahsil edilen', tl(tah), 'Dökümdeki ' + tl(tum) + ' TL tahakkukun %' + (tum ? (tah / tum * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : 0) + '’i', 'var(--okt)', tum ? Math.round(tah / tum * 100) : 0, '#2F8A55'],
       ['Açık alacak', tl(acik), nAcik + ' kalem, 120.99 + 127', 'var(--ink)', tum ? Math.max(2, Math.round(acik / tum * 100)) : 0, '#C2412D'],
       ['Kiradaki park', cnt('Kirada') + ' / ' + D.length, cnt('Sona erdi') + ' sona erdi, ' + cnt('İhale edilecek') + ' ihale, ' + cnt('Davalık') + ' davalık', 'var(--ink)', Math.round(cnt('Kirada') / D.length * 100), '#9CC27A']];
     const kpis = '<section class="kpis">' + kp.map((k) => '<div class="kpi"><span>' + k[0] + '</span><strong class="n" style="color:' + k[3] + '">' + k[1] + '</strong><em>' + k[2] + '</em><div class="bar"><i style="width:' + k[4] + '%;background:' + k[5] + '"></i></div></div>').join('') + '</section>';
@@ -1199,7 +1199,7 @@
     const on = k.slice(0, 3).toLocaleUpperCase('tr-TR'), ids = new Set();
     g.f.forEach((f, i) => {
       if (!f.p) f.p = f.s || 'U';
-      if (!PL[f.p]) { const ky = g.kaynak.find((x) => x.k === f.s) || {}; PL[f.p] = { id: f.p, ad: ky.ad || 'Uygulamadan yüklenen katman', tarih: ky.tarih || '', durum: 'belirsiz', k: f.s || '', onay: '', not: 'Uygulamadan KML/KMZ ile yüklendi; onay bilgisi girilmedi.' }; g.planlar.push(PL[f.p]); }
+      if (!PL[f.p]) { const ky = g.kaynak.find((x) => x.k === f.s) || {}, yukleme = /^U/.test(ky.k || '') && /programdan yüklendi/i.test(ky.not || ''); PL[f.p] = { id: f.p, ad: ky.ad || 'Uygulamadan yüklenen katman', tarih: yukleme ? '' : ky.tarih || '', yukleme_tarihi: ky.yukleme_tarihi || (yukleme ? ky.tarih : '') || '', durum: 'belirsiz', k: f.s || '', onay: ky.onay_tarihi || '', not: 'Uygulamadan KML/KMZ ile yüklendi; onay kapsamı teyit edilmeli.' }; g.planlar.push(PL[f.p]); }
       if (!f.id) f.id = OPGeo.id(k, f); if (ids.has(f.id)) f.id += '-' + (i + 1);
       ids.add(f.id); Object.defineProperty(f, '_geo', { value: OPGeo.validate(f), enumerable: false, configurable: true }); });
     Object.defineProperty(g, '_pl', { value: PL, enumerable: false, configurable: true, writable: true });
@@ -1219,7 +1219,22 @@
     if (!rings || !rings.length || OPGeo.boundaryIssues(p.harita).length || OPGeo.validate(f).length) return null;
     return OPGeo.outsideBoundary(p.harita, f, true);
   }
-  function planMetin(pl) { return [pl.ad, pl.tarih ? fd(pl.tarih) : '', pl.onay].filter(Boolean).join(' · ') || BYOK; }
+  function planTarihMetin(pl) {
+    // Eski içe aktarımlarda tarih, belgenin değil yüklemenin tarihiydi.
+    const eskiYukleme = /^U/.test(pl.id || '') && /Programdan yüklendi/.test(pl.not || '') && !pl.yukleme_tarihi;
+    const out = [];
+    if (pl.tarih && !eskiYukleme) out.push('Belge tarihi: ' + fd(pl.tarih));
+    if (pl.onay) out.push(/^\d{4}-\d{2}-\d{2}$/.test(pl.onay) ? 'Onay tarihi: ' + fd(pl.onay) : 'Onay: ' + pl.onay);
+    else if (eskiYukleme) out.push('Plan ve onay tarihi teyit gerekli');
+    const yukleme = pl.yukleme_tarihi || (eskiYukleme ? pl.tarih : '');
+    if (yukleme) out.push('Yükleme: ' + fd(yukleme));
+    return out.join(' · ');
+  }
+  function planMetin(pl) { return [pl.ad, planTarihMetin(pl)].filter(Boolean).join(' · ') || BYOK; }
+  function kaynakTarihMetin(k) {
+    const eskiYukleme = /^U/.test(k.k || '') && /programdan yüklendi/i.test(k.not || '') && !k.yukleme_tarihi;
+    return [k.tarih && !eskiYukleme ? 'Kaynak tarihi: ' + fd(k.tarih) : '', k.onay_tarihi ? 'Onay tarihi: ' + fd(k.onay_tarihi) : '', k.yukleme_tarihi || eskiYukleme && k.tarih ? 'Yükleme: ' + fd(k.yukleme_tarihi || k.tarih) : ''].filter(Boolean).join(' · ');
+  }
   function gypSatir(p, f) {
     const g = S.gyp && S.gyp.parklar[p.kisa], pl = plOf(g, f);
     const rows = [['Park', p.ad || p.kisa], ['Tür', f.t], ['Durum', (DUR[f.d] || DUR.B)[0]], ['Plan', planMetin(pl) + ' (' + (PLD[pl.durum] || PLD.belirsiz)[0].toLocaleLowerCase('tr-TR') + ')']];
@@ -1363,9 +1378,9 @@
     const n = {}; g.f.forEach((f) => { n[f.p] = (n[f.p] || 0) + 1; });
     return '<section class="panel"><h3>Plan ve revizyonlar</h3>' + (belgeIncelemesi(p) && belgeIncelemesi(p).plan_notu ? '<p class="hnote"><b>Belge incelemesi · ' + fd(belgeIncelemesi(p).tarih) + '</b><br>' + esc(belgeIncelemesi(p).plan_notu) + '</p>' : '') + pl.map((x) => { const key = p.kisa + '#' + x.id, on = S.hF.pk[key] != null ? S.hF.pk[key] : (x.durum !== 'arsiv' || !!S.hF.arsiv), k0 = ky.find((y) => y.k === x.k) || {}, b = PLD[x.durum] || PLD.belirsiz;
       return '<div class="hbel"><label class="hchip hplc"><input type="checkbox" data-hp="' + esc(key) + '"' + (on ? ' checked' : '') + (n[x.id] ? '' : ' disabled') + '><b>' + esc(x.ad) + '</b></label> <span class="badge ' + b[1] + '">' + esc(b[0]) + '</span>' +
-        '<small>' + esc([x.tarih ? fd(x.tarih) : '', x.onay, (n[x.id] || 0) + ' çizim'].filter(Boolean).join(' · ')) + '</small>' + (x.not ? (belgeIncelemesi(p) ? '<details><summary>İçe aktarma sırasında kaydedilen not</summary><p class="hnote">' + esc(x.not) + '</p></details>' : '<span class="muted">' + esc(x.not) + '</span>') : '') +
+        '<small>' + esc([planTarihMetin(x), (n[x.id] || 0) + ' çizim'].filter(Boolean).join(' · ')) + '</small>' + (x.not ? (belgeIncelemesi(p) ? '<details><summary>İçe aktarma sırasında kaydedilen not</summary><p class="hnote">' + esc(x.not) + '</p></details>' : '<span class="muted">' + esc(x.not) + '</span>') : '') +
         (k0.url ? '<a href="' + esc(k0.url) + '" target="_blank" rel="noopener">' + esc(k0.ad) + '</a>' : '') + '</div>'; }).join('') +
-      '<details><summary>Kaynak dosyalar (' + ky.length + ')</summary>' + ky.map((k) => '<div class="hbel"><a href="' + esc(k.url || '#') + '" target="_blank" rel="noopener">' + esc(k.ad) + '</a><small>' + (k.tarih ? 'Drive ' + fd(k.tarih) : '') + '</small><span class="muted">' + esc(k.not || '') + '</span>' +
+      '<details><summary>Kaynak dosyalar (' + ky.length + ')</summary>' + ky.map((k) => '<div class="hbel"><a href="' + esc(k.url || '#') + '" target="_blank" rel="noopener">' + esc(k.ad) + '</a><small>' + esc(kaynakTarihMetin(k)) + '</small><span class="muted">' + esc(k.not || '') + '</span>' +
         (/^U/.test(k.k) ? '<button class="btn sm red duz-only" data-a="gypSil" data-s="' + esc(k.k) + '">Kaldır</button>' : '') + '</div>').join('') + '</details>' +
       (g.not && g.not.length ? '<details><summary>Okuma notları (' + g.not.length + ')</summary>' + g.not.map((t) => '<p class="muted" style="font-size:12.5px;line-height:1.45;margin:6px 0">' + esc(t) + '</p>').join('') + '</details>' : '') + '</section>';
   }
@@ -1537,7 +1552,7 @@
       const al = (h.alt || []).map((a) => OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r.c, r.holes) + '</Placemark>').join('')).join('');
       const plk = (g.planlar || []).map((pl) => { const fs = g.f.filter((f) => f.p === pl.id && !(f._geo || OPGeo.validate(f)).length); if (!fs.length) return ''; const ar = pl.durum === 'arsiv';
         const kl = Object.keys(DUR).map((d) => { const x = fs.filter((f) => f.d === d); return x.length ? '<Folder><name>' + xe(DUR[d][0]) + ' (' + x.length + ')</name>' + x.map((f) => pm(p, g, f, ar ? 'ars' : 'd' + d)).join('') + '</Folder>' : ''; }).join('');
-        return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad + (pl.tarih ? ' (' + fd(pl.tarih) + ')' : '')) + '</name>' + (ar ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], pl.onay, pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
+        return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad) + '</name>' + (ar ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], planTarihMetin(pl), pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
       return '<Folder><name>' + xe(p.ad || p.kisa) + '</name><Folder><name>Güncel sınır</name>' + sn + '</Folder>' + (al ? '<Folder><name>Önceki / diğer sınır çizimleri</name>' + al + '</Folder>' : '') + plk + '</Folder>'; }).join('');
     return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + xe(baslik || 'İstanbul OİM orman parkları – sınır ve plan tesisleri') + ' (' + fd(bugun()) + ')</name>' + st + govde + '</Document></kml>';
   }
@@ -1767,7 +1782,7 @@
       if (!sonuc) return; const sourceURL=gv('hk_url'); if(sourceURL&&!/^https:\/\//i.test(sourceURL)||sourceURL&&!OPGeo.safeURL(sourceURL)){ $('#hk_on').textContent='Geçerli HTTPS kaynak bağlantısı girin.';return;} const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
       if (sonuc.plan) { (async () => { await gypAl(); const g = S.gyp.parklar[p.kisa] || (S.gyp.parklar[p.kisa] = { kaynak: [], f: [], not: [] }); const k = 'U' + Date.now().toString(36);
         if ($('#hk_r').checked) { gypHazirla(g, p.kisa); (g.planlar || []).forEach((pl) => { pl.durum = 'arsiv'; pl.not = (pl.not || '') + ' · Yeni plan yüklenince arşive alındı (' + bugun() + ').'; }); }
-        g.kaynak.push({ k, ad: sonuc.dosya, url: sourceURL, tarih: gv('hk_onay') || bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: bugun(), durum: 'belirsiz', k, onay: gv('hk_onay'), not: 'Programdan yüklendi (' + sonuc.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); sonuc.plan.forEach((x) => { x.s = k; x.p = k; g.f.push(x); });
+        g.kaynak.push({ k, ad: sonuc.dosya, url: sourceURL, tarih: '', onay_tarihi: gv('hk_onay'), yukleme_tarihi: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: '', yukleme_tarihi: bugun(), durum: 'belirsiz', k, onay: gv('hk_onay'), not: 'Programdan yüklendi (' + sonuc.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); sonuc.plan.forEach((x) => { x.s = k; x.p = k; g.f.push(x); });
         modalKapat(); try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan tesis katmanı yüklendi (' + sonuc.dosya + ', ' + sonuc.plan.length + ' çizim; kaynak: ' + kayn + ')'); toast('Plan katmanı kaydedildi.'); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } })(); return; }
       const h = p.harita = p.harita || {};
       if (sonuc.sinir) sinirKaydiUygula(h,sonuc,{ad:kayn,url:sourceURL,onay:gv('hk_onay'),kapsam:gv('hk_kapsam')});
