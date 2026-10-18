@@ -18,7 +18,7 @@ KML dışa aktarımı artık sekiz plan durumunu `op_status` alanında saklar. Y
 
 Çiçekçiler için dört kaynak, imzalı taramanın ilgili sayfaları ve sayısal çizim incelendi. Bu çalışma 115 tesis referansını kapsar; 122 coğrafi unsurun tamamı tesis değildir. Bütün parkların veya bu parkın bütün altyapı ve mevcut tesis oturumlarının incelemesi bitmiş sayılmaz. Güncel saha mevcudiyeti ve sonraki onay zinciri ayrıca doğrulanmalıdır.
 
-Özel koordinatlar, KML ve ayrıntılı envanter açık kod deposuna eklenmez. Uygulamaya kayıt, mevcut şifreli veri kaydetme mekanizmasıyla yapılacaktır. Bu not tek başına üretime veri kaydedildiğinin veya yeniden okunduğunun kanıtı değildir; canlı kayıt sonucu ayrıca belirtilecektir.
+Özel koordinatlar, KML ve ayrıntılı envanter açık kod deposuna eklenmez. Uygulamaya kayıt, mevcut şifreli veri kaydetme mekanizmasıyla yapıldı. Canlı kayıt ve yeniden okuma sonuçları aşağıdadır.
 
 ## Canlı kayıt ve yeniden okuma
 
@@ -31,3 +31,11 @@ Uygulamadan gerçek KML indirildi: esas sınır dahil 123 Placemark; 68 poligon,
 Canlı kontrol sırasında `Kaynak katman` alanının genel `kat` araması yüzünden yükseklik gibi gösterilebildiği görüldü. Yükseklik artık gerçek kat/yükseklik/hmax etiketlerinden okunur. Park genelindeki denetim tür eşleşmesi tek tesisin sahadaki mevcudiyeti olarak sunulmaz; birebir eşleştirme yapılmadığı açıkça yazılır. Kaynak ölçü/geometri çelişkileri açılır ayrıntılara girmeden görünür. KML önizleme açıklaması açık kayıtlı durumun önceliğini anlatacak şekilde güncellendi.
 
 `npm test`: 69/69 başarılı; iki yeni test bu bilgi kutusu hatalarını ve kaynak uyarısının görünür/kaçışlanmış gösterimini denetler. Sözdizimi ve diff kontrolleri başarılı. Fiziksel cihazda saha GPS testi, gerçek PWA kurulum testi ve bütün parkların kaynak incelemesi tamamlanmış sayılmaz.
+
+v26 canlı sayfada açıldı: 122 unsur korunuyor; Y19 uyarısı açılır ayrıntılardan önce görünür. Y19 yüksekliği `Belgede belirtilmemiş`, Y3 hmax değeri 6,5; denetim tür eşleşmesi birebir tesis tespiti olarak sunulmuyor. Kaynak yol çizgisi uzunluğu ve mevcut sınırla uyuşmazlık uyarısı da kontrol edildi. Tam ekran ve parka sığdır düğmeleri çalıştırıldı.
+
+## v27 — okunabilirlik ve bilgiye erişim
+
+Koyu harita bilgi kutularındaki sabit koyu yeşil başlık rengi tema metin rengiyle değiştirildi; tablo çizgileri, kaynak bağlantıları ve uyarılar da temaya uyar. Baskı stilleri değişmez. Uzun kaynak incelemesi belge/teyit konusu sayısını gösteren açılır bölümde tutulur; düzenleme düğmesi ve inceleme durumu doğrudan erişilebilir. Bu değişiklik hiçbir kaydı veya planı değiştirmez.
+
+`npm test`: 70/70 başarılı; yeni test açılır bölümde bütün kaynakların korunmasını ve düzenleme düğmesinin erişilebilirliğini denetler. Sözdizimi ve diff kontrolleri başarılı.

@@ -65,6 +65,9 @@
  .nav>a>span:first-of-type{flex:1}.menu>a{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px 14px;color:var(--ink);border-radius:10px;background:var(--soft);border:1px solid var(--line)}
  .source-review .ch{padding:0 0 12px}.source-review .ch h2{font-size:18px}.source-review details{margin-top:12px}.source-review td small{color:var(--mute)}
  .source-review textarea{width:100%}.source-review a{color:var(--pine)}
+ .source-review>.review-evidence>summary{min-height:36px;padding:7px 0;cursor:pointer;color:var(--ink2);font-weight:600;line-height:1.4}
+ .hpop th{color:var(--ink2)}.hpop th,.hpop td{border-bottom-color:var(--line)}
+ .hpop .hpk{color:var(--mute)}.hpop a{color:var(--pine)}.hpop .hwarn{background:var(--ambbg);color:var(--ambt)}
  :root[data-tema="koyu"] .leaflet-popup-content-wrapper,:root[data-tema="koyu"] .leaflet-popup-tip,:root[data-tema="koyu"] .leaflet-control-layers,:root[data-tema="koyu"] .leaflet-bar a,:root[data-tema="koyu"] .hleg,:root[data-tema="koyu"] .hcoord{background:var(--paper);color:var(--ink);border-color:var(--line)}
  :root[data-tema="koyu"] .hpop,:root[data-tema="koyu"] .hpop .hkoor{color:var(--ink2)}
  :root[data-tema="koyu"] .hpop .hpt small,:root[data-tema="koyu"] .hleg em{color:var(--mute)}
