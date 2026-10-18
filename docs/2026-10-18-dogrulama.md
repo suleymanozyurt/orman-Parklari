@@ -49,3 +49,12 @@ v27 uygulama kontrolü ve Pages yayını başarılı; canlı sayfada `app.js?v=2
 - Konum kontrolü iç halka içindeki noktaları, hariç alandan geçen çizgileri ve hariç alanı çevreleyen tesis poligonlarını tespit eder. Sonuç hukuki aykırılık veya sahada mevcudiyet teyidi değildir.
 - Otomatik test: 74/74 başarılı. Yeni kontroller: hassas koordinatlarla sınır aktarımı/dışa aktarımı, arşiv, atomik geçersiz kayıt reddi, gerçek projeksiyonla net alan, nokta/çizgi/poligonun hariç alana taşması ve eski şema uyumu.
 - Canlı tarayıcı doğrulaması ve kaynak cetvelleriyle veri eşleştirmesi sürüyor; bütün parkların sınırları doğrulandı veya çalışma bütünü tamamlandı anlamına gelmez.
+
+### v29 — Yılbaşı çalışma hesabı ve geçiş kıstı
+
+- 18.10.2026 kullanıcı talimatıyla 2027 ve sonrası planlar yılbaşında açılır. Yılbaşından veya gerekli resmî Aralık TÜFE verisi gelmeden kesin bedel gösterilmez. Tarihsel sözleşme zinciri korunur ve aynı ayrıntıdan açılır; yeni çalışma esası mevzuat hükmü olarak sunulmaz.
+- Belgeli yıllık kira tutarı/yılı açıkça saklanır. Tam taksitleri içeren daha yeni gerçek muhasebe yılı geldiğinde yıllık esas yenilenir; eksik taksit düzeni tutarı düşürmek için kullanılmaz. Muhasebe vadeleri elle tanımlı günlerden önce gelir.
+- “Hesap → Geçiş kıstı” tarih aralığı, başlangıç/bitiş dahil gün sayısı, gerçek 365/366 veya açıkça seçilmiş sabit365 esası ve kaynak belgeyle karşılaştırma taslağı oluşturur. Bu taslak ödeme/tahakkuk kaydı oluşturmaz; vergi ve teminatı kendiliğinden varsaymaz.
+- Türkiye tarih değişimi, açık düzenleme veya kaydedilmemiş taslak yokken hesapları yeniden kurar. Sayfa açık kalsa da yılbaşı geçişi izlenir.
+- Otomatik test:82/82 başarılı. Önceki testlere ek olarak yılbaşı öncesi veri bulunsa bile tutarın bekletilmesi, farklı sözleşme aylarında ortak başlangıç, resmî oran yokluğu, belgeli kira yılı, yeni tam/eksik muhasebe yılı, vade önceliği, taksit kuruş toplamı, artık yıl/tek gün/yıl geçişi kıstı, hatalı tarihler, kaynaklı kıst taslağının muhasebeyi değiştirmemesi ve düzenleme sırasında tarih geçişi kontrol edildi.
+- v28 canlı veri kanıtı:230köşeli kaynak sınır kaydedildi; “Verileri yenile” sunucudan dönüşü doğrulandı. Canlı KML dışa aktarımında218/6/9 kapalı halka noktaları kaynakla birebir eşleşti; bir önceki sınır arşivde korundu. Alan farkı yüzde kontrol eşiği içinde olsa da artık eşitlik/onay anlamındaki “uyumlu” yerine sayısal fark gösterilir.

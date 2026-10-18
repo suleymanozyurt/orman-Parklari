@@ -239,6 +239,11 @@
     yonlendir();
     S.sha = await veriSHA(S.enc);
     senkronKur();
+    if(!S._takvimTimer){S._takvimTimer=setInterval(takvimKontrol,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)takvimKontrol();});}
+  }
+  function takvimKontrol(){
+    if(!S.veri||bugun()===S.rapor||S.dirty||S.saving||S.refreshing||$('#modal.on')||document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return false;
+    hesapla();kabukDurum();sayfaCiz();return true;
   }
   function gateGoster(t, msg) {
     const g = $('#gate'); g.style.display = 'grid'; $('#app').style.display = 'none';
@@ -593,9 +598,9 @@
       else if (t.kod === 'kapsam') todo.push({ k: t.park, red: false, tutar: tl(t.kira), alt: y + ' yıllık kira', go: 'tahakkuk',
         ne: y + ' kirası ' + fd(t.zaman) + ' itibarıyla tahakkuk edilmeli; yüklü döküm bu tarihi kapsamıyor (120 son yevmiye ' + fd(t.dokumSon) + '). Güncel döküm yüklenince kontrol edilir.' });
     });
-    const sy = Object.values(S.plan[y + 1] || {}), hz = sy.filter((t) => t.kod === 'plan'), bk = sy.filter((t) => t.kod === 'tufe');
+    const sy = Object.values(S.plan[y + 1] || {}), hz = sy.filter((t) => t.kod === 'plan'), bk = sy.filter((t) => ['tufe','yilbasi','esas'].includes(t.kod));
     if (hz.length || bk.length) todo.push({ k: '', red: false, tutar: hz.length + ' / ' + (hz.length + bk.length), alt: (y + 1) + ' kirası hesaplanan', go: 'tahakkuk',
-      ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park TÜFE bekliyor; resmî veri alındıkça hesaplanır.' : '.') });
+      ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park yılbaşını ve resmî TÜFE verisini bekliyor.' : '.') });
     S.veri.parks.forEach((p) => { if (p.durum === 'Sona erdi') todo.push({ k: p.kisa, red: false, tutar: '', alt: '', ne: 'Sözleşme ' + fd(p.soz_bit) + '’de sona erdi: geri teslim tutanağı 15 gün içinde GM’ye (Md. 13/1), yeniden ihale.' }); });
     const todoH = '<section class="card"><div class="ch"><h2>Öncelik sırasıyla yapılacaklar</h2></div><ul class="todo">' + todo.map((t, i) => '<li><span class="no" style="background:' + (t.red ? 'var(--red)' : 'var(--amb)') + '">' + (i + 1) + '</span>' +
       '<div><b>' + (t.go && !t.k ? '<a href="#/' + t.go + '">Kira ve tahakkuk</a>' : '<a href="#/' + (t.go || 'park') + '" data-a="park" data-k="' + esc(t.k) + '" data-go="' + (t.go || 'park') + '">' + esc(t.k) + '</a>') + '</b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + t.tutar + '<small>' + esc(t.alt) + '</small></div></li>').join('') +
@@ -699,7 +704,7 @@
         '<div style="margin-top:8px"><button class="btn sm" data-a="tAyrP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Hesabı göster</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEtP" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Tahakkuk et</button>' : '') + '</div></div>'; };
     const pYears = planYillari([p]), pYear = pYears.includes(S.pY) ? S.pY : y;
     const plH = pY(pYear) + (pYears.includes(pYear + 1) ? pY(pYear + 1) : '');
-    const planK = plH ? '<section class="card"><div class="ch"><h2>Yıllık kira ve tahakkuk</h2><label class="year-picker" for="parkPlanYear">Yıl <select class="fld" id="parkPlanYear">' + pYears.map((Y) => '<option' + (Y === pYear ? ' selected' : '') + '>' + Y + '</option>').join('') + '</select></label><span class="muted" style="font-size:13px">Md. 31–33, 10/2 · ' + esc(p.artis || '') + ' · ' + esc(p.kural || '') + '</span></div><div class="plns">' + plH + '</div></section>' : '';
+    const planK = plH ? '<section class="card"><div class="ch"><h2>Yıllık kira ve tahakkuk</h2><label class="year-picker" for="parkPlanYear">Yıl <select class="fld" id="parkPlanYear">' + pYears.map((Y) => '<option' + (Y === pYear ? ' selected' : '') + '>' + Y + '</option>').join('') + '</select></label><span class="muted" style="font-size:13px">2027 ve sonrası: yılbaşı çalışma hesabı · Tarihsel sözleşme esası: ' + esc(p.artis || '') + ' · ' + esc(p.kural || '') + '</span></div><div class="plns">' + plH + '</div></section>' : '';
     const T = TAKVIM(p);
     const tkK = '<section class="card"><div class="ch"><h2>Süreler ve yükümlülükler</h2><span class="muted" style="font-size:13px">' + fd(R) + ' tarihine göre</span></div><div class="scroll"><table class="rt"><thead><tr><th>Dayanak</th><th>İş</th><th>Durum</th><th>Ayrıntı</th></tr></thead><tbody>' +
       T.map((x) => '<tr>' + td(esc(x.md), '', 'lead muted') + td('<b>' + esc(x.ad) + '</b>', 'İş', 'wide', ' style="white-space:normal"') + td('<span class="badge ' + x.c + '">' + esc(x.s) + '</span>', 'Durum') + td(esc(x.d), 'Ayrıntı', 'wide n', ' style="white-space:normal;font-size:13.5px;color:var(--ink2)"') + '</tr>').join('') + '</tbody></table></div></section>';
@@ -797,7 +802,7 @@
     if (S.tool === 'k') {
       if (!p) body = calc('Yıllık kira ve tahakkuk', 'Md. 31–33, 10', '<p class="note">Bu hesap parka göre yapılır; yukarıdan park seçin.</p>', '');
       else {
-        const Y = +H.kY || y, ky = E.kiraYili(p, S.tufe, S.veri.ek_kira, Y), pl = E.tahakkukPlan(S.veri, S.esl, p, S.tufe, Y, S.rapor);
+        const Y = +H.kY || y, ky = Y >= 2027 ? E.yilbasiKira(p, S.tufe, Y, S.rapor, {veri:S.veri,esl:S.esl}) : E.kiraYili(p, S.tufe, S.veri.ek_kira, Y), pl = E.tahakkukPlan(S.veri, S.esl, p, S.tufe, Y, S.rapor);
         const z = ky ? ky.zincir.filter((d) => d.n <= ky.donem + 1) : [];
         const satir = (d, i) => { const prev = z[i - 1]; let f;
           if (d.oncesi) f = 'Belgeli başlangıçtan önce — hesaplanmaz'; else if (d.belge) f = 'Belgeli dönem kirası: ' + esc(d.belge); else if (d.n === 1) f = 'İhale bedeli (Md. 31/1)';
@@ -805,7 +810,7 @@
           else f = '(' + tl(prev.bedel) + (prev.ek ? ' + ' + tl(prev.ek) : '') + ') × (1 + ' + E.pct(d.tufe) + ') = ' + tl(d.bedel);
           return '<tr' + (d.n === (ky && ky.donem) ? ' style="background:var(--okbg)"' : '') + '><td>' + d.n + '</td><td class="n">' + fd(d.bas) + '</td><td>' + (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] : '—') + '</td><td class="n" style="white-space:normal">' + f + '</td><td class="r n"><b>' + tl(d.bedel) + '</b></td></tr>'; };
         const yilSec = '<div class="fl"><label for="h_kY">Yıl</label><select id="h_kY" data-h="kY">' + planYillari([p]).map((v) => '<option' + (v === Y ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>';
-        const kural = (p.rejim === 'Eski' ? 'Sözleşmesi Tebliğ öncesi (Geçici Md. 8): sözleşmedeki artış esası. ' : 'Md. 32/1–2: sözleşme ayında yayımlanan TÜFE (12 aylık ort.). ') + 'Kayıt: ' + esc(p.artis || '—') + ' · ' + esc(p.kural || '—') + (p.yil_esas === 'Dönem başı' ? ' · yıl, dönemin başladığı yıl' : ' · yıl, 31 Mart’a kadar başlayan dönem');
+        const kural = (Y >= 2027 ? 'Yılbaşı çalışma hesabı: önceki belgeli yıllık kira ve resmî Aralık TÜFE. Tarihsel sözleşme esası: ' : '') + (p.rejim === 'Eski' ? 'Sözleşmesi Tebliğ öncesi (Geçici Md. 8): sözleşmedeki artış esası. ' : 'Md. 32/1–2: sözleşme ayında yayımlanan TÜFE (12 aylık ort.). ') + 'Kayıt: ' + esc(p.artis || '—') + ' · ' + esc(p.kural || '—') + (p.yil_esas === 'Dönem başı' ? ' · yıl, dönemin başladığı yıl' : ' · yıl, 31 Mart’a kadar başlayan dönem');
         body = calc('Yıllık kira ve tahakkuk · ' + p.kisa, 'Md. 31–33, 10', yilSec + '<p class="note" style="margin:0">' + kural + '</p>',
           '<div class="sl"><table><thead><tr><th>Dönem</th><th>Başlangıç</th><th>TÜFE ayı</th><th>Hesap</th><th class="r">Dönem kirası</th></tr></thead><tbody>' + z.map(satir).join('') + '</tbody></table></div>' +
           (pl.kira != null ? out(Y + ' yıllık kira', tl(pl.kira)) + fx('Ağaçlandırma = ' + tl(pl.kira) + ' × %5 = ' + tl(pl.agac) + ' (Md. 33)') + fx('KDV = (' + tl(pl.kira) + ' + ' + tl(pl.agac) + ') × %20 = ' + tl(pl.kdv)) +
@@ -1308,7 +1313,7 @@
       (h.onay_tarihi || h.onay ? kv('Belgedeki onay', fd(h.onay_tarihi || h.onay)) : '') +
       (h.sinir_kapsam ? kv('Sınırın kapsamı', esc(h.sinir_kapsam)) : '') +
       kv('Kayıtlı alan', p.alan != null ? haMetin(p.alan) : 'Kayıtta yok') +
-      kv('Haritadan alan', h.alan_ha != null ? haMetin(h.alan_ha) + (k ? (k.ok ? ' <i class="ok-t">uyumlu</i>' : ' <i class="red-t">fark %' + (k.f * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + '</i>') : '') : '<i class="amb-t">sınır koordinatı yok</i>') +
+      kv('Haritadan alan', h.alan_ha != null ? haMetin(h.alan_ha) + (k ? ' <i class="' + (k.ok ? 'muted' : 'red-t') + '">fark %' + (k.f * 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + (k.ok ? ' · kontrol eşiği içinde' : '') + '</i>' : '') : '<i class="amb-t">sınır koordinatı yok</i>') +
       (k && !k.ok ? '<div class="alert amb">Sınırdan hesaplanan alan kayıttaki alandan farklı. Belge karşılaştırması gerekiyor.</div>' : '') +
       '<details class="hmeta"><summary>Kaynak belge ve doğrulama</summary>' + kv('Sınır kaynağı', esc(h.kaynak || BYOK)) + kv('Onay sayısı', esc(h.onay_sayisi || '')) + kv('Koordinat sistemi', esc(h.crs || BYOK)) +
       (h.kontrol ? '<p class="hnote">' + esc(h.kontrol) + '</p>' : '') + (h.koordinat_url ? '<a href="' + esc(OPGeo.safeURL(h.koordinat_url)) + '" target="_blank" rel="noopener">Koordinat cetvelini aç</a>' : '') + '</details>' +
@@ -2067,7 +2072,7 @@
       '<div class="frow">' + fi('pk_od', 'Ödeme şekli', p.odeme, null, ['', 'Peşin', '4 taksit', '1/3 peşin + 2 taksit'].concat(p.odeme && !['Peşin', '4 taksit', '1/3 peşin + 2 taksit'].includes(p.odeme) ? [p.odeme] : [])) + fi('pk_tv', 'Ödeme günleri (AA-GG, virgülle; boşsa önceki yıl / Md. 32-3)', p.taksit_vade) + '</div>' +
       '<div class="frow">' + fi('pk_kes', 'Kesin teminat (TL; boşsa ihale × %6)', p.kesin, 'number') + fi('pk_gir', 'Giriş ücreti (varsa)', p.giris) + '</div>' +
       '<div class="frow">' + fi('pk_guv', 'Güvence (%)', pct(p.guv), 'number') + fi('pk_dep', 'Depozito (%)', pct(p.dep), 'number') + '</div>' +
-      '<div class="frow">' + fi('pk_mk', 'Muhasebedeki yıllık kira (karşılaştırma)', p.muh_kira, 'number') + fi('pk_mkn', 'Muhasebe kira açıklaması', p.muh_kira_not) + '</div>' +
+      '<div class="frow">' + fi('pk_mk', 'Muhasebedeki yıllık kira (karşılaştırma)', p.muh_kira, 'number') + fi('pk_mky', 'Bu yıllık kiranın yılı', p.muh_kira_yil || (yeni ? E.year(S.rapor) : 2026), 'number') + fi('pk_mkn', 'Muhasebe kira açıklaması', p.muh_kira_not) + '</div>' +
       H('Plan, tesisler ve yatırımlar') + '<div class="frow one">' + fi('pk_plan', 'Gelişim ve yönetim planı durumu', p.plan) + '</div><div class="frow">' + fi('pk_gyp', 'GYP onay tarihi', p.gyp_onay, 'date') + fi('pk_prj', 'Uygulama projesi / ruhsat başvurusu', p.proje_t, 'date') + '</div>' +
       '<div class="frow">' + fi('pk_yat', 'Planlanan yatırım maliyeti (TL, Md. 29)', p.yatirim, 'number') + fi('pk_ybt', 'Yatırımlar tamamlandı', p.yatirim_bitti ? 'Evet' : 'Hayır', null, ['Hayır', 'Evet']) + '</div>' +
       '<div class="frow one">' + fi('pk_tsl2', 'Teslim edilen tesisler (Ek-9, Ek-10)', p.tesisler, 'area') + fi('pk_muh', 'Muhdesat (şartname/sözleşme)', p.muhdesat, 'area') + '</div>' +
@@ -2101,7 +2106,7 @@
         kok: gv('pk_kb') && gv('pk_kbb', 'number') != null ? { bas: gv('pk_kb'), bedel: r2(gv('pk_kbb', 'number')), kaynak: gv('pk_kbk') || '' } : null, odeme: gv('pk_od') || (ihb != null ? (ihb <= 150000 ? 'Peşin' : '4 taksit') : ''), taksit_vade: tv || '',
         kesin: gv('pk_kes', 'number') != null ? gv('pk_kes', 'number') : (ihb != null && yeni ? r2(ihb * 0.06) : (yeni ? null : p.kesin)), giris: gv('pk_gir') || '',
         guv: gv('pk_guv', 'number') == null ? null : gv('pk_guv', 'number') / 100, dep: gv('pk_dep', 'number') == null ? null : gv('pk_dep', 'number') / 100,
-        muh_kira: gv('pk_mk', 'number'), muh_kira_not: gv('pk_mkn') || '', plan: gv('pk_plan'), gyp_onay: gv('pk_gyp'), proje_t: gv('pk_prj'), yatirim: gv('pk_yat', 'number'), yatirim_bitti: gv('pk_ybt') === 'Evet',
+        muh_kira: gv('pk_mk', 'number'), muh_kira_yil: gv('pk_mky','number'), muh_kira_not: gv('pk_mkn') || '', plan: gv('pk_plan'), gyp_onay: gv('pk_gyp'), proje_t: gv('pk_prj'), yatirim: gv('pk_yat', 'number'), yatirim_bitti: gv('pk_ybt') === 'Evet',
         tesisler: gv('pk_tsl2') || '', muhdesat: gv('pk_muh') || '', yapilacak: gv('pk_yap') || '', notlar: gv('pk_not') || '', kz_not: gv('pk_kzn') || '' });
       if (yeni) S.veri.parks.push(yeniK);
       else if (k !== t.dataset.k) parkAdTasi(t.dataset.k, k);
@@ -2530,7 +2535,7 @@
     const say = (k) => L.filter((t) => t.kod === k).length;
     const top = sumOf(L.filter((t) => t.kira != null), (t) => t.kira);
     const durumC = { tamam: 'b-ok', oto: 'b-ok', fark: 'b-amb', bekliyor: 'b-no', plan: 'b-gray', tufe: 'b-amb', yok: 'b-gray', kapsam: 'b-amb' };
-    S.csv = { name: 'tahakkuk_' + Y, head: ['Park', 'Dönem', 'Dönem başı', 'TÜFE ayı', 'TÜFE', 'Yıllık kira (Tebliğ)', 'Ağaçlandırma', 'KDV', 'Toplam', 'Muhasebe', 'Fark', 'Vadeler', 'Güvence', 'Depozito', 'Durum'],
+    S.csv = { name: 'tahakkuk_' + Y, head: ['Park', 'Dönem', 'Dönem başı', 'TÜFE ayı', 'TÜFE', Y >= 2027 ? 'Yıllık kira (yılbaşı çalışma hesabı)' : 'Yıllık kira (sözleşme/Tebliğ)', 'Ağaçlandırma', 'KDV', 'Toplam', 'Muhasebe', 'Fark', 'Vadeler', 'Güvence', 'Depozito', 'Durum'],
       rows: L.map((t) => [t.park, t.donem, fd(t.bas), t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] : '', t.tufe, t.kira, t.agac, t.kdv, t.toplam, t.muhasebede ? t.muhKira : '', t.fark, (t.vadeler || []).map((v) => fd(v.vade) + ' ' + tl(v.kira)).join(' | '), t.guv, t.dep, t.durum]) };
     const satir = (t) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(t.park) + '" data-k="' + esc(t.park) + '" data-go="park" style="font-weight:600">' + esc(t.park) + '</a>', '', 'lead') +
       td(t.donem ? t.donem + '. dönem<br><span class="muted n" style="font-size:12.5px">' + fd(t.bas) + '</span>' : '—', 'Dönem') +
@@ -2542,12 +2547,12 @@
       td('<span class="badge ' + (durumC[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span>', 'Durum') +
       td('<button class="btn sm" data-a="tAyr" data-k="' + esc(t.park) + '">Hesap</button>' + ((t.kod === 'bekliyor' || t.kod === 'plan' || t.kod === 'kapsam') ? ' <button class="btn sm pri own-only" data-a="tEt" data-k="' + esc(t.park) + '">Tahakkuk et</button>' : '') +
         (t.kod === 'oto' ? ' <button class="btn sm red own-only" data-a="tGeri" data-k="' + esc(t.park) + '">Geri al</button>' : ''), '', 'noprint') + '</tr>';
-    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>Yıllık kira Tebliğ Md. 31–32 zincirinden hesaplanır: dönem kirası = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE). Takvim yılının kirası, o yılın 31 Mart’ına kadar başlamış dönemin kirasıdır (dönem başı esaslı parklarda o yıl başlayan dönem). “Dökümde tespit edilemedi” yalnız yüklü döküme göredir; döküm tarihinden sonraki kayıtlar muhasebeden teyit edilir. Ödeme günleri önceki yılın tahakkukundan, yoksa Md. 32/3’ten alınır; ağaçlandırma %5 (Md. 33), KDV %20 ilk taksitle. Gerekli TÜFE açıklanmadıkça tutar hesaplanmaz; resmî veri başarıyla alındığında otomatik tamamlanır.</p></div>' +
+    return '<div class="pagehead"><div><h1>Kira ve tahakkuk</h1><p>2027’den itibaren bütün parkların hesabı yılbaşında açılır; gerekli resmî TÜFE açıklanmadan kesin tutar gösterilmez. Vadeler muhasebeden alınır. Ayrıntı ve geçiş kıstına “Hesap” düğmesinden ulaşabilirsiniz.</p><details class="hnote"><summary>Hesap ve kaynak esasları</summary><p>18.10.2026 talimatına göre yılbaşı çalışma hesabı: önceki belgeli yıllık kira × (1 + önceki Aralık ayının resmî TÜFE oranı). Tarihsel sözleşme zinciri ayrıca korunur. Esas bedelin yılı park kaydında görünür. Ek tesis ve geçiş kıstı dayanakları ayrıca karşılaştırılır; kıst taslağı kendiliğinden borç oluşturmaz. Muhasebe dökümü sonrasındaki tahakkuk ve ödemeler bu dökümden doğrulanamaz. Muhasebe vadesi yoksa tanımlı ödeme günleri ve ilgili sözleşme değerlendirilir.</p></details><p hidden></p></div>' +
       '<label class="year-picker" for="tYear">Yıl <select class="fld" id="tYear">' + years.map((v) => '<option' + (v === Y ? ' selected' : '') + '>' + v + '</option>').join('') + '</select><small>' + years[0] + '–' + years[years.length - 1] + ' · sözleşmelere göre</small></label></div>' +
       '<section class="kpis"><div class="kpi"><span>' + Y + ' yıllık kira (hesaplanan)</span><strong class="n">' + tl(top) + '</strong><em>' + L.filter((t) => t.kira != null).length + ' park</em></div>' +
       '<div class="kpi"><span>Tahakkuk edilmiş</span><strong class="n">' + (say('tamam') + say('fark') + say('oto')) + '</strong><em>' + say('fark') + ' parkta Tebliğ hesabından farklı</em></div>' +
       '<div class="kpi"><span>Dökümde tahakkuku tespit edilemeyen</span><strong class="n" style="color:' + (say('bekliyor') ? 'var(--red)' : 'var(--ink)') + '">' + say('bekliyor') + '</strong><em>' + (Y > y0 ? say('plan') + ' park hesaplandı, zamanı gelmedi' : (say('kapsam') ? say('kapsam') + ' parkta döküm tarihi kapsamıyor' : '120 son yevmiye ' + fd(E.dokumSon(S.veri)['120']))) + '</em></div>' +
-      '<div class="kpi"><span>TÜFE bekleyen</span><strong class="n">' + say('tufe') + '</strong><em>' + (say('tufe') ? 'Resmî veri bekleyen aylar izleniyor' : 'hepsi hesaplandı') + '</em></div></section>' +
+      '<div class="kpi"><span>Hesap bekleyen</span><strong class="n">' + (say('tufe') + say('yilbasi') + say('esas')) + '</strong><em>' + say('yilbasi') + ' yılbaşını · ' + say('tufe') + ' TÜFE’yi · ' + say('esas') + ' belgeli esas bedeli bekliyor' + '</em></div></section>' +
       '<section class="card"><div class="ch"><h2>' + Y + ' yılı kira ve tahakkuk planı</h2><button class="btn sm" data-a="tTalimat">Tahakkuk talimatı (yazdır)</button></div><div class="scroll"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Dönem</th><th>TÜFE</th><th class="r">Yıllık kira</th><th class="r">Ağaç. / KDV</th><th>Taksitler</th><th class="r">Muhasebe</th><th>Durum</th><th class="noprint"></th></tr></thead><tbody>' +
       L.map(satir).join('') + '</tbody></table></div><p class="muted" style="margin:10px 22px 16px;font-size:13.5px">“Tahakkuk et” kayıtları programın muhasebe defterine işlenir; muhasebe dökümü yüklendiğinde aynı park ve yılın gerçek tahakkuku gelirse program kaydı kendiliğinden devreden çıkar. İşlenmiş tahakkuk, sonradan değişen oranlardan etkilenmez.</p></section>';
   };
@@ -2557,11 +2562,11 @@
   AKSIYON.tEtP = (t) => { S.tY = +t.dataset.y; AKSIYON.tEt(t); };
   AKSIYON.tAyr = (t) => {
     const Y = S.tY || E.year(S.rapor), pl = planAl(Y)[t.dataset.k], p = S.pBy[t.dataset.k];
-    const ky = E.kiraYili(p, S.tufe, S.veri.ek_kira, Y);
+    const ky = Y >= 2027 ? E.yilbasiKira(p, S.tufe, Y, S.rapor, {veri:S.veri,esl:S.esl}) : E.kiraYili(p, S.tufe, S.veri.ek_kira, Y);
     const z = ky ? ky.zincir.filter((d) => d.n <= ky.donem) : [];
-    modal(Y + ' kira hesabı · ' + p.kisa, '<div class="kv"><span>Esas</span><span>' + esc(p.rejim === 'Eski' ? 'Sözleşmesi Tebliğ öncesi (Geçici Md. 8): artış sözleşmedeki esasa göre' : 'Tebliğ Md. 31–32') + ' · ' + esc(p.artis || '') + ' · ' + esc(p.kural || '') + '</span></div>' +
+    modal(Y + ' kira hesabı · ' + p.kisa, (Y >= 2027 ? '<p class="hnote">Yılbaşı çalışma hesabı · 18.10.2026 kullanıcı talimatı. Önceki belgeli yıllık kira ve resmî Aralık TÜFE esas alınır. Muhasebe vadeleri korunur; tarihsel sözleşme zinciri değiştirilmez.</p>' : '') + '<div class="kv"><span>' + (Y >= 2027 ? 'Tarihsel sözleşme esası' : 'Esas') + '</span><span>' + esc(p.rejim === 'Eski' ? 'Sözleşmesi Tebliğ öncesi (Geçici Md. 8): artış sözleşmedeki esasa göre' : 'Tebliğ Md. 31–32') + ' · ' + esc(p.artis || '') + ' · ' + esc(p.kural || '') + '</span></div>' +
       '<div class="sl"><table><thead><tr><th>Dönem</th><th>Başlangıç</th><th>TÜFE</th><th class="r">Ek kira</th><th class="r">Dönem kirası</th></tr></thead><tbody>' +
-      z.map((d) => '<tr><td>' + d.n + '</td><td class="n">' + fd(d.bas) + '</td><td>' + (d.n === 1 ? 'İhale bedeli' : (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] + ' · ' : '') + (d.tufe != null ? E.pct(d.tufe) : 'açıklanmadı')) + '</td><td class="r n">' + (d.ek ? tl(d.ek) : '–') + '</td><td class="r n"><b>' + tl(d.bedel) + '</b></td></tr>').join('') + '</tbody></table></div>' +
+      z.map((d) => '<tr><td>' + d.n + '</td><td class="n">' + fd(d.bas) + '</td><td>' + (d.belge ? esc(d.belge) : d.n === 1 ? 'İhale bedeli' : (d.tufeAy ? AY[d.tufeAy[1] - 1] + ' ' + d.tufeAy[0] + ' · ' : '') + (d.tufe != null ? E.pct(d.tufe) : 'açıklanmadı')) + '</td><td class="r n">' + (d.ek ? tl(d.ek) : '–') + '</td><td class="r n"><b>' + tl(d.bedel) + '</b></td></tr>').join('') + '</tbody></table></div>' +
       (z.length > 1 ? '<p class="muted" style="margin:0;font-size:13px">Her satır: (önceki dönem kirası + önceki dönemde eklenen ek kira) × (1 + TÜFE), kuruşa yuvarlanır.</p>' : '') +
       (pl.kira != null ? '<div class="kv"><span>' + Y + ' yıllık kira</span><span class="n"><b>' + tl(pl.kira) + '</b></span></div><div class="kv"><span>Ağaçlandırma (kira × %5)</span><span class="n">' + tl(pl.agac) + '</span></div>' +
         '<div class="kv"><span>KDV ((kira + ağaçlandırma) × %20)</span><span class="n">' + tl(pl.kdv) + '</span></div><div class="kv"><span>Toplam</span><span class="n">' + tl(pl.toplam) + '</span></div>' +
@@ -2570,7 +2575,17 @@
         (pl.guv != null ? '<div class="kv"><span>Güvence (kira × ' + E.pct(p.guv, 0) + ', Md. 10/1)</span><span class="n">' + tl(pl.guv) + (pl.guvFark != null ? ' · artış ' + tl(pl.guvFark) : '') + '</span></div>' : '') +
         (pl.dep != null ? '<div class="kv"><span>Depozito (kira × ' + E.pct(p.dep, 0) + ', Md. 10/2)</span><span class="n">' + tl(pl.dep) + (pl.depFark != null ? ' · artış ' + tl(pl.depFark) : '') + '</span></div>' : '')
         : '<div class="alert amb">' + esc(pl.durum) + (pl.yayim ? ': ' + AY[pl.tufeAy[1] - 1] + ' ' + pl.tufeAy[0] + ' TÜFE’si resmî kaynaktan alındığında hesap kendiliğinden tamamlanır. Kesin yayım tarihi TÜİK takvimine bağlıdır.' : '') + '</div>'),
-      '<button class="btn pri" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Kapat</button>');
+      '<a class="btn" href="#/zincir?p=' + encodeURIComponent(p.kisa) + '">Sözleşme kira zinciri</a><button class="btn" data-a="kistAc" data-k="' + esc(p.kisa) + '" data-y="' + Y + '">Geçiş kıstı</button><button class="btn pri" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Kapat</button>');
+  };
+  AKSIYON.kistAc = (t) => {
+    const p=S.pBy[t.dataset.k], Y=+t.dataset.y; if(!p)return;
+    const draft=(S.veri.kist_taslaklari||[]).filter(x=>x.park===p.kisa&&x.yil===Y).at(-1)||{};
+    modal('Geçiş kıstı · '+p.kisa+' · '+Y,'<p class="hnote">Yılbaşı hesabına geçişte karşılaştırma taslağı. Kaynak tarih aralığını girin; başlangıç ve bitiş dahildir. Sonuç otomatik borç, ödeme veya tahakkuk oluşturmaz.</p>'+fi('kiBedel','Kaynak yıllık kira (TL)',draft.bedel??p.muh_kira??'')+'<div class="frow">'+fi('kiBas','Kıst başlangıcı',draft.bas||'','date')+fi('kiBit','Kıst bitişi',draft.bit||'','date')+'</div>'+fi('kiEsas','Gün esası',draft.esas==='365'?'Sabit 365':'Takvim yılı: 365 / 366',null,['Takvim yılı: 365 / 366','Sabit 365'])+fi('kiKaynak','Dayanak belge / açıklama',draft.kaynak||'','area')+'<div id="kiSonuc" role="status"></div>','<button class="btn" id="kiHesap">Hesapla</button><button class="btn pri duz-only" id="kiSave" disabled>Taslağı kaydet</button>');
+    let result=null;
+    const invalid=()=>{result=null;$('#kiSave').disabled=true;$('#kiSonuc').textContent='Değişiklikten sonra yeniden hesaplayın.';};
+    ['kiBedel','kiBas','kiBit','kiEsas','kiKaynak'].forEach(id=>$('#'+id).addEventListener('input',invalid));
+    $('#kiHesap').onclick=()=>{try{result=E.kistHesap(gv('kiBedel','number'),gv('kiBas'),gv('kiBit'),gv('kiEsas')==='Sabit 365'?'365':'gercek');$('#kiSonuc').innerHTML='<p><b>'+tl(result.tutar)+' TL</b> · '+result.gun+' gün · '+result.tarihDahil+'</p>'+result.dilimler.map(d=>'<div class="kv"><span>'+fd(d.bas)+' – '+fd(d.bit)+'</span><span>'+tl(result.bedel)+' × '+d.gun+' / '+d.payda+'</span></div>').join('')+'<p class="hnote">Yalnız kira kıstı hesaplandı. KDV, ağaçlandırma, teminat ve mevcut ödemeler bu taslağa eklenmedi; ilgili dayanakla ayrıca karşılaştırılır.</p>';$('#kiSave').disabled=!yetki('duzenle')||!gv('kiKaynak');}catch(e){invalid();$('#kiSonuc').textContent=e.message;}};
+    $('#kiSave').onclick=()=>{if(!result||!yetki('duzenle')||!gv('kiKaynak'))return;const row={...result,park:p.kisa,yil:Y,kaynak:gv('kiKaynak'),kim:S.kim,tarih:new Date().toISOString(),durum:'Karşılaştırma taslağı'};(S.veri.kist_taslaklari=S.veri.kist_taslaklari||[]).push(row);modalKapat();degisti(p.kisa+' '+Y+' geçiş kıstı karşılaştırma taslağı kaydedildi: '+tl(row.tutar)+' TL',p.kisa);};
   };
   AKSIYON.tEt = (t) => {
     if (!S.owner) return yoneticiGiris();

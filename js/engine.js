@@ -268,6 +268,38 @@
   };
   // TÜİK, ayın verisini izleyen ayın 3'ünde açıklar
   E.tufeYayim = (ta) => (ta ? iso(ta[1] === 12 ? ta[0] + 1 : ta[0], ta[1] === 12 ? 1 : ta[1] + 1, 3) : null);
+  // 18.10.2026 kullanıcı talimatı: 2027 ve sonrası yılbaşı çalışma hesabı.
+  // Sözleşmedeki tarihsel zincir ayrıca korunur; bu tercih mevzuat hükmü değildir.
+  E.yilbasiKira = function (p, tufe, Y, rapor, context) {
+    const bas = iso(Y, 1, 1), ta = [Y - 1, 12], out = { bas, tufeAy: ta, tufe: E.tufeAl(tufe, ...ta), bedel: null, ek: 0, donem: Y - E.year(p.soz_bas) + 1, zincir: [], onceki: null, yilbasi: true };
+    if (rapor < bas) return Object.assign(out, { bekleme: 'Yılbaşı bekleniyor', zamanBekle: true });
+    let by = p.muh_kira_yil == null ? 2026 : Number(p.muh_kira_yil), b = p.muh_kira;
+    const sy = E.year(p.soz_bas);
+    // Yeni gerçek döküm geldiğinde yalnız tam taksit düzeni yıllık esasın yerine geçer.
+    const ctx=context||{}, count=p.odeme==='4 taksit'?4:p.odeme==='Peşin'?1:null;
+    if(count&&ctx.esl&&ctx.veri)for(let y=Y-1;y>=Math.max(2026,sy);y--){
+      const items=ctx.esl.items.filter(it=>it.park===p.kisa&&it.tur==='Kira'&&it.grup===y+' tahakkuku'&&!(ctx.veri.muhasebe[it.row]||{}).oto&&!/k[ıi]st|\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}/i.test(it.aciklama||''));
+      if(new Set(items.map(it=>it.vade).filter(Boolean)).size===count&&items.every(it=>Number.isFinite(it.tutar)&&it.tutar>0)&&(y>by||!Number.isFinite(b))){by=y;b=r2(items.reduce((sum,it)=>sum+it.tutar,0));break;}
+    }
+    if (sy >= 2027 && (!Number.isFinite(b) || by < sy)) { by = sy; b = p.ihale_b; }
+    if (!Number.isInteger(by) || by > Y || by < sy || !Number.isFinite(b) || b <= 0) return Object.assign(out, { bekleme: 'Belgeli yıllık kira ve yılı gerekli', esasEksik: true });
+    out.zincir.push({ n: by - sy + 1, bas: iso(by,1,1), bedel: b, ek: 0, belge: by + ' muhasebe yıllık kira esası' });
+    for (let y = by + 1; y <= Y; y++) {
+      const ay = [y - 1,12], t = E.tufeAl(tufe, ...ay), prev = out.zincir[out.zincir.length - 1];
+      const next = { n: y - sy + 1, bas: iso(y,1,1), tufeAy: ay, tufe: t, bedel: !Number.isFinite(t) || t <= -1 || prev.bedel == null ? null : r2(prev.bedel * (1 + t)), ek: 0 };
+      out.zincir.push(next);
+      if (next.bedel == null) return Object.assign(out, { tufeAy: ay, tufe: t, bekleme: 'TÜFE bekleniyor' });
+    }
+    const last = out.zincir[out.zincir.length - 1];
+    return Object.assign(out, { bedel: last.bedel, tufe: last.tufe ?? null, tufeAy: last.tufeAy || null, onceki: out.zincir.length > 1 ? out.zincir[out.zincir.length - 2] : null, esasYili: by, esasBedeli: b, esasKaynak: 'Muhasebe yıllık kira kaydı; ek tesis ve geçiş kıstı ayrıca karşılaştırılır' });
+  };
+  E.kistHesap = function (bedel, bas, bit, esas) {
+    const valid = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0,10) === s;
+    if (!Number.isFinite(bedel) || bedel <= 0 || !valid(bas) || !valid(bit) || bit < bas || E.days(bas, bit) > 3660 || !['gercek','365'].includes(esas)) throw Error('Pozitif yıllık bedel, geçerli tarih aralığı ve gün esası gerekli.');
+    const dilimler = []; let cursor = bas;
+    while (cursor <= bit) { const y = E.year(cursor), end = bit < iso(y,12,31) ? bit : iso(y,12,31), gun = E.days(cursor,end) + 1, payda = esas === '365' ? 365 : E.days(iso(y,1,1),iso(y+1,1,1)); dilimler.push({ bas: cursor, bit: end, gun, payda, ham: bedel * gun / payda }); cursor = E.addDays(end,1); }
+    return { bas, bit, bedel, esas, gun: dilimler.reduce((s,d)=>s+d.gun,0), dilimler, tutar: r2(dilimler.reduce((s,d)=>s+d.ham,0)), tarihDahil: 'Başlangıç ve bitiş dahil' };
+  };
   const bol = (top, n) => { const a = []; const b = r2(top / n); for (let i = 0; i < n - 1; i++) a.push(b); a.push(r2(top - b * (n - 1))); return a; };
   E.bol = bol;
   // Ödeme düzeni: önceki yılın muhasebe tahakkukları (vade günleri +1 yıl); yoksa Md. 31/32-3 kuralı; yönetici parkta 'taksit_vade' (AA-GG listesi) tanımlayabilir.
@@ -276,10 +308,10 @@
     if (!p.soz_bas || !p.taban || p.ihale_b == null) { out.durum = 'Sözleşme bilgisi eksik'; out.kod = 'eksik'; return out; }
     if (p.durum && p.durum !== 'Kirada') { out.durum = 'Park kirada değil (' + p.durum + ')'; out.kod = 'disi'; return out; }
     if (p.soz_bit && iso(Y, 1, 1) > p.soz_bit) { out.durum = 'Sözleşme süresi dışında'; out.kod = 'disi'; return out; }
-    const ky = E.kiraYili(p, tufe, veri.ek_kira, Y);
+    const ky = Y >= 2027 ? E.yilbasiKira(p, tufe, Y, rapor, {veri,esl}) : E.kiraYili(p, tufe, veri.ek_kira, Y);
     if (!ky) { out.durum = 'Kira dönemi başlamamış'; out.kod = 'yok'; return out; }
-    Object.assign(out, { donem: ky.donem, bas: ky.bas, tufe: ky.tufe, tufeAy: ky.tufeAy });
-    if (ky.bedel == null) { out.durum = 'TÜFE bekleniyor'; out.kod = 'tufe'; out.yayim = E.tufeYayim(ky.tufeAy); return out; }
+    Object.assign(out, { donem: ky.donem, bas: ky.bas, tufe: ky.tufe, tufeAy: ky.tufeAy, yilbasi: !!ky.yilbasi, kiraEsasi: ky.esasKaynak || '', esasYili: ky.esasYili, esasBedeli: ky.esasBedeli });
+    if (ky.bedel == null) { out.durum = ky.bekleme || 'TÜFE bekleniyor'; out.kod = ky.zamanBekle ? 'yilbasi' : ky.esasEksik ? 'esas' : 'tufe'; if (!ky.zamanBekle && !ky.esasEksik) out.yayim = E.tufeYayim(ky.tufeAy); return out; }
     const kira = ky.bedel;
     out.kira = kira; out.ilkDonem = ky.donem === 1;
     // muhasebede bu yılın tahakkuku var mı
@@ -301,11 +333,11 @@
     }
     let vadeler, kaynak;
     const own = (p.taksit_vade || '').split(/[,;\s]+/).filter((s) => /^\d\d-\d\d$/.test(s));
-    if (own.length) { vadeler = own.map((s) => Y + '-' + s).sort(); kaynak = 'Parkta tanımlı ödeme günleri'; }
-    else if (ornek) {
+    if (ornek) {
       const kv = Array.from(new Set(ornek.items.filter((x) => x.tur === 'Kira').map((x) => x.vade || x.duz).filter(Boolean))).sort();
-      vadeler = kv.map((v) => E.addMonths(v, (Y - ornek.yil) * 12)); kaynak = ornek.yil + ' tahakkukunun ödeme günleri (bir yıl ileri)';
-    } else {
+      vadeler = kv.map((v) => E.addMonths(v, (Y - ornek.yil) * 12)); kaynak = ornek.yil + ' tahakkukunun ödeme günleri (ilgili yıla taşındı)';
+    } else if (own.length) { vadeler = own.map((s) => Y + '-' + s).sort(); kaynak = 'Muhasebe örneği yok; parkta tanımlı ödeme günleri'; }
+    else {
       const [, sm, sd] = P(p.soz_bas);
       if (p.ihale_b <= 150000) { vadeler = [iso(Y, sm, lastDay(Y, sm))]; kaynak = 'Md. 32/3: sözleşme ayının sonunda tek seferde peşin'; }
       else { vadeler = [0, 3, 6, 9].map((k) => { const [yy, mm] = mk(Y, sm + k, 1); return iso(yy, mm, Math.min(sd, lastDay(yy, mm))); }).filter((v) => E.year(v) === Y).sort();
