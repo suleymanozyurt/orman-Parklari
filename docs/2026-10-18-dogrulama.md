@@ -19,3 +19,15 @@ KML dışa aktarımı artık sekiz plan durumunu `op_status` alanında saklar. Y
 Çiçekçiler için dört kaynak, imzalı taramanın ilgili sayfaları ve sayısal çizim incelendi. Bu çalışma 115 tesis referansını kapsar; 122 coğrafi unsurun tamamı tesis değildir. Bütün parkların veya bu parkın bütün altyapı ve mevcut tesis oturumlarının incelemesi bitmiş sayılmaz. Güncel saha mevcudiyeti ve sonraki onay zinciri ayrıca doğrulanmalıdır.
 
 Özel koordinatlar, KML ve ayrıntılı envanter açık kod deposuna eklenmez. Uygulamaya kayıt, mevcut şifreli veri kaydetme mekanizmasıyla yapılacaktır. Bu not tek başına üretime veri kaydedildiğinin veya yeniden okunduğunun kanıtı değildir; canlı kayıt sonucu ayrıca belirtilecektir.
+
+## Canlı kayıt ve yeniden okuma
+
+v25 uygulama kontrolleri ve Pages yayını başarılı. Çiçekçiler katmanı uygulamanın normal yönetici arayüzünden şifreli kaydedildi; dört kaynak ve yedi teyit konusu ayrıca eklendi. `Verileri yenile` işlemi sunucudaki sürümü aldıktan sonra 122 unsur ve kaynak incelemesi tekrar görüldü. Resmî alan 9,50 ha, esas harita alanı 9,49 ha ve güncel sözleşme tarihleri korundu.
+
+Uygulamadan gerçek KML indirildi: esas sınır dahil 123 Placemark; 68 poligon, 49 nokta, 6 çizgi. Plan katmanındaki 122 geometrinin koordinatları hazırlanan kaynak KML ile tek tek birebir aynı. M49/P21/O45/Y6/A1 durumları dışa aktarımda da korundu. Bu sonuç, mevcut tesis oturumları veya imzalı cetvelin bütün satırlarının ayrıca teyidinin tamamlandığı anlamına gelmez.
+
+## v26 — bilgi kutusundaki anlam doğruluğu
+
+Canlı kontrol sırasında `Kaynak katman` alanının genel `kat` araması yüzünden yükseklik gibi gösterilebildiği görüldü. Yükseklik artık gerçek kat/yükseklik/hmax etiketlerinden okunur. Park genelindeki denetim tür eşleşmesi tek tesisin sahadaki mevcudiyeti olarak sunulmaz; birebir eşleştirme yapılmadığı açıkça yazılır. Kaynak ölçü/geometri çelişkileri açılır ayrıntılara girmeden görünür. KML önizleme açıklaması açık kayıtlı durumun önceliğini anlatacak şekilde güncellendi.
+
+`npm test`: 69/69 başarılı; iki yeni test bu bilgi kutusu hatalarını ve kaynak uyarısının görünür/kaçışlanmış gösterimini denetler. Sözdizimi ve diff kontrolleri başarılı. Fiziksel cihazda saha GPS testi, gerçek PWA kurulum testi ve bütün parkların kaynak incelemesi tamamlanmış sayılmaz.

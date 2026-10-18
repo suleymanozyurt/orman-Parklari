@@ -1244,13 +1244,13 @@
     if (f.g === 'A') ana.push(['Alan (çizimden)', f.m2 != null ? m2(f.m2) : BYOK]);
     else if (f.g === 'L') ana.push(['Uzunluk (çizimden)', hUzunluk(f.c).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' m']);
     ana.push(['Plan', planMetin(pl)], ['Plan durumu', (PLD[pl.durum] || PLD.belirsiz)[0]]);
-    const ay = [['Kat / yükseklik', bul(/kat|yükseklik|yukseklik/i) || BYOK], ['Kapasite', bul(/kapasite|kişi|araç/i) || BYOK],
-      ['Plan – saha', dn ? (dk.length ? 'Son denetimde (' + fd(dn.tarih) + ') sahada: ' + dk.map((x) => x.ham).join('; ') : 'Son denetim listesinde (' + fd(dn.tarih) + ') bu tür geçmiyor; yerinde teyit gerekli') : 'Denetim kaydı yok; teyit gerekli'],
-      ['Denetim bulgusu', dn && dn['Plana uygunluk'] && dn['Plana uygunluk'] !== '-' ? dn['Plana uygunluk'] : BYOK]];
-    b.filter((x) => !/^Çizimden alan/.test(x[0])).forEach((x) => ay.push(x));
+    const ay = [['Kat / yükseklik', bul(/(?:^|\s)kat(?:\s|\/|:|$)|yükseklik|yukseklik|\bhmax\b|\bh\s*[:=(]/i) || BYOK], ['Kapasite', bul(/kapasite|kişi|araç/i) || BYOK],
+      ['Plan – saha', dn ? (dk.length ? 'Park genelinde tür düzeyinde bilgi (' + fd(dn.tarih) + '): ' + dk.map((x) => x.ham).join('; ') + '. Bu çizimdeki tesisle birebir eşleştirilmedi; yerinde teyit gerekli.' : 'Parkın son denetim listesinde (' + fd(dn.tarih) + ') bu tür geçmiyor; bu tesisin yokluğunu kanıtlamaz, yerinde teyit gerekli.') : 'Denetim kaydı yok; teyit gerekli'],
+      ['Park denetiminin genel bulgusu', dn && dn['Plana uygunluk'] && dn['Plana uygunluk'] !== '-' ? dn['Plana uygunluk'] + ' (park düzeyinde; bu tesise özel eşleştirme yapılmadı)' : BYOK]];
+    b.filter((x) => !/^Çizimden alan|^op_status$|^tur$/.test(x[0])).forEach((x) => ay.push(x));
     if (f.k) ay.push(['Plan katmanı', f.k]);
     ay.push(['Kaynak sayfa / pafta', bul(/^Kaynak sayfa \/ pafta$/) || (/\.(ncz|kml|kmz)/i.test(ky.ad || '') ? 'Sayısal çizim – katman “' + (f.k || '') + '”' : BYOK)], ['Program kodu', f.id]);
-    const uy = [...new Set([...(f._geo || OPGeo.validate(f)), ...(f.v || []).filter((v) => v !== 'sinir_disinda').map((v) => VMET[v] || v), ...(hKonumDisinda(p, f) ? ['Çizim mevcut harita sınırının dışında; sınır ve plan sürümü karşılaştırılmalı. Bu sonuç tek başına aykırılık tespiti değildir.'] : [])])];
+    const uy = [...new Set([...(f._geo || OPGeo.validate(f)), ...(f.v || []).filter((v) => v !== 'sinir_disinda').map((v) => VMET[v] || v), ...b.filter((x) => /^(Belge|Geometri) karşılaştırma uyarısı$/.test(x[0])).map((x) => x[1]), ...(hKonumDisinda(p, f) ? ['Çizim mevcut harita sınırının dışında; sınır ve plan sürümü karşılaştırılmalı. Bu sonuç tek başına aykırılık tespiti değildir.'] : [])])];
     return '<div class="hpop"><div class="hpt" style="border-color:' + r[1] + '">' + esc(f.ad || f.t) + '<small>' + esc(f.t !== (f.ad || f.t) ? f.t : '') + '</small></div>' +
       (uy.length ? '<div class="hwarn">' + uy.map(esc).join('<br>') + '</div>' : '') +
       '<table>' + ana.map((x) => '<tr><th>' + esc(x[0]) + '</th><td' + (x[1] === BYOK ? ' class="hbyok"' : '') + '>' + esc(x[1]) + '</td></tr>').join('') + '</table>' +
@@ -1733,7 +1733,7 @@
         if (tur === PLAN_T || tur === 'Tesis') { const fs = kmlOzellik(txt, p), dis = fs.filter((x) => (x.g === 'N' ? [x.c] : x.c.concat((x.holes || []).flat())).some((q) => !IST(q[0], q[1]))).length, say = {};
           fs.forEach((x) => { say[x.d] = (say[x.d] || 0) + 1; }); sonuc = { plan: fs, dosya: f.name };
           $('#hk_on').innerHTML = '<b>' + fs.length + '</b> çizim okundu (' + fs.filter((x) => x.g === 'A').length + ' alan, ' + fs.filter((x) => x.g === 'L').length + ' çizgi, ' + fs.filter((x) => x.g === 'N').length + ' nokta).<br>' + Object.keys(say).map((d) => esc((DUR[d] || DUR.B)[0]) + ': ' + say[d]).join(' · ') +
-            '<br><span class="muted">Durum, KML klasör / katman adlarından okunur (MEVCUT/MVCT → mevcut, PLAN/PLANLANAN → planlanan, KALDIR/ESKİ → kaldırılan); bulunamazsa “belirtilmemiş”. Açıklamadaki tablo bilgi kutusuna aktarılır.</span>' +
+            '<br><span class="muted">Dosyada açıkça kayıtlı plan durumu korunur. Böyle bir kayıt yoksa klasör / katman adı değerlendirilir; belirlenemezse “durumu belirtilmemiş” kullanılır. Aktarım, belgenin onayını, güncelliğini veya tesisin sahada bulunduğunu doğrulamaz. Kaynak bilgiler bilgi kutusuna aktarılır.</span>' +
             (dis ? '<br><span class="red-t">' + dis + ' çizim İstanbul dışına düşüyor; dosya WGS84 olmalıdır.</span>' : '');
           $('#hkOk').disabled = !!dis || !fs.length; return; }
         const rings = kmlSinir(txt); kmlP = rings.map((pts) => ({ pts, ad: '' })); }
