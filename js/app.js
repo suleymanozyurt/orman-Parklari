@@ -2238,38 +2238,62 @@
       modalKapat(); degisti('Muhasebe satırı eklendi'); };
   };
   AKSIYON.csvYukle = () => {
-    modal('Yeni muhasebe dökümü', '<p style="margin:0;line-height:1.5">Muhasebe sisteminden alınan <b>120.99</b> ya da <b>127</b> hesap dökümünü (CSV ya da Excel) seçin. Seçilen hesabın eski döküm satırları yenisiyle değişir. Elle eklenmiş satırlardan dökümde birebir karşılığı olanlar (aynı yevmiye no ve tarihi, hesap, vergi no, vade, borç, alacak) mükerrer olmaması için kaldırılır; karşılığı olmayan elle kayıtlar korunur.</p>' +
-      '<div class="frow">' + fi('cv_k', 'Hesap', '120', null, ['120', '127']) + fi('cv_t', 'Döküm tarihi (muhasebeden alındığı gün)', '', 'date') + '</div><div class="f"><label for="cv_f">Döküm dosyası</label><input class="fld" id="cv_f" type="file" accept=".csv,.xlsx,text/csv"></div><div id="cv_on" class="muted" style="font-size:13.5px"></div>',
+    if (!S.owner || !yetki('muhasebe')) return;
+    modal('Yeni muhasebe dökümü', '<p style="margin:0;line-height:1.5">Aynı hesaba ait bütün dökümleri <b>birlikte</b> seçin. Örneğin 120.99.99.02 ve 120.99.99.05 dosyalarını birlikte yükleyin. Seçilen hesabın eski döküm satırları yenisiyle değişir. Dökümde birebir karşılığı olan elle kayıtlar kaldırılır; diğer elle kayıtlar korunur.</p>' +
+      '<div class="frow">' + fi('cv_k', 'Hesap', '120', null, ['120', '127']) + fi('cv_t', 'Döküm tarihi (biliniyorsa)', '', 'date') + '</div><div class="f"><label for="cv_f">Döküm dosyaları (CSV / Excel)</label><input class="fld" id="cv_f" type="file" multiple accept=".csv,.xlsx,text/csv"></div>' +
+      '<details><summary>Dosya seçilemiyorsa CSV metni yapıştır</summary><p class="muted">Muhasebe sütun sırasını ve başlık satırını koruyun. Ayraç noktalı virgül olmalıdır. Aynı hesaba ait bütün alt hesapları dahil edin.</p>' + fi('cv_ad', 'Kaynak dosya adları', '', 'text') + fi('cv_csv', 'Muhasebe CSV metni', '', 'area') + '<button class="btn" id="cvCheck">Metni denetle</button></details><div id="cv_on" role="status" aria-live="polite" class="muted" style="font-size:13.5px"></div>',
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="cvOk" disabled>Yükle ve eşleştir</button>');
-    let rows = null, dosya = '';
+    let rows = null, dosya = '', generation = 0;
+    const invalidate = () => { generation++; rows = null; $('#cvOk').disabled = true; $('#cv_on').textContent = 'Veri değişti; yeniden denetleyin.'; };
+    const error = (er) => { rows = null; $('#cvOk').disabled = true; $('#cv_on').textContent = 'Döküm alınamadı: ' + er.message; };
+    const preview = (R, names) => {
+      const k = gv('cv_k');
+      if (!R.length) throw new Error('Muhasebe satırı okunamadı.');
+      if (R.some(x => (x.hesap || '').split('.')[0] !== k)) throw new Error('Dosyadaki hesap seçilen hesapla uyuşmuyor. 120 ve 127 ayrı aktarılmalıdır.');
+      if (R.some(x => !x.tarih || !Number.isFinite(x.borc) || !Number.isFinite(x.alacak) || x.borc < 0 || x.alacak < 0)) throw new Error('Tarih veya tutar geçersiz.');
+      const keys = new Set();
+      for (const x of R) { const key = E.muhAnahtar(x); if (keys.has(key)) throw new Error('Aynı yevmiye, hesap, vade ve tutarlı satır birden fazla bulundu. Dosyaların çakışmasını inceleyin.'); keys.add(key); }
+      rows = R; dosya = names;
+      const b = sumOf(rows, x => x.borc - x.alacak), ys = rows.map(x => x.tarih).sort(), bil = E.muhBirlestir(S.veri.muhasebe, rows, k);
+      const hs = Array.from(new Set(rows.map(x => x.hesap))).sort().join(', ');
+      $('#cv_on').innerHTML = rows.length + ' satır · hesaplar ' + esc(hs) + ' · yevmiye ' + fd(ys[0]) + ' – <b>' + fd(ys[ys.length - 1]) + '</b> · bakiye <b>' + tl(b) + '</b>' +
+        '<br>Kaynak: ' + esc(dosya) + '<br>Mükerrer olacak elle kayıt: <b>' + bil.mukerrer.length + '</b>' + (bil.otoDus ? ' · karşılığı gelen program tahakkuku: ' + bil.otoDus : '') +
+        (bil.geri ? '<br><span class="red-t">Bu döküm programdaki son yevmiyeden eski. Daha yeni kayıtlar korunmadan uygulanmamalı.</span>' : '');
+      $('#cvOk').disabled = false;
+    };
+    $('#cv_k').onchange = invalidate;
+    $('#cv_csv').oninput = invalidate;
+    $('#cv_ad').oninput = invalidate;
+    $('#cvCheck').onclick = () => { invalidate(); try { if (!gv('cv_ad')) throw new Error('Kaynak dosya adları gerekli.'); preview(E.csvOku(gv('cv_csv'), gv('cv_k')), gv('cv_ad')); } catch (er) { error(er); } };
     $('#cv_f').onchange = async (e) => {
-      const f = e.target.files[0]; if (!f) return; dosya = f.name; $('#cv_on').textContent = 'Okunuyor…';
+      invalidate(); const ticket = generation, files = Array.from(e.target.files || []); if (!files.length) return;
+      $('#cv_on').textContent = 'Okunuyor…';
       try {
-        const buf = await f.arrayBuffer();
-        if (/\.xlsx$/i.test(f.name)) { await betik('vendor/exceljs.min.js'); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf); const ws = wb.worksheets[0], M = [];
-          ws.eachRow({ includeEmpty: false }, (r) => { const a = []; for (let c = 1; c <= 19; c++) { let v = r.getCell(c).value; if (v && typeof v === 'object' && !(v instanceof Date)) v = v.result != null ? v.result : (v.text != null ? v.text : (v.richText ? v.richText.map((t) => t.text).join('') : '')); a.push(v); } M.push(a); });
-          rows = E.dokumSatir(M.slice(1), gv('cv_k'));
-        } else { let txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1254').decode(buf); rows = E.csvOku(txt, gv('cv_k')); }
-      } catch (er) { rows = null; $('#cv_on').innerHTML = '<span class="red-t">Dosya okunamadı: ' + esc(er.message) + '</span>'; return; }
-      const k = gv('cv_k'); rows.forEach((x) => { x.kaynak = k; });
-      const b = sumOf(rows, (x) => x.borc - x.alacak), ys = rows.map((x) => x.tarih).filter(Boolean).sort(), bil = E.muhBirlestir(S.veri.muhasebe, rows, k);
-      const hs = Array.from(new Set(rows.map((x) => (x.hesap || '').split('.')[0]))).join(', ');
-      $('#cv_on').innerHTML = rows.length ? rows.length + ' satır · hesap ' + esc(hs) + ' · yevmiye ' + fd(ys[0]) + ' – <b>' + fd(ys[ys.length - 1]) + '</b> · bakiye ' + tl(b) +
-        (hs && hs !== k ? '<br><span class="red-t">Dosyadaki hesap (' + esc(hs) + ') seçilen hesapla (' + k + ') uyuşmuyor.</span>' : '') +
-        '<br>Mükerrer olacak elle kayıt: <b>' + bil.mukerrer.length + '</b>' + (bil.otoDus ? ' · muhasebede karşılığı gelen program tahakkuku: ' + bil.otoDus : '') +
-        (bil.geri ? '<br><span class="red-t">Bu dökümün son yevmiyesi (' + fd(bil.yeniSon) + ') programdakinden (' + fd(bil.eskiSon) + ') eski. Yüklerseniz daha yeni kayıtlar kaybolur.</span>' : '')
-        : '<span class="red-t">Satır okunamadı; dosya biçimini kontrol edin.</span>';
-      $('#cvOk').disabled = !rows.length || (hs && hs !== k);
+        const R = [], k = gv('cv_k');
+        for (const f of files) {
+          const buf = await f.arrayBuffer(); let parsed;
+          if (/\.xlsx$/i.test(f.name)) {
+            await betik('vendor/exceljs.min.js'); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf); const ws = wb.worksheets[0], M = [];
+            ws.eachRow({ includeEmpty: false }, r => { const a = []; for (let c = 1; c <= 19; c++) { let v = r.getCell(c).value; if (v && typeof v === 'object' && !(v instanceof Date)) v = v.result != null ? v.result : (v.text != null ? v.text : (v.richText ? v.richText.map(t => t.text).join('') : '')); a.push(v); } M.push(a); });
+            parsed = E.dokumSatir(M.slice(1), k);
+          } else { let txt = new TextDecoder('utf-8').decode(buf); if (txt.includes('�')) txt = new TextDecoder('windows-1254').decode(buf); parsed = E.csvOku(txt, k); }
+          if (!parsed.length) throw new Error(f.name + ': muhasebe satırı okunamadı.');
+          R.push(...parsed);
+        }
+        if (ticket !== generation) return;
+        preview(R, files.map(f => f.name).join(' + '));
+      } catch (er) { if (ticket === generation) error(er); }
     };
     $('#cvOk').onclick = () => {
-      const k = gv('cv_k'); if (!rows || !rows.length) return;
+      const k = gv('cv_k'); if (!rows || !rows.length || !S.owner || !yetki('muhasebe')) return;
       const bil = E.muhBirlestir(S.veri.muhasebe, rows, k);
       if (bil.geri && !confirm('Yüklenen döküm programdakinden eski. Yine de yüklensin mi?')) return;
+      const imported = rows; rows = null; $('#cvOk').disabled = true;
       S.veri.muhasebe = bil.muhasebe;
-      const ys = rows.map((x) => x.tarih).filter(Boolean).sort();
-      S.veri.meta.dokumler = (S.veri.meta.dokumler || []).filter((d) => d.kaynak !== k).concat([{ kaynak: k, dosya, dokum_tarihi: gv('cv_t') || null, dokum_not: gv('cv_t') ? '' : 'Döküm tarihi girilmedi',
-        ilk_yevmiye: ys[0], son_yevmiye: ys[ys.length - 1], satir: rows.length, yukleme: bugun(), yukleyen: S.kim, mukerrer: bil.mukerrer.length }]);
-      modalKapat(); degisti(k + ' dökümü yüklendi: ' + dosya + ', ' + rows.length + ' satır, son yevmiye ' + fd(ys[ys.length - 1]) + (bil.mukerrer.length ? '; ' + bil.mukerrer.length + ' mükerrer elle kayıt çıkarıldı' : '') + (bil.otoDus ? '; muhasebede karşılığı gelen ' + bil.otoDus + ' program tahakkuku satırı kaldırıldı' : ''));
+      const ys = imported.map(x => x.tarih).filter(Boolean).sort();
+      S.veri.meta.dokumler = (S.veri.meta.dokumler || []).filter(d => d.kaynak !== k).concat([{ kaynak: k, dosya, dokum_tarihi: gv('cv_t') || null, dokum_not: gv('cv_t') ? '' : 'Döküm tarihi kaynakta belirtilmedi',
+        ilk_yevmiye: ys[0], son_yevmiye: ys[ys.length - 1], satir: imported.length, yukleme: bugun(), yukleyen: S.kim, mukerrer: bil.mukerrer.length }]);
+      modalKapat(); degisti(k + ' dökümü yüklendi: ' + dosya + ', ' + imported.length + ' satır, son yevmiye ' + fd(ys[ys.length - 1]) + (bil.mukerrer.length ? '; ' + bil.mukerrer.length + ' mükerrer elle kayıt çıkarıldı' : '') + (bil.otoDus ? '; karşılığı gelen ' + bil.otoDus + ' program tahakkuku satırı kaldırıldı' : ''));
     };
   };
   // gerektiğinde dış betik yükle (vendor klasöründen)

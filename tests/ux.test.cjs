@@ -241,3 +241,34 @@ test('a saved map with failed summary save remains a visible pending summary and
   assert.equal(await a.gypKaydet(a.S.pBy.Test,'TEST map',next),false);assert.equal(a.S.gypSHA,'c'.repeat(40));assert.equal(a.S.gyp.parklar.Test.not[0],'TEST new note');assert.ok(a.S.dirty);assert.match(w.document.querySelector('#toast').textContent,/Kaydedilemedi/);
  }finally{dom.window.close();}
 });
+
+function accountingCSV(h='120.99.99.02',debit='100,00',yev='12'){
+ const row=Array(19).fill('');row[2]=yev;row[3]='21.10.2026';row[5]=h;row[6]='123';row[7]='Test';row[8]='30.10.2026';row[13]='2026/4 kira';row[14]=debit;row[18]='600';return Array(19).fill('Başlık').join(';')+'\n'+row.join(';');
+}
+test('pasted accounting import reconciles exact manual duplicate, preserves other account and cannot apply twice',()=>{
+ const {dom,w,a}=preparedApp();try{
+ a.S.owner=true;a.S.rol={muhasebe:true};const csv=accountingCSV(),r=w.E.csvOku(csv,'120')[0];a.S.veri.muhasebe=[{...r,ek:true},{...r,kaynak:'127',hesap:'127.01.03',borc:7}];a.S.page='muhasebe';a.AKSIYON.csvYukle();
+ const d=w.document;d.querySelector('#cv_ad').value='Kaynak 02.csv + 05.csv';d.querySelector('#cv_csv').value=csv;d.querySelector('#cvCheck').click();assert.equal(d.querySelector('#cvOk').disabled,false);assert.match(d.querySelector('#cv_on').textContent,/elle kayıt: 1/);
+ const apply=d.querySelector('#cvOk').onclick;apply();apply();assert.equal(a.S.veri.muhasebe.length,2);assert.equal(a.S.veri.muhasebe.filter(x=>x.kaynak==='127').length,1);assert.equal(a.S.veri.meta.dokumler[0].satir,1);assert.equal(a.S.veri.meta.dokumler[0].dokum_tarihi,null);assert.equal(a.S.dirty,1);
+ }finally{dom.window.close();}
+});
+test('accounting preview rejects mixed or duplicated accounts and invalidates after any source edit',()=>{
+ const {dom,w,a}=preparedApp();try{
+ a.S.owner=true;a.S.rol={muhasebe:true};a.AKSIYON.csvYukle();const d=w.document,put=t=>{d.querySelector('#cv_ad').value='Döküm.csv';d.querySelector('#cv_csv').value=t;d.querySelector('#cvCheck').click();};
+ put(accountingCSV());assert.equal(d.querySelector('#cvOk').disabled,false);d.querySelector('#cv_csv').dispatchEvent(new w.Event('input'));assert.equal(d.querySelector('#cvOk').disabled,true);
+ put(accountingCSV('127.01.03'));assert.match(d.querySelector('#cv_on').textContent,/uyuşmuyor/);assert.equal(d.querySelector('#cvOk').disabled,true);
+ put(accountingCSV()+'\n'+accountingCSV().split('\n')[1]);assert.match(d.querySelector('#cv_on').textContent,/birden fazla/);assert.equal(d.querySelector('#cvOk').disabled,true);
+ put(accountingCSV());d.querySelector('#cv_k').value='127';d.querySelector('#cv_k').dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#cvOk').disabled,true);assert.equal(a.S.veri.muhasebe.length,0);
+ }finally{dom.window.close();}
+});
+test('multiple accounting files keep both 120 subaccounts in one replacement and a source change cancels pending read',async()=>{
+ const {dom,w,a}=preparedApp();try{
+ a.S.owner=true;a.S.rol={muhasebe:true};w.TextDecoder=TextDecoder;a.AKSIYON.csvYukle();const d=w.document;
+ const file=(name,csv)=>({name,arrayBuffer:async()=>new TextEncoder().encode(csv).buffer});
+ await d.querySelector('#cv_f').onchange({target:{files:[file('02.csv',accountingCSV()),file('05.csv',accountingCSV('120.99.99.05','20,00'))]}});
+ assert.equal(d.querySelector('#cvOk').disabled,false);assert.match(d.querySelector('#cv_on').textContent,/2 satır/);assert.match(d.querySelector('#cv_on').textContent,/120,00/);
+ d.querySelector('#cv_k').value='127';d.querySelector('#cv_k').dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#cvOk').disabled,true);
+ let finish;const pending=d.querySelector('#cv_f').onchange({target:{files:[{name:'127.csv',arrayBuffer:()=>new Promise(r=>{finish=r;})}]}});
+ d.querySelector('#cv_k').value='120';d.querySelector('#cv_k').dispatchEvent(new w.Event('change'));finish(new TextEncoder().encode(accountingCSV('127.01.03')).buffer);await pending;assert.equal(d.querySelector('#cvOk').disabled,true);
+ }finally{dom.window.close();}
+});
