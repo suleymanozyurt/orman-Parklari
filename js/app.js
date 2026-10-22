@@ -1831,6 +1831,27 @@
   AKSIYON.zsec = (t, ev) => { ev.preventDefault(); S.zPark = t.dataset.k; S.park = t.dataset.k; sayfaCiz(); };
 
   // ---------- MUHASEBE ----------
+  function muhasebeKaynaklari() {
+    const packs = S.veri.muhasebe_ekleri || [];
+    if (!packs.length) return '';
+    return '<section class="card"><div class="ch"><h2>Muhasebe kaynakları ve takip dosyası</h2></div><div style="padding:16px 22px">' + packs.map((p, i) =>
+      '<p><b>' + esc(p.ad) + '</b> · ' + fd(p.tarih) + ' <button class="btn" data-a="muhEkIndir" data-i="' + i + '">Takip paketini indir</button></p>' +
+      '<p class="muted" style="line-height:1.6">' + esc(p.not || '') + '</p><details><summary>Cetvel, kaynak belge ve yazı taslakları</summary><div class="scroll"><table class="rt"><thead><tr><th>Belge</th><th>Durum / kullanım</th><th></th></tr></thead><tbody>' +
+      (p.dosyalar || []).map((f, n) => '<tr>' + td(esc(f.ad), '', 'wide') + td(esc(f.durum || ''), '', 'wide') + td('<button class="btn" data-a="muhEkIndir" data-i="' + i + '" data-n="' + n + '">İndir</button>') + '</tr>').join('') + '</tbody></table></div></details>'
+    ).join('') + '</div></section>';
+  }
+  AKSIYON.muhEkIndir = async (t) => {
+    const p = (S.veri.muhasebe_ekleri || [])[+t.dataset.i]; if (!p || !p.icerik) return;
+    try {
+      const bytes = K.ub64(p.icerik);
+      if (t.dataset.n == null) { EK.indir(new Blob([bytes], { type: 'application/zip' }), p.ad); return; }
+      const f = (p.dosyalar || [])[+t.dataset.n]; if (!f || !/\.(xlsx|pdf|docx)$/i.test(f.ad)) throw new Error('Belge türü desteklenmiyor.');
+      await betik('vendor/jszip.min.js'); const zip = await JSZip.loadAsync(bytes), file = zip.file(f.yol);
+      if (!file) throw new Error('Belge pakette bulunamadı.');
+      const body = await file.async('uint8array');
+      EK.indir(new Blob([body], { type: /\.pdf$/i.test(f.ad) ? 'application/pdf' : /\.xlsx$/i.test(f.ad) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), f.ad);
+    } catch (e) { toast('Kaynak belge indirilemedi: ' + e.message, true); }
+  };
   SAYFA.muhasebe = function () {
     const rows = S.muhAll ? S.esl.rows : S.esl.rows.filter((x) => x.park === S.park), q = (S.muhQ || '').toLocaleLowerCase('tr-TR');
     const bal = (k) => sumOf(rows.filter((x) => x.kaynak === k), (x) => x.borc - x.alacak);
@@ -1845,7 +1866,7 @@
         td(esc(d.dokum_not || '') + (d.mukerrer ? ' · ' + d.mukerrer + ' mükerrer elle kayıt çıkarıldı' : ''), 'Not', 'wide', ' style="white-space:normal;font-size:12.5px;color:var(--mute);max-width:320px"') + '</tr>').join('') +
       '</tbody></table></div><p class="muted" style="margin:8px 22px 16px;font-size:13px">Programdaki son yevmiye: 120.99 ' + fd(dsn['120']) + ', 127 ' + fd(dsn['127']) + '. Alacak ve gecikme zammı sonuçları bu tarihlere kadarki kayıtları yansıtır; sonraki tahakkuk ve tahsilatlar için yeni döküm yüklenmelidir.</p></section>';
     return '<div class="pagehead"><div><h1>Muhasebe</h1><p>120.99 ve 127 hesap dökümleri. Tahakkuklar alacak kalemi olur; her tahsilat fişi önce aynı hesap ve vadeli kaleme, sonra en eski vadeye dağıtılır.</p></div>' +
-      '<div class="muh-only" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-a="csvYukle">Yeni döküm yükle (CSV / Excel)</button><button class="btn" data-a="kayitEkle">Elle kayıt ekle</button></div></div>' + dokT +
+      '<div class="muh-only" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-a="csvYukle">Yeni döküm yükle (CSV / Excel)</button><button class="btn" data-a="kayitEkle">Elle kayıt ekle</button></div></div>' + dokT + muhasebeKaynaklari() +
       '<section class="kpis"><div class="kpi"><span>120.99 bakiyesi</span><strong class="n">' + tl(bal('120')) + '</strong><em>Borç − alacak</em></div><div class="kpi"><span>127 bakiyesi</span><strong class="n">' + tl(bal('127')) + '</strong><em>' + (S.muhAll ? 'Tüm kayıtlar' : esc(S.park)) + ' · Borç − alacak</em></div>' +
       '<div class="kpi"><span>Satır sayısı</span><strong class="n">' + rows.length + '</strong><em>' + rows.filter((x) => x.park === 'Park dışı').length + ' satır park dışı · ' + rows.filter((x) => x.ek).length + ' elle eklenen</em></div><div class="kpi"><span>Alacak kalemi</span><strong class="n">' + S.esl.items.length + '</strong><em>Tüm sistem · ' + S.esl.parcalar.length + ' parça (ödeme bölünmeleriyle)</em></div></section>' +
       '<section class="card"><div class="ch" style="gap:12px"><h2>Döküm satırları · ' + esc(S.muhAll ? 'Tüm kayıtlar' : S.park) + '</h2><div class="seg"><button data-a="muhScope" data-v="park" class="' + (S.muhAll ? '' : 'on') + '">Seçili park</button><button data-a="muhScope" data-v="all" class="' + (S.muhAll ? 'on' : '') + '">Tüm kayıtlar</button></div><div class="filters"><div class="seg">' + [['tümü', 'Tümü'], ['120', '120.99'], ['127', '127'], ['elle', 'Elle eklenen']].map((s) => '<button class="' + (S.muhK === s[0] ? 'on' : '') + '" data-a="muhK" data-v="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>' +

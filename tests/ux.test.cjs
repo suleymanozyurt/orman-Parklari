@@ -272,3 +272,14 @@ test('multiple accounting files keep both 120 subaccounts in one replacement and
  d.querySelector('#cv_k').value='120';d.querySelector('#cv_k').dispatchEvent(new w.Event('change'));finish(new TextEncoder().encode(accountingCSV('127.01.03')).buffer);await pending;assert.equal(d.querySelector('#cvOk').disabled,true);
  }finally{dom.window.close();}
 });
+
+test('private accounting source package is escaped, downloads exact original bytes and exposes drafts as drafts',async()=>{
+ const {dom,w,a}=preparedApp();try{
+ w.Blob=Blob;const JSZip=require('../vendor/jszip.min.js'),z=new JSZip(),content=Buffer.from('Source document bytes');z.file('docs/source.docx',content);const bytes=await z.generateAsync({type:'uint8array'});
+ a.S.veri.muhasebe_ekleri=[{ad:'Sources.zip',tarih:'2026-10-22',not:'Taslak; muhasebe vadeleri ayrıca esas alınır.',icerik:Buffer.from(bytes).toString('base64'),dosyalar:[{ad:'source.docx',yol:'docs/source.docx',durum:'Yazı taslağı <img src=x>'}]}];
+ w.K.ub64=x=>new Uint8Array(Buffer.from(x,'base64'));w.JSZip=JSZip;a.BETIK['vendor/jszip.min.js']=Promise.resolve();const saved=[];w.EK={indir:(blob,name)=>saved.push({blob,name})};
+ w.document.querySelector('#page').innerHTML=a.SAYFA.muhasebe();assert.equal(w.document.querySelector('#page img'),null);assert.match(w.document.querySelector('#page').textContent,/Yazı taslağı/);
+ await a.AKSIYON.muhEkIndir({dataset:{i:'0'}});assert.equal(saved[0].name,'Sources.zip');assert.deepEqual(Buffer.from(await saved[0].blob.arrayBuffer()),Buffer.from(bytes));
+ await a.AKSIYON.muhEkIndir({dataset:{i:'0',n:'0'}});assert.deepEqual(Buffer.from(await saved[1].blob.arrayBuffer()),content);assert.equal(saved[1].name,'source.docx');
+ }finally{dom.window.close();}
+});

@@ -114,7 +114,7 @@
       }
     }
     // tahsilat fişleri
-    const fis = new Map(), fd = new Map();
+    const fis = new Map(), fd = new Map(), borcSatiri = new Map();
     for (const x of rows) {
       if (x.park === 'Park dışı' || x.item) continue;
       const bh = hs(x.borc_h), ah = hs(x.alacak_h);
@@ -127,6 +127,7 @@
       if (!fis.has(k)) fis.set(k, new Map());
       const g = fis.get(k), gk = aile(x.hesap) + '|' + (x.vade || '');
       g.set(gk, (g.get(gk) || 0) + x.alacak - x.borc);
+      if (x.borc > x.alacak && !borcSatiri.has(k + '|' + gk)) borcSatiri.set(k + '|' + gk, x);
     }
     const keys = Array.from(fis.keys()).map((k, i) => ({ k, i })).sort((a, b) => {
       const da = fd.get(a.k), db = fd.get(b.k);
@@ -137,10 +138,19 @@
     }).map((o) => o.k);
     for (const k of keys) {
       const [vkn, yevS] = k.split('|'); const yev = +yevS; const tarih = fd.get(k);
+      // Aynı fişte farklı vadeye borç aktarımı/iade varsa net borç kaybolmamalı.
+      // Ham döküm değişmez; negatif tahsilat grubu kaynak satırın vadesiyle açık kalemdir.
+      for (const [gk, amt0] of fis.get(k)) {
+        if (r2(amt0) >= -0.004) continue;
+        const x = borcSatiri.get(k + '|' + gk); if (!x) continue;
+        items.push({ id: items.length, park: x.park, vkn: x.vkn, grup: 'Muhasebe borç düzeltmesi', tur: tur(x), vade: x.vade || null,
+          tutar: r2(-amt0), olusma: tarih, yev, aciklama: x.aciklama, hesap: x.hesap, odenen: 0, odemeler: [], row: x.id,
+          duz: null, vnot: 'Aynı yevmiye ve vadeli satırların net borcu; dökümdeki vade korundu. Tahsilat veya vade düzeltmesinin dayanağı ayrıca teyit edilmeli.', ek: !!x.ek, not_: x.not_ || '' });
+      }
       for (const [gk, amt0] of fis.get(k)) {
         const [fam, vade0] = gk.split('|'); const vade = vade0 || null;
         let amt = r2(amt0);
-        if (amt < -0.004) { uyarilar.push('Negatif net tahsilat: ' + k + ' ' + gk + ' ' + amt); continue; }
+        if (amt < -0.004) continue; // yukarıda kaynaklı borç düzeltmesi olarak korundu
         if (amt <= 0.004) continue;
         const op = items.filter((it) => it.vkn === vkn && it.olusma <= tarih && it.tutar - it.odenen > 0.004);
         const pr = (it) => {
