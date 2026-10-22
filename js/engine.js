@@ -424,16 +424,20 @@
     const th = E.ekTahsil(pl.onay, vadeler);
     const rom = ((pl.revize || '').match(/^([IVX]+)\./) || [])[1];
     const re = rom ? new RegExp('(^|[^IVX])' + rom + '\\.\\s*Revize', 'i') : null;
-    const kayit = (esl.items || []).filter((it) => it.park === pl.park && it.grup === 'Ek tahakkuk' && it.tur === 'Kira' && re && re.test(it.aciklama || '') && !/fark/i.test(it.aciklama || ''));
-    const muh = r2(kayit.reduce((s, it) => s + it.tutar, 0));
+    const baglar = new Set((pl.muhasebe_baglari || []).map(x => x.anahtar).filter(Boolean));
+    const satirlar = new Map((esl.rows || []).map(x => [x.id, x]));
+    const kayit = (esl.items || []).filter((it) => it.park === pl.park && it.tur === 'Kira' &&
+      ((satirlar.has(it.row) && baglar.has(E.muhAnahtar(satirlar.get(it.row)))) ||
+       (it.grup === 'Ek tahakkuk' && re && re.test(it.aciklama || '') && !/fark/i.test(it.aciklama || ''))));
+    const muh = r2(kayit.reduce((s, it) => s + it.tutar, 0)), muhTahsil = r2(kayit.reduce((s,it) => s + (it.odenen || 0),0)), muhAcik = r2(muh - muhTahsil);
     const ds = E.dokumSon(veri), son = [ds['120'], ds['127']].filter(Boolean).sort().slice(-1)[0] || null;
     let kod, durum;
     if (kayit.length && Math.abs(muh - ek) <= 1) { kod = 'tamam'; durum = 'Muhasebede Tebliğ tutarıyla tahakkuk edildi'; }
-    else if (kayit.length) { kod = 'fark'; durum = 'Muhasebe kaydı (' + E.tl(muh) + ') Tebliğe göre yıllık ek kiradan (' + E.tl(ek) + ') farklı; fark ' + E.tl(r2(ek - muh)) + (/k[ıi]st/i.test(kayit.map((k) => k.aciklama).join(' ')) ? '. Kayıtta gün/365 kıst uygulanmış; Tebliğ Md. 30/1–2 kıst öngörmez, ayrı dayanak belgesi yoksa farkın tahakkuku incelenmeli.' : '.'); }
+    else if (kayit.length) { kod = 'fark'; durum = 'Muhasebede ' + E.tl(muh) + ' TL tahakkuk, ' + E.tl(muhTahsil) + ' TL tahsilat, ' + E.tl(muhAcik) + ' TL açık kayıt var. Planın tam yıllık ek kirası ' + E.tl(ek) + ' TL; yıllık/kayıt karşılaştırma farkı ' + E.tl(r2(ek - muh)) + ' TL. Bu fark tek başına ödenmemiş borç değildir; kıst dönemi ve sonraki yıllara devri dayanak belgeden teyit edilmeli.'; }
     else if (son && th.tarih && son >= th.tarih) { kod = 'yok'; durum = 'İncelenen dökümde (son yevmiye ' + E.fmtDate(son) + ') tahakkuk tespit edilemedi'; }
     else if (th.tarih && rapor >= th.tarih) { kod = 'kapsam'; durum = 'Tahsil tarihi (' + E.fmtDate(th.tarih) + ') geçti; dökümler bu tarihi kapsamıyor (son yevmiye ' + E.fmtDate(son) + ')'; }
     else { kod = 'bekliyor'; durum = 'Tahsil zamanı ' + (th.tarih ? E.fmtDate(th.tarih) : 'belirsiz') + (son && pl.onay && son < pl.onay ? '; dökümler plan onayından önce (son yevmiye ' + E.fmtDate(son) + ')' : ''); }
-    return { ek, agac, kdv, tem, top: r2(ek + agac + kdv + tem), tahsil: th.tarih, tahsilNe: th.ne, kayit, muh, kod, durum, dokumSon: son };
+    return { ek, agac, kdv, tem, top: r2(ek + agac + kdv + tem), tahsil: th.tarih, tahsilNe: th.ne, kayit, muh, muhTahsil, muhAcik, kod, durum, dokumSon: son };
   };
 
   // ---------- rakamı yazıyla (Türkçe) ----------

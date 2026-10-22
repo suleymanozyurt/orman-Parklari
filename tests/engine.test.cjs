@@ -27,3 +27,11 @@ test('a net debit is counted once after credit offsets within the same journal a
  const v={parks:[{kisa:'Test',vkn_muh:'123'}],muhasebe:[row({borc:500}),row({alacak:100}),row({yev:3,tarih:'2026-03-01',alacak:400})]};const r=E.eslestir(v);
  assert.equal(r.items.length,1);assert.equal(r.items[0].tutar,400);assert.equal(r.items[0].odenen,400);assert.equal(r.parcalar.filter(x=>!x.odeme).length,0);assert.equal(r.uyarilar.length,0);
 });
+
+test('a plan source link recognizes a collected 120 proration without presenting annual comparison as an unpaid debt',()=>{
+ const invoice={kaynak:'120',yev:8,tarih:'2026-09-25',hesap:'120.99.99.02',vkn:'123',vade:'2026-10-30',aciklama:'107 günlük ek kira',borc:100,alacak:0,borc_h:'120',alacak_h:'600'};
+ const v={parks:[{kisa:'Test',vkn_muh:'123'}],muhasebe:[invoice,{...invoice,yev:9,tarih:'2026-10-07',borc:0,alacak:100,borc_h:'102',alacak_h:'120'}]},e=E.eslestir(v),p={park:'Test',onay:'2026-09-16',ek:400,revize:'II. Revize',muhasebe_baglari:[{anahtar:E.muhAnahtar(invoice)}]};
+ const r=E.revizeDurum(v,e,p,['2026-10-30'],'2026-10-22');assert.equal(r.kayit.length,1);assert.equal(r.muh,100);assert.equal(r.muhTahsil,100);assert.equal(r.muhAcik,0);assert.equal(r.kod,'fark');assert.match(r.durum,/tek başına ödenmemiş borç değildir/);
+ assert.equal(E.revizeDurum(v,e,{...p,park:'Other'},['2026-10-30'],'2026-10-22').kayit.length,0);
+ assert.equal(E.revizeDurum(v,e,{...p,muhasebe_baglari:[{anahtar:'stale'}]},['2026-10-30'],'2026-10-22').kayit.length,0);
+});

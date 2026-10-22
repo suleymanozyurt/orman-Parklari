@@ -17,3 +17,7 @@ Aynı yevmiyede, farklı vadeli vergi/fon satırındaki yeniden borçlandırma �
 Takip ZIP paketinin özgün baytları ve belge listesi şifreli ana kayıtta saklanır. Muhasebe ekranından paket ve içindeki Excel/PDF/Word dosyaları indirilebilir. Taslak yazılar gönderilmiş yazı gibi sunulmaz. Ek paketteki vade varsayımları hesaplama motoruna otomatik taşınmaz.
 
 101 JavaScript testi ve 6 Python testi geçti. Özel kaynak incelemesinde tüm parkların muhasebe bakiyesi ile açık kalemleri ayrı ayrı eşitlendi; şifrele/aç ve kaynak ZIP bayt karşılaştırması doğrulandı. Park, harita, sözleşme, denetim, mevcut form ve oran kayıtları korundu. Bu doğrulama saha geometrilerinin veya tüm eski geliştirme taleplerinin tamamlandığını göstermez.
+
+## Plan–muhasebe bağlantısı
+
+Üç revize plan, kontrol edilen özgün Excel satırlarına muhasebe anahtarıyla bağlandı. 120 hesabındaki kıst tahakkuklar da tanınır; 127'ye aktarım aynı kira ikinci kez sayılmaz. Ekranda kaydın tahakkuk/tahsil/açık tutarları ile planın tam yıllık karşılaştırma bedeli ayrıdır. Karşılaştırma farkı otomatik ödenmemiş borç sayılmaz. Yanlış park ve geçerliliğini yitirmiş satır bağlantıları test edildi. Son kontrol: 102 JavaScript ve 6 Python testi geçti.
