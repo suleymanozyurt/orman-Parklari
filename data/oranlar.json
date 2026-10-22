@@ -1,11 +1,11 @@
 {
- "guncelleme": "2026-10-22T15:57:27+03:00",
+ "guncelleme": "2026-10-22T18:05:08+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
   "kaynak_url": "https://veriportali.tuik.gov.tr/tr/press-releases",
   "son_ay": "2026-09",
-  "durum": "otomatik güncelleme yapılamadı: TÜİK veri portalına ulaşılamadı: <urlopen error _ssl.c:993: The handshake operation timed out>",
+  "durum": "otomatik: TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 21 bilinen ayla doğrulandı",
   "degerler": {
    "2013": [
     0.0862,
@@ -204,14 +204,14 @@
     null
    ]
   },
-  "son_kontrol": "2026-10-21 23:03",
+  "son_kontrol": "2026-10-22 18:05",
   "kayit": {},
-  "son_deneme": "2026-10-22 15:57",
-  "son_basarili_kontrol": "2026-10-21 23:03"
+  "son_deneme": "2026-10-22 18:05",
+  "son_basarili_kontrol": "2026-10-22 18:05"
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
-  "son_kontrol": "2026-10-22 15:57",
+  "son_kontrol": "2026-10-22 18:05",
   "durum": "Resmî Gazete: 7 günlük tarama tamamlandı; yeni oran varsa yürürlük tablosuna işlendi.",
   "oranlar": [
    [
@@ -251,17 +251,17 @@
     0.037
    ]
   ],
-  "son_deneme": "2026-10-22 15:57",
+  "son_deneme": "2026-10-22 18:05",
   "tarama": {
    "istenen": 7,
    "ok": 7,
    "eksik": [],
    "karar_eksik": []
   },
-  "son_basarili_kontrol": "2026-10-22 15:57"
+  "son_basarili_kontrol": "2026-10-22 18:05"
  },
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
-  "TÜFE (portal): TÜİK veri portalına ulaşılamadı: <urlopen error _ssl.c:993: The handshake operation timed out>"
+  "TÜFE (portal): TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 21 bilinen ayla doğrulandı"
  ]
 }
