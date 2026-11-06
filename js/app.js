@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '40', date: '06.11.2026' };
+  const BUILD = { version: '41', date: '06.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -2012,7 +2012,7 @@
     button.onclick = go; field.onkeydown = (e) => { $('#yCaps').hidden = !e.getModifierState?.('CapsLock'); if (e.key === 'Enter') { e.preventDefault(); go(); } };
   }
   const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('Orman Parklari yonetici') +
-    '&description=' + encodeURIComponent('Orman Parklari programinda kayit yetkisi') + '&target_name=' + CFG.owner + '&expires_in=366&contents=write';
+    '&description=' + encodeURIComponent('Orman Parklari programinda kayit yetkisi') + '&target_name=' + CFG.owner + '&expires_in=365&contents=write';
   function anahtarYenileFormu() {
     const savedPassword = S.authAdmin && S.yPw ? S.yPw : null;
     const keepSession = !!ls.get('op_gh');
