@@ -23,3 +23,7 @@ Geçersiz GitHub anahtarı bu kod değişikliğiyle yenilenmez. Kullanıcı hesa
 ## Testler
 
 109 JavaScript testi ve 6 Python testi yerelde başarılı. Yeni kontroller: doğru parola + geçersiz anahtar, yanlış parola, sağlıklı bağlantı, ağ/istek sınırı, yazmanın engellenmesi, anonim genel sürüm okuma, pencere kapatma yarışı, kalıcı oturum çakışması ve bütün takvim satırlarının erişilebilirliği. Canlı tarayıcı kontrolü yayın sonrasında ayrıca yapılır.
+
+## Canlı kontrol
+
+İlk düzeltme yayınının CI ve GitHub Pages kontrolleri başarılı. Canlı sitede mevcut yönetici parolasıyla oturum açıldı; geçersiz anahtar için kapalı kayıt bağlantısı gösterildi. Kaydet düğmesi bir başarı bildirimi vermek yerine bağlantı açıklamasını açtı. Verileri yenile düğmesi sunucu sürümünü alıp yenileme saatini gösterdi. Mevzuat ve Formlar altındaki ekler/maddeler bağlantıları açıldı. Mobil genişlikte yatay taşma görülmedi, alt menüdeki beş düğme ve Daha menüsü erişilebilir kaldı. Mobilde de her sayfada kayıt bağlantısı uyarısı gösterilmesi için son görünüm düzeltmesi eklendi; sürüm v39.

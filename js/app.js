@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '38', date: '06.11.2026' };
+  const BUILD = { version: '39', date: '06.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -492,7 +492,7 @@
       '<div class="f"><label>Seçili park</label><select class="fld" id="mPark">' + S.veri.parks.map((p) => '<option' + (p.kisa === S.park ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('') + '</select></div>' +
       (late.length ? '<div class="chiprow">' + late.map((k) => '<button class="btn sm red" data-a="park" data-k="' + esc(k) + '" data-go="park">' + esc(k) + '</button>').join('') + '</div>' : '') +
       '<div class="frow"><button class="btn" data-a="pdf">PDF kaydet</button><button class="btn" data-a="csv">CSV indir</button><button class="btn" data-a="paylas">Paylaş</button><button class="btn" data-a="yenile">Verileri yenile</button>' +
-      '<button class="btn pri own-only" data-a="kaydet">Değişiklikleri kaydet' + (S.dirty ? ' (' + S.dirty + ')' : '') + '</button>' +
+      '<button class="btn pri own-only" data-a="kaydet">' + (S.writeStatus?.ok === false ? 'Kayıt bağlantısını düzelt' : 'Değişiklikleri kaydet') + (S.dirty ? ' (' + S.dirty + ')' : '') + '</button>' +
       '<button class="btn view-only" data-a="giris">Yönetici girişi</button><button class="btn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
       '<p class="muted" style="font-size:13px;margin:0">Rapor tarihi ' + fd(S.rapor) + ' · Döküm son yevmiye 120: ' + fd(E.dokumSon(S.veri)['120']) + ', 127: ' + fd(E.dokumSon(S.veri)['127']) + ' · ' + (S.owner ? esc(S.kim) : 'Görüntüleme') + '</p>');
     $('#mPark').onchange = (e) => parkSec(e.target.value, 'park');
@@ -540,7 +540,7 @@
     $('#mTitle').textContent = (PAGES.find((p) => p.id === S.page) || {}).l || 'Orman Parkları';
     S.csv = null;
     const content = (SAYFA[S.page] || SAYFA.genel)();
-    $('#page').innerHTML = modulSekmeleri() + (['ekler', 'defter'].includes(S.page) ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
+    $('#page').innerHTML = (S.owner && S.writeStatus?.ok === false ? '<div class="write-warning noprint" role="status"><span>Yönetici açık · değişiklikler henüz sunucuya kaydedilemez.</span><button class="btn sm" data-a="kayitBaglantisi">Bağlantıyı düzelt</button></div>' : '') + modulSekmeleri() + (['ekler', 'defter'].includes(S.page) ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
     if (S.page === 'veriler') { $('#page').insertAdjacentHTML('beforeend', '<section class="panel"><h3>Cihazdaki çevrimdışı veriler</h3><p class="muted hnote">Veri dosyaları şifreli olarak bu cihazda saklanır. Harita altlığı ayrı önbellektedir; karo sayısı bir parkın bütün ölçeklerde kaydedildiği anlamına gelmez. Drive belgeleri ayrıca kaydedilmedikçe çevrimdışı açılamaz.</p><div id="offlineDurum" role="status">Kayıtlı kopyalar kontrol ediliyor…</div><div class="hbtns"><button class="btn sm" data-a="offlineDurum">Kopyaları kontrol et</button><button class="btn sm" data-a="offlineKaydet">Verileri çevrimdışı için kaydet</button></div></section>'); AKSIYON.offlineDurum(); }
     $('#page').setAttribute('tabindex', '-1');
     if (AFTER[S.page]) AFTER[S.page]();
@@ -572,7 +572,7 @@
     const acik = sumOf(al, (a) => a.acik), nAcik = al.filter((a) => a.acik > 0).length;
     const D = S.veri.parks.map((p) => p.durum);
     const cnt = (s) => D.filter((d) => d === s).length;
-    const hero = '<section class="hero"><div><h1>' + (late.length ? 'Dökümlere göre ' + late.length + ' parkta vadesi geçmiş alacak görünüyor' : 'Dökümlerde vadesi geçmiş alacak görünmüyor') + '</h1>' +
+    const hero = '<section class="hero"><div><h2 class="overview-alert-title">' + (late.length ? 'Dökümlere göre ' + late.length + ' parkta vadesi geçmiş alacak görünüyor' : 'Dökümlerde vadesi geçmiş alacak görünmüyor') + '</h2>' +
       '<p>' + (late.length ? late.map((o) => esc(o.kisa)).join(', ').replace(/, ([^,]*)$/, ' ve $1') + ' için dökümde ödenmemiş kalem var; döküm tarihinden sonraki ödemeler muhasebeden teyit edilmeli. Park adına dokununca park bilgileri ve sözleşme ayrıntıları açılır.' : 'Dökümdeki vadesi gelmiş bütün alacaklar ödenmiş görünüyor.') + '</p>' +
       '<div class="chips">' + late.map((o) => '<a class="chip" href="#/park?p=' + encodeURIComponent(o.kisa) + '" data-k="' + esc(o.kisa) + '" data-go="park"><i></i>' + esc(o.kisa) + '</a>').join('') + '</div></div>' +
       '<div class="big"><span>Vadesi geçmiş alacak</span><strong class="n">' + tl(vgec) + ' TL</strong><div class="row"><div>Gecikme zammı ve KDV’si<b class="n">' + tl(gz) + '</b></div><div>En eski vade<b class="n">' + fd(enEski) + '</b></div></div></div>' +
