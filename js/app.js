@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '39', date: '06.11.2026' };
+  const BUILD = { version: '40', date: '06.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -275,12 +275,12 @@
     if (!r.ok) throw new Error((j && j.message) || ('GitHub ' + r.status));
     return j;
   }
-  async function yetkiKontrol(sessiz) {
+  async function yazmaAnahtariniDenetle(token) {
     let result;
     try {
-      if (!S.token) throw new Error('Yazma anahtarı yok.');
+      if (!token) throw new Error('Yazma anahtarı yok.');
       const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo, {
-        headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + S.token },
+        headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token },
         cache: 'no-store', signal: AbortSignal.timeout(12000) });
       const j = await r.json().catch(() => ({}));
       result = { ok: r.ok && j.permissions?.push === true, status: r.status,
@@ -289,6 +289,10 @@
           !r.ok ? 'Yazma bağlantısı doğrulanamadı (HTTP ' + r.status + ').' :
           j.permissions?.push !== true ? 'Anahtarın bu depoya yazma izni bulunmuyor.' : '' };
     } catch (e) { result = { ok: false, status: 0, reason: 'Yazma bağlantısına ulaşılamadı. İnternet bağlantısını kontrol edin.' }; }
+    return result;
+  }
+  async function yetkiKontrol(sessiz) {
+    const result = await yazmaAnahtariniDenetle(S.token);
     S.writeStatus = result;
     // Yönetici parolası oturumu doğrular; GitHub bağlantısı yalnız sunucuya kaydı belirler.
     S.owner = result.ok || S.authAdmin === true;
@@ -2009,7 +2013,59 @@
   }
   const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('Orman Parklari yonetici') +
     '&description=' + encodeURIComponent('Orman Parklari programinda kayit yetkisi') + '&target_name=' + CFG.owner + '&expires_in=366&contents=write';
+  function anahtarYenileFormu() {
+    const savedPassword = S.authAdmin && S.yPw ? S.yPw : null;
+    const keepSession = !!ls.get('op_gh');
+    modal('Kayıt bağlantısını yenile', '<p class="renew-lead">Yönetici parolanız ve mevcut verileriniz korunur. Yalnız sunucuya kayıt için kullanılan yazma anahtarı yenilenir.</p>' +
+      '<a class="btn sm" href="' + TOKEN_URL + '" target="_blank" rel="noopener noreferrer">GitHub’da yeni yazma anahtarı oluştur</a>' +
+      '<details class="login-help"><summary>GitHub’da hangi ayarları seçmeliyim?</summary><ol class="renew-steps"><li>Repository access → Only select repositories → <b>' + CFG.repo + '</b>.</li><li>Repository permissions → Contents → <b>Read and write</b>.</li><li>Generate token ile oluşturun. Anahtarı yalnız aşağıdaki alana yapıştırın.</li></ol><p class="muted">Anahtar oluşturma GitHub hesabınızda yapılır. Oluşan anahtarı sohbet mesajı olarak göndermeyin.</p></details>' +
+      fi('rn_token', 'Yeni yazma anahtarı', '', 'password', null, ' autocomplete="off" autocapitalize="none" spellcheck="false"') +
+      (savedPassword ? '<div class="renew-preserved">✓ Yönetici parolanız aynı kalacak.</div>' : fi('rn_password', 'Mevcut yönetici parolası', '', 'password', null, ' autocomplete="current-password"')) +
+      '<div id="rn_error" class="err" role="alert"></div>',
+      '<button class="btn" id="rn_cancel">Vazgeç</button><button class="btn pri" id="rn_submit">Bağlantıyı yenile</button>');
+    const sheet = $('#modal .sheet'), field = $('#rn_token'), error = $('#rn_error'), button = $('#rn_submit'); let busy = false;
+    const active = () => sheet.isConnected && $('#modal.on .sheet') === sheet;
+    $('#rn_cancel').onclick = modalKapat;
+    const submit = async () => {
+      if (busy) return;
+      const token = field.value.trim(), password = savedPassword || $('#rn_password')?.value;
+      if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(token)) { error.textContent = 'GitHub’da oluşturduğunuz yeni yazma anahtarını yapıştırın.'; return; }
+      if (!password) { error.textContent = 'Mevcut yönetici parolasını girin. Yeni parola oluşturulmayacak.'; return; }
+      busy = true; button.disabled = true; error.textContent = 'Yeni bağlantı denetleniyor…';
+      try {
+        const check = await yazmaAnahtariniDenetle(token); if (!active()) return;
+        if (!check.ok) { error.textContent = check.reason; return; }
+        const url = 'https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + CFG.yonetici;
+        const headers = { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token };
+        const current = await fetch(url + '?ref=' + CFG.branch + '&t=' + Date.now(), { headers, cache: 'no-store', signal: AbortSignal.timeout(12000) });
+        if (!active()) return;
+        if (!current.ok) throw new Error('Mevcut yönetici kaydı okunamadı (HTTP ' + current.status + ').');
+        const file = await current.json();
+        if (!file.sha || file.encoding !== 'base64' || !file.content) throw new Error('Yönetici kaydının güncel sürümü doğrulanamadı. Hiçbir kayıt değiştirilmedi.');
+        const cipher = new TextDecoder().decode(K.ub64(file.content.replace(/\s/g, '')));
+        let record; try { record = await K.coz(cipher, password); } catch (_) { throw new Error('Mevcut yönetici parolası doğrulanamadı. Anahtar kaydedilmedi.'); }
+        if (!record || typeof record.token !== 'string' || !record.token) throw new Error('Yönetici kaydının yapısı doğrulanamadı.');
+        if (!active()) return;
+        const next = Object.assign({}, record, { token, t: new Date().toISOString() });
+        const encrypted = await K.sifrele(next, password);
+        if (!active()) return;
+        error.textContent = 'Şifreli yönetici kaydı güncelleniyor…';
+        const response = await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ message: 'Yönetici yazma anahtarı yenilendi', content: K.b64(new TextEncoder().encode(encrypted)), sha: file.sha, branch: CFG.branch }), signal: AbortSignal.timeout(20000) });
+        if (!response.ok) throw new Error(response.status === 409 || response.status === 422 ? 'Yönetici kaydı başka bir işlemde değişmiş. Üzerine yazılmadı; yeniden deneyin.' : 'Şifreli anahtar kaydedilemedi (HTTP ' + response.status + '). Mevcut oturum korunuyor.');
+        S.authAdmin = true; S.owner = true; S.writeStatus = check; S.rol = TUM_ROL; S.kullanici = null; S.dirKey = record.dirKey || null; S.yPw = password;
+        oturumAc(token, record.kim || S.kim, keepSession);
+        field.value = ''; if (active()) modalKapat(); kabukDurum(); sayfaCiz();
+        toast('Kayıt bağlantısı yenilendi. Yönetici parolanız değişmedi.');
+        try { await kulYenidenSar({ token }); } catch (_) { toast('Anahtar yenilendi; kişisel hesapların bağlantısını Veriler ve Ayarlar’dan ayrıca yenileyin.', true); }
+      } catch (e) { if (active()) error.textContent = e.message; else toast('Bağlantı yenilenemedi. Mevcut oturum korunuyor.', true); }
+      finally { busy = false; if (button.isConnected) button.disabled = false; }
+    };
+    button.onclick = submit;
+    field.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } };
+    const passwordField = $('#rn_password'); if (passwordField) passwordField.onkeydown = field.onkeydown;
+  }
   function kurulum(mod) {
+    if (mod === 'yenile') return anahtarYenileFormu();
     modal(mod === 'yenile' ? 'GitHub anahtarını yenile' : 'Yönetici kurulumu (bir kez)',
       '<ol style="margin:0;padding-left:20px;line-height:1.6;color:var(--ink2)"><li><a class="btn sm" href="' + TOKEN_URL + '" target="_blank" rel="noopener">GitHub’da anahtar sayfasını aç</a> (ad, süre ve “Contents: Read and write” izni hazır gelir).</li>' +
       '<li>“Repository access” bölümünde <b>Only select repositories</b> → <b>' + CFG.repo + '</b> seçin, en altta <b>Generate token</b>’a basın.</li><li>Oluşan anahtarı (github_pat_…) aşağıya yapıştırın ve bir yönetici parolası belirleyin.</li></ol>' +
