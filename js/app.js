@@ -1,6 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
+  const BUILD = { version: '38', date: '06.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -23,15 +24,13 @@
   };
   const svg = (d, s, w) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"></path></svg>';
   const LOGO = (s) => '<img class="park-logo" src="icons/park-mark.svg?v=13" width="' + s + '" height="' + s + '" alt="" aria-hidden="true">';
-  // Yedi ana çalışma alanı; eski bağlantılar alt sayfa olarak çalışmaya devam eder.
+  // Beş çalışma alanı; eski sayfa adresleri ve bütün işlemler korunur.
   const MODULES = [
     { id: 'genel', l: 'Genel Durum', ic: IC.home, pages: [['genel','Özet'],['eksik','Veri Kontrolü'],['veriler','Veriler ve Ayarlar']] },
     { id: 'harita', l: 'Harita', ic: IC.map, pages: [['harita','Harita ve Tesis Envanteri']] },
-    { id: 'parklar', l: 'Orman Parkları', ic: IC.park, pages: [['parklar','Park Envanteri'],['park','Park 360°'],['denetim','Denetim ve Plan Kayıtları']] },
-    { id: 'muhasebe', l: 'Muhasebe', ic: IC.money, pages: [['alacaklar','Alacak ve Tahsilat'],['tahakkuk','Kira ve Tahakkuk'],['muhasebe','Hesap Dökümleri'],['zincir','Kira Bedeli Geçmişi']] },
-    { id: 'ekler', l: 'Tebliğ Ekleri', ic: IC.file, pages: [['ekler','Ekler ve Formlar'],['form','Seçili Form']] },
-    { id: 'defter', l: 'Kayıt Defteri', ic: IC.book, pages: [['defter','İşlem Kayıtları'],['islem','İşlem ve Belge Kontrolü']] },
-    { id: 'teblig', l: 'Tebliğ ve Hesaplar', ic: IC.doc, pages: [['teblig','Tebliğ Maddeleri'],['hesap','Hesaplama Araçları']] }
+    { id: 'parklar', l: 'Orman Parkları', ic: IC.park, pages: [['parklar','Park Envanteri'],['park','Park Dosyası'],['denetim','Denetim ve Planlar'],['defter','Kayıt Defteri'],['islem','İşlem ve Belge Kontrolü']] },
+    { id: 'muhasebe', l: 'Muhasebe', ic: IC.money, pages: [['alacaklar','Alacak ve Tahsilat'],['tahakkuk','Kira ve Tahakkuk'],['muhasebe','Hesap Dökümleri'],['zincir','Kira Bedeli Geçmişi'],['hesap','Hesaplama Araçları']] },
+    { id: 'ekler', l: 'Mevzuat ve Formlar', ic: IC.file, pages: [['ekler','Ekler ve Formlar'],['teblig','Tebliğ Maddeleri'],['form','Seçili Form']] }
   ];
   const PAGES = MODULES.flatMap((m) => m.pages.map(([id,l]) => ({id,l:id===m.id?m.l:l,s:({genel:'Genel',harita:'Harita',parklar:'Parklar',muhasebe:'Muhasebe'})[id]||l,ic:m.ic,module:m.id})));
   const anaModul = (id) => MODULES.find((m) => m.pages.some((p) => p[0] === id)) || MODULES[0];
@@ -107,7 +106,7 @@
     // En güncel hâl için önce GitHub API (yayın gecikmesi yok), olmazsa site kopyası
     try {
       const h = { Accept: 'application/vnd.github.raw+json' };
-      if (S.token) h.Authorization = 'Bearer ' + S.token;
+      if (S.token && S.writeStatus?.ok !== false) h.Authorization = 'Bearer ' + S.token;
       const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + path + '?ref=' + encodeURIComponent(ref || CFG.branch) + '&t=' + Date.now(), { headers: h, cache: 'no-store' });
       if (r.ok) return await r.text();
     } catch (e) { /* çevrimdışı ya da sınır */ }
@@ -148,7 +147,7 @@
           toast(recordsChanged ? 'Güncel kayıtlar otomatik alındı.' : 'Resmî oranlar güncellendi; hesaplar yeniden yapıldı.');
         } else S.sha = snapshot.sha;
         S.dataRef = snapshot.ref;
-        durum('Senkronize · ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+        durum('Kaynakla eşleşti · ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
       },
     });
     const check = () => S.sync.check();
@@ -166,7 +165,7 @@
     catch (e) { Object.assign(S,old); hesapla(); throw e; }
   }
   async function kaynakSurumu() {
-    const headers = { Accept: 'application/vnd.github+json' }; if (S.token) headers.Authorization = 'Bearer ' + S.token;
+    const headers = { Accept: 'application/vnd.github+json' }; if (S.token && S.writeStatus?.ok !== false) headers.Authorization = 'Bearer ' + S.token;
     const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/commits?sha=' + CFG.branch + '&per_page=1', { headers, cache: 'no-store' });
     if (!r.ok) throw new Error('Güncel kaynak sürümü doğrulanamadı.');
     const list = await r.json(); if (!list[0]?.sha) throw new Error('Kaynak sürümü boş.'); return list[0].sha;
@@ -269,6 +268,7 @@
   // ---------------- GitHub (yalnız yönetici) ----------------
   async function gh(path, opt) {
     opt = opt || {};
+    if (S.writeStatus?.ok === false && opt.method && !['GET', 'HEAD'].includes(opt.method)) throw new Error('Sunucuya kayıt bağlantısı kapalı. Yazma anahtarını yenileyin.');
     const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + path, Object.assign({}, opt, {
       headers: Object.assign({ Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + S.token, 'X-GitHub-Api-Version': '2022-11-28' }, opt.headers || {}) }));
     const j = await r.json().catch(() => ({}));
@@ -276,13 +276,30 @@
     return j;
   }
   async function yetkiKontrol(sessiz) {
+    let result;
     try {
-      const j = await gh('');
-      S.owner = !!(j.permissions && j.permissions.push);
-      if (!S.owner && !sessiz) toast('Bu anahtarın depoya yazma izni yok.', true);
-    } catch (e) { S.owner = false; if (!sessiz) toast('Anahtar doğrulanamadı: ' + e.message, true); }
+      if (!S.token) throw new Error('Yazma anahtarı yok.');
+      const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo, {
+        headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + S.token },
+        cache: 'no-store', signal: AbortSignal.timeout(12000) });
+      const j = await r.json().catch(() => ({}));
+      result = { ok: r.ok && j.permissions?.push === true, status: r.status,
+        reason: r.status === 401 ? 'Kayıtlı yazma anahtarı geçersiz veya süresi dolmuş.' :
+          r.status === 403 && (r.headers?.get('X-RateLimit-Remaining') === '0' || /rate limit/i.test(j.message || '')) ? 'GitHub istek sınırına ulaşıldı; daha sonra yeniden deneyin.' :
+          !r.ok ? 'Yazma bağlantısı doğrulanamadı (HTTP ' + r.status + ').' :
+          j.permissions?.push !== true ? 'Anahtarın bu depoya yazma izni bulunmuyor.' : '' };
+    } catch (e) { result = { ok: false, status: 0, reason: 'Yazma bağlantısına ulaşılamadı. İnternet bağlantısını kontrol edin.' }; }
+    S.writeStatus = result;
+    // Yönetici parolası oturumu doğrular; GitHub bağlantısı yalnız sunucuya kaydı belirler.
+    S.owner = result.ok || S.authAdmin === true;
+    if (!result.ok && !sessiz) toast(result.reason, true);
     rolSinif();
-    return S.owner;
+    return result.ok;
+  }
+  function kayitBaglantisi() {
+    modal('Sunucuya kayıt bağlantısı', '<p>Yönetici oturumunuz açık. <b>Değişiklikler henüz sunucuya kaydedilemez.</b></p><p>' + esc(S.writeStatus?.reason || 'Yazma bağlantısı doğrulanmalı.') + '</p><p class="muted">Taslağınızı indirin veya yazma anahtarını yenileyin. Anahtar yenilenene kadar sayfayı kapatırsanız kaydedilmemiş değişiklikler kaybolabilir.</p>',
+      '<button class="btn" data-a="yedekIndir">Taslağı indir</button><button class="btn" id="writeRetry">Bağlantıyı denetle</button><button class="btn pri" data-a="kurulum" data-m="yenile">Anahtarı yenile</button>');
+    const retry = $('#writeRetry'); retry.onclick = async () => { if (retry.disabled) return; retry.disabled = true; retry.textContent = 'Denetleniyor…'; const ok = await yetkiKontrol(true); kabukDurum(); if (!retry.isConnected) return; if (ok) { modalKapat(); toast('Sunucuya kayıt bağlantısı doğrulandı. Taslağınızı kaydedebilirsiniz.'); } else kayitBaglantisi(); };
   }
   // ---- yetkiler: görüntüleme (herkes), veri düzenleme, muhasebe yükleme, yönetim ----
   const ROL = { duzenle: 'Veri düzenleme', muhasebe: 'Muhasebe yükleme ve kayıt', yonetim: 'Yönetim (kullanıcılar, parola, oranlar)' };
@@ -305,6 +322,7 @@
   }
   async function kaydet() {
     if (!S.owner) { yoneticiGiris(); return; }
+    if (S.writeStatus?.ok === false) { kayitBaglantisi(); return; }
     if (S.saving || S.gypSaving) return;
     S.saving = true;
     const btn = $('#bKaydet'); if (btn) { btn.disabled = true; btn.textContent = 'Kaydediliyor…'; }
@@ -354,12 +372,12 @@
       '<div class="sgrid"><button class="sbtn" data-a="prev">‹ Önceki</button><button class="sbtn" data-a="next">Sonraki ›</button></div>' +
       '<span class="lbl" id="sQl">Vadesi geçmiş alacağı olan</span><div class="sq" id="sQuick"></div></div>' +
       '<div class="sbox"><span class="lbl">İşlemler</span>' +
-      '<div class="sgrid"><button class="sbtn" data-a="geri">Geri</button><button class="sbtn" data-a="pdf">PDF kaydet</button></div>' +
+      '<details class="side-tools"><summary>Çıktı ve paylaşım</summary><div class="sgrid"><button class="sbtn" data-a="geri">Geri</button><button class="sbtn" data-a="pdf">PDF kaydet</button></div>' +
       '<div class="sgrid"><button class="sbtn" data-a="csv">CSV indir</button><button class="sbtn" data-a="paylas">Paylaş</button></div>' +
-      '<button class="sbtn" data-a="yenile">Verileri yenile</button>' +
+      '</details><button class="sbtn" data-a="yenile">Verileri yenile</button>' +
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
-      '<div class="foot" id="sFoot"></div></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
+      '<div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
       '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span class="prepared">Hazırlayan <strong>Süleyman Özyurt</strong></span><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
@@ -379,7 +397,8 @@
     $('#sFoot').innerHTML = 'Rapor tarihi <b class="n">' + fd(S.rapor) + '</b><br>Döküm son yevmiye: 120 <b class="n">' + fd(dsn['120']) + '</b> · 127 <b class="n">' + fd(dsn['127']) + '</b><br>TÜFE son veri <b>' + (sonAy ? AY[sonAy[1] - 1] + ' ' + sonAy[0] : '—') + '</b>' +
       (tufeGecikti() ? '<br><span class="warn">TÜFE güncellemesi bekleniyor</span>' : '') + '<br>GZ oranı <b>%' + (gzSon()[1] * 100).toLocaleString('tr-TR') + '</b> · ' + fd(gzSon()[0]) +
       '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div><div id="syncStatus" role="status" style="margin-top:8px">' + esc(S.syncText || 'Otomatik senkronizasyon hazırlanıyor') + '</div>' + (S.lastRefresh ? '<div>Son yenileme <b>' + esc(S.lastRefresh) + '</b></div>' : '');
-    const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : 'Kaydedildi ✓';
+    const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : (S.writeStatus?.ok === false ? 'Kayıt bağlantısını düzelt' : 'Değişiklik yok');
+    const connection = $('#sessionConnection'); if (connection) connection.innerHTML = S.owner && S.writeStatus?.ok === false ? '<button class="sbtn connection-warn" data-a="kayitBaglantisi">Yönetici açık · kayıt bağlantısı kapalı</button>' : '<span class="session-label">' + (S.owner ? (S.writeStatus?.ok ? 'Yönetici · kayıt bağlantısı açık' : 'Yönetici oturumu') : 'Görüntüleme modu') + '</span>';
   }
   const gzSon = () => S.gzO[S.gzO.length - 1];
   function sonTufeAyi() { const t = S.tufe || {}; let best = null; Object.keys(t).forEach((y) => (t[y] || []).forEach((v, i) => { if (v != null) { const k = [+y, i + 1]; if (!best || k[0] * 12 + k[1] > best[0] * 12 + best[1]) best = k; } })); return best; }
@@ -402,7 +421,7 @@
       case 'yenile': yenile(); break;
       case 'kaydet': kaydet(); break;
       case 'giris': yoneticiGiris(); break;
-      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { ['op_gh', 'op_kim', 'op_rol', 'op_kul'].forEach((k) => { ls.del(k); ss.del(k); }); S.token = null; S.owner = false; S.rol = {}; S.kullanici = null; S.dirKey = null; S.yPw = null; S.kim = 'Yönetici'; rolSinif(); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Oturum kapatıldı; görüntüleme modundasınız.'); } break;
+      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { ['op_gh', 'op_kim', 'op_rol', 'op_kul'].forEach((k) => { ls.del(k); ss.del(k); }); S.token = null; S.owner = false; S.authAdmin = false; S.writeStatus = null; S.rol = {}; S.kullanici = null; S.dirKey = null; S.yPw = null; S.kim = 'Yönetici'; rolSinif(); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Oturum kapatıldı; görüntüleme modundasınız.'); } break;
       default: if (AKSIYON[a]) {
         const g = GEREK[a];
         if (g && !yetki(g)) { if (!S.owner) yoneticiGiris(); else toast('Bu işlem için “' + ROL[g] + '” yetkisi gerekiyor. Yetkiyi yönetici verir.', true); return; }
@@ -541,6 +560,7 @@
 
   // =============== SAYFALAR ===============
   const SAYFA = {}, AFTER = {}, AKSIYON = {};
+  AKSIYON.kayitBaglantisi = kayitBaglantisi;
 
   // ---------- GENEL DURUM ----------
   SAYFA.genel = function () {
@@ -606,9 +626,8 @@
     if (hz.length || bk.length) todo.push({ k: '', red: false, tutar: hz.length + ' / ' + (hz.length + bk.length), alt: (y + 1) + ' kirası hesaplanan', go: 'tahakkuk',
       ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park yılbaşını ve resmî TÜFE verisini bekliyor.' : '.') });
     S.veri.parks.forEach((p) => { if (p.durum === 'Sona erdi') todo.push({ k: p.kisa, red: false, tutar: '', alt: '', ne: 'Sözleşme ' + fd(p.soz_bit) + '’de sona erdi: geri teslim tutanağı 15 gün içinde GM’ye (Md. 13/1), yeniden ihale.' }); });
-    const todoH = '<section class="card"><div class="ch"><h2>Öncelik sırasıyla yapılacaklar</h2></div><ul class="todo">' + todo.map((t, i) => '<li><span class="no" style="background:' + (t.red ? 'var(--red)' : 'var(--amb)') + '">' + (i + 1) + '</span>' +
-      '<div><b>' + (t.go && !t.k ? '<a href="#/' + t.go + '">Kira ve tahakkuk</a>' : '<a href="#/' + (t.go || 'park') + '" data-a="park" data-k="' + esc(t.k) + '" data-go="' + (t.go || 'park') + '">' + esc(t.k) + '</a>') + '</b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + t.tutar + '<small>' + esc(t.alt) + '</small></div></li>').join('') +
-      (todo.length ? '' : '<li><div></div><p>Bekleyen iş yok.</p></li>') + '</ul></section>';
+    const taskRow = (t, i) => '<li><span class="no" style="background:' + (t.red ? 'var(--red)' : 'var(--amb)') + '">' + (i + 1) + '</span><div><b><a href="#/' + (t.go || 'park') + (t.k ? '?p=' + encodeURIComponent(t.k) : '') + '">' + esc(t.k || 'Kira ve tahakkuk') + '</a></b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + esc(t.tutar) + '<small>' + esc(t.alt) + '</small></div></li>';
+    const todoH = '<section class="card"><div class="ch"><h2>Öncelikli işler</h2><span class="badge b-gray">' + todo.length + ' kayıt</span></div><ul class="todo">' + todo.slice(0,3).map(taskRow).join('') + (todo.length ? '' : '<li><p>Bekleyen iş yok.</p></li>') + '</ul>' + (todo.length > 3 ? '<details class="more-tasks"><summary>Diğer ' + (todo.length - 3) + ' işi göster</summary><ul class="todo">' + todo.slice(3).map((t,i) => taskRow(t,i+3)).join('') + '</ul></details>' : '') + '</section>';
     // 60 gün
     const son = E.addDays(R, 60), grp = {};
     al.filter((a) => a.acik > 0 && a.esas && a.esas >= R && a.esas <= son).forEach((a) => { const k = a.esas + '|' + a.park; grp[k] = grp[k] || { esas: a.esas, park: a.park, t: 0, ek: false }; grp[k].t += a.acik; if (a.grup === 'Ek tahakkuk') grp[k].ek = true; });
@@ -621,7 +640,7 @@
       ['ekler', 'Tebliğ Ekleri', 'Resmî formlar, düzenleme ve belge çıktıları', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     const quick = '<nav class="quick-tasks noprint" aria-label="Hızlı işlemler"><a href="#/harita">' + svg(IC.map) + 'Harita ve tesisler</a><a href="#/parklar">' + svg(IC.list) + 'Park envanteri</a><a href="#/ekler">' + svg(IC.file) + 'Tebliğ ekleri</a><a href="#/tahakkuk">' + svg(IC.clock) + 'Kira ve tahakkuk</a></nav>';
-    return quick + banners() + hero + kpis + cal + '<div class="split">' + todoH + tlH + '</div>' + tilesH;
+    return '<div class="pagehead overview-heading"><div><h1>Genel durum</h1><p>Parklar, mali takip ve yaklaşan işler.</p></div><span class="release-label">v' + BUILD.version + ' · ' + BUILD.date + '</span></div>' + quick + banners() + kpis + hero + '<div class="split">' + todoH + tlH + '</div><details class="overview-detail"><summary>' + y + ' ödeme takvimi · ' + S.veri.parks.length + ' park</summary>' + cal + '</details>';
   };
   // Alacak ve tahakkuk sonuçları yüklenen dökümlerin son yevmiye tarihine kadar geçerlidir; güncel borç durumu değildir.
   function dokumNotu(kisa) {
@@ -631,7 +650,8 @@
     return kisa ? t : t + 'Bu tarihlerden sonraki tahakkuk ve tahsilatlar görünmez; sonuç güncel borç durumu değildir. Yeni tahakkuk ya da ödeme olduğunda güncel döküm yüklenmelidir (Muhasebe sayfası).';
   }
   function banners() {
-    let h = '<div class="banner noprint">' + svg(IC.book, 18, 2) + '<div>' + dokumNotu() + '</div></div>';
+    const ds = E.dokumSon(S.veri), son = sonTufeAyi();
+    let h = '<details class="freshness noprint"><summary><span class="freshness-dot"></span><b>Veri kapsamı</b><span>120: ' + fd(ds['120']) + ' · 127: ' + fd(ds['127']) + ' · TÜFE: ' + (son ? AY[son[1]-1] + ' ' + son[0] : '—') + '</span><small>Ayrıntılar</small></summary><div>' + dokumNotu() + '<p>Program sürümü v' + BUILD.version + ' (' + BUILD.date + '). Kaynakla eşleşme, muhasebe dökümünün bugüne ait olduğu anlamına gelmez.</p><button class="btn sm" data-a="yenile">Kaynakları yeniden kontrol et</button></div></details>';
     if (tufeGecikti()) { const s = sonTufeAyi(); h += '<div class="banner noprint">' + svg(IC.clock, 18, 2) + '<div><b>TÜFE güncellemesi bekleniyor.</b> Elde en son ' + (s ? AY[s[1] - 1] + ' ' + s[0] : '—') + ' verisi var. Otomatik güncelleme günde bir kez TÜİK’ten denenir' + (S.oran.tufe.durum ? ' (' + esc(S.oran.tufe.durum) + ')' : '') + '. Kira hesapları bu aya kadar doğrudur.</div></div>'; }
     if (S.esl.uyarilar.length) h += '<div class="banner">' + svg(IC.check, 18, 2) + '<div><b>Muhasebe eşleştirme uyarısı:</b> ' + S.esl.uyarilar.map(esc).join(' · ') + '</div></div>';
     return h;
@@ -1947,31 +1967,45 @@
   }
   function oturumAc(tok, kim, kalici) {
     S.token = tok; S.kim = kim || 'Yönetici';
+    for (const k of ['op_gh', 'op_kim', 'op_rol', 'op_kul']) { ls.del(k); ss.del(k); }
     const D = kalici ? ls : ss;
+    if (S.writeStatus?.ok === false) tok = null;
     if (tok) D.set('op_gh', tok); D.set('op_kim', S.kim); D.set('op_rol', JSON.stringify(S.rol || {})); if (S.kullanici) D.set('op_kul', S.kullanici); else { ls.del('op_kul'); ss.del('op_kul'); }
     rolSinif();
   }
   function yoneticiGiris() {
-    modal('Yönetici girişi', '<p style="margin:0;color:var(--ink2);line-height:1.5">Düzenleme ve kaydetme için <b>yönetici parolasını</b> girin. Erişim parolası yalnız görüntüleme içindir.</p>' +
-      '<div class="f"><label for="ypw">Yönetici parolası</label><input class="fld" id="ypw" type="password" autocomplete="current-password"></div>' +
-      '<label class="chk"><input type="checkbox" id="ykeep" checked> Bu cihazda açık kalsın</label><div class="err" id="yerr" role="alert"></div>' +
-      '<p class="muted" style="margin:0;font-size:13px"><a href="#" data-a="kulGirisAc" style="text-decoration:underline">Kişisel hesabımla gir</a> · <a href="#" data-a="kurulum" style="text-decoration:underline">İlk kurulum / parolamı unuttum / anahtarı yenile</a></p>',
-      '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="yOk">Giriş</button>');
+    modal('Yönetici girişi', '<p style="margin:0;color:var(--ink2);line-height:1.5">Yönetici parolanızla oturum açın. Sunucuya kayıt bağlantısı ayrıca kontrol edilir.</p>' +
+      '<div class="f"><label for="ypw">Yönetici parolası</label><div class="password-field"><input class="fld" id="ypw" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"><button type="button" id="yShow" aria-label="Parolayı göster">Göster</button></div></div>' +
+      '<div id="yCaps" class="muted" hidden>Caps Lock açık.</div><label class="chk"><input type="checkbox" id="ykeep"> Bu cihazda açık kalsın</label><div class="err" id="yerr" role="alert"></div>' +
+      '<details class="login-help"><summary>Giriş yardımı ve anahtar yenileme</summary><p class="muted">Erişim parolası görüntüleme, yönetici parolası düzenleme içindir. Doğru parola ile giriş, yazma anahtarı geçersiz olsa da açılır; sunucuya kayıt için anahtar yenilenmelidir.</p><a href="#" data-a="kulGirisAc">Kişisel hesap</a> · <a href="#" data-a="kurulum" data-m="yenile">Anahtarı yenile</a></details>',
+      '<button class="btn" id="yCancel">Vazgeç</button><button class="btn pri" id="yOk">Giriş yap</button>');
+    const field = $('#ypw'), error = $('#yerr'), button = $('#yOk'), keep = $('#ykeep'), sheet = $('#modal .sheet'); let busy = false;
+    $('#yCancel').onclick = modalKapat;
+    $('#yShow').onclick = (e) => { const show = field.type === 'password'; field.type = show ? 'text' : 'password'; e.currentTarget.textContent = show ? 'Gizle' : 'Göster'; e.currentTarget.setAttribute('aria-label', show ? 'Parolayı gizle' : 'Parolayı göster'); field.focus(); };
+    const active = () => sheet.isConnected && $('#modal.on .sheet') === sheet;
     const go = async () => {
-      const pw = $('#ypw').value; if (!pw) return;
-      $('#yerr').textContent = 'Denetleniyor…';
-      let txt;
-      try { txt = await yoneticiDosya(); } catch (e) { $('#yerr').textContent = e.message; return; }
-      if (!txt) { $('#yerr').textContent = 'Yönetici kaydı henüz oluşturulmamış. İlk kurulum açılıyor…'; setTimeout(() => kurulum('ilk'), 700); return; }
-      let o; try { o = await K.coz(txt, pw); } catch (e) { $('#yerr').textContent = 'Yönetici parolası yanlış.'; return; }
-      S.token = o.token; const ok = await yetkiKontrol(true);
-      if (!ok) { S.token = null; $('#yerr').innerHTML = 'Parola doğru, ancak kayıtlı GitHub anahtarı artık geçerli değil (süresi dolmuş veya iptal edilmiş). <a href="#" data-a="kurulum" data-m="yenile" style="text-decoration:underline">Anahtarı yenileyin</a>.'; return; }
-      S.rol = TUM_ROL; S.kullanici = null; S.dirKey = o.dirKey || null;
-      oturumAc(o.token, o.kim, $('#ykeep').checked); S.yPw = pw;
-      if (!S.dirty) S.sha = await veriSHA(S.enc);
-      modalKapat(); kabukDurum(); sayfaCiz(); toast('Yönetici girişi yapıldı (' + S.kim + '). Düzenleme düğmeleri açıldı.');
+      if (busy) return; const pw = field.value; if (!pw) { error.textContent = 'Yönetici parolasını girin.'; return; }
+      busy = true; button.disabled = true; error.textContent = 'Parola doğrulanıyor…';
+      try {
+        const txt = await yoneticiDosya(); if (!active()) return;
+        if (!txt) { error.textContent = 'Yönetici kaydı bulunamadı. İlk kurulum gerekli.'; return; }
+        let o; try { o = await K.coz(txt, pw); } catch (e) { error.textContent = 'Yönetici parolası doğrulanamadı. Büyük/küçük harfleri ve boşlukları kontrol edin.'; return; }
+        if (!o || typeof o.token !== 'string' || !o.token) { error.textContent = 'Yönetici kaydı eksik; yazma anahtarı kurulumu gerekli.'; return; }
+        if (!active()) return;
+        error.textContent = 'Parola doğru. Kayıt bağlantısı kontrol ediliyor…';
+        const prior = { token: S.token, owner: S.owner, authAdmin: S.authAdmin, writeStatus: S.writeStatus };
+        S.token = o.token; S.authAdmin = true;
+        const ok = await yetkiKontrol(true);
+        if (!active()) { Object.assign(S, prior); rolSinif(); return; }
+        S.rol = TUM_ROL; S.kullanici = null; S.dirKey = o.dirKey || null;
+        oturumAc(o.token, o.kim, keep.checked); S.yPw = pw;
+        if (!S.dirty) S.sha = await veriSHA(S.enc);
+        modalKapat(); kabukDurum(); sayfaCiz();
+        toast(ok ? 'Yönetici oturumu ve kayıt bağlantısı açıldı.' : 'Yönetici oturumu açıldı. Sunucuya kayıt için yazma anahtarını yenileyin.', !ok);
+      } catch (e) { if (active()) error.textContent = 'Giriş tamamlanamadı: ' + e.message; }
+      finally { busy = false; if (button.isConnected) button.disabled = false; }
     };
-    $('#yOk').onclick = go; $('#ypw').onkeydown = (e) => { if (e.key === 'Enter') go(); };
+    button.onclick = go; field.onkeydown = (e) => { $('#yCaps').hidden = !e.getModifierState?.('CapsLock'); if (e.key === 'Enter') { e.preventDefault(); go(); } };
   }
   const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('Orman Parklari yonetici') +
     '&description=' + encodeURIComponent('Orman Parklari programinda kayit yetkisi') + '&target_name=' + CFG.owner + '&expires_in=366&contents=write';
@@ -1993,7 +2027,7 @@
       if (!ok) { S.token = null; er.textContent = 'Bu anahtarın ' + CFG.repo + ' deposuna yazma izni yok. Depo seçimini ve “Contents: Read and write” iznini kontrol edin.'; return; }
       try { await dosyaYaz(CFG.yonetici, await K.sifrele({ token: tok, kim, t: new Date().toISOString() }, p1), 'Yönetici anahtarı güncellendi (' + kim + ')'); }
       catch (e) { er.textContent = 'Yönetici kaydı yazılamadı: ' + e.message; return; }
-      S.rol = TUM_ROL; S.kullanici = null; oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await veriSHA(S.enc);
+      S.authAdmin = true; S.rol = TUM_ROL; S.kullanici = null; oturumAc(tok, kim, true); S.yPw = p1; if (!S.dirty) S.sha = await veriSHA(S.enc);
       if (mod === 'yenile') { try { await kulYenidenSar({ token: tok }); } catch (e) { toast('Kullanıcı kayıtlarındaki anahtar güncellenemedi: ' + e.message + ' (Veriler › Kullanıcılar › Kayıtları yenile).', true); } }
       modalKapat(); kabukDurum(); sayfaCiz(); toast('Kurulum tamam. Bundan sonra yönetici girişi için yalnız parola yeterli.');
     };
