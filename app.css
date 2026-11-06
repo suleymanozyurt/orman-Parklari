@@ -345,11 +345,6 @@ th.mc{text-align:center;padding:10px 2px}
   .ev{grid-template-columns:82px 14px 1fr;gap:10px}
 }
 
-/* ---------- koyu görünüm ---------- */
-:root[data-tema="koyu"]{--mist:#0D1511;--paper:#15201A;--soft:#1A271F;--ink:#E4ECE6;--ink2:#BCCCC2;--mute:#8EA195;--line:#2A3A31;--line2:#203027;--okbg:#17321F;--ok:#5FC28A;
-  --ambbg:#3A2E14;--ambt:#EDB65C;--redbg:#3B1D18;--redt:#F28C79;--red:#E25E46;--fldbg:#2C2A18;--blbg:#18242E;--glass:rgba(13,21,17,.9);color-scheme:dark}
-@media (prefers-color-scheme:dark){:root:not([data-tema="acik"]){--mist:#0D1511;--paper:#15201A;--soft:#1A271F;--ink:#E4ECE6;--ink2:#BCCCC2;--mute:#8EA195;--line:#2A3A31;--line2:#203027;--okbg:#17321F;--ok:#5FC28A;
-  --ambbg:#3A2E14;--ambt:#EDB65C;--redbg:#3B1D18;--redt:#F28C79;--red:#E25E46;--fldbg:#2C2A18;--blbg:#18242E;--glass:rgba(13,21,17,.9);color-scheme:dark}}
 .fld{background:var(--fldbg);color:var(--ink)}
 .btn{background:var(--paper);color:var(--ink2)}
 .btn.pri{background:var(--moss);color:#fff}
@@ -359,7 +354,6 @@ th.mc{text-align:center;padding:10px 2px}
 .eks-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mute);align-items:center}.eks-leg i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
 .lg-oto{background:#E6F4EA}.lg-el{background:#FFF3C4}.lg-ip{background:#fff;border-style:dashed !important}
 .ekalan{background:#E9ECE7;border-radius:12px;padding:18px;overflow:auto;-webkit-overflow-scrolling:touch}
-:root[data-tema="koyu"] .ekalan{background:#26302A}
 .eks-kagit{position:relative;background:#fff;color:#000;box-shadow:0 1px 3px rgba(0,0,0,.18),0 8px 24px rgba(0,0,0,.08);margin:0 auto;padding:0}
 .eks{border-collapse:collapse;table-layout:fixed;color:#000;background:#fff}
 .eks td{padding:0 2px;overflow:hidden;line-height:1.2;box-sizing:border-box}
@@ -371,7 +365,6 @@ th.mc{text-align:center;padding:10px 2px}
 .eks-img{position:absolute;pointer-events:none}
 .dxk{background:transparent}.dxk .dx-wrapper{background:transparent !important;padding:0 !important}.dxk section.dx{box-shadow:0 1px 3px rgba(0,0,0,.18);margin:0 auto 18px !important}
 .fsec{font-size:14.5px;margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line);color:var(--pine)}
-:root[data-tema="koyu"] .fsec{color:var(--leaf)}
 .ok-t{color:var(--okt)}
 
 /* ---------- kira ve tahakkuk ---------- */
