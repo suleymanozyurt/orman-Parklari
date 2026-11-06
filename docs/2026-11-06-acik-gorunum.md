@@ -18,3 +18,15 @@ OGM'nin yayımladığı [313 sayılı Orman Parkları Tebliği](https://www.ogm.
 - 6 Python testi geçti.
 - Yeni testler: eski tema kaydının dönüşümü, depolama engeli, eski tema eylemleri, taslak ile yasal hesabın ayrımı ve dökümün veri değiştirmemesi.
 - JavaScript söz dizimi ve git diff boşluk kontrolü başarılı.
+
+## Canlı yayın kontrolü
+
+- v42 yayını: GitHub Actions uygulama kontrolleri ve Pages dağıtımı başarılı.
+- Masaüstü 1920 px ve mobil 390 × 844 px: açık tema uygulandı; sayfada yatay taşma yok.
+- Park dosyasında ana zemin, yan menü, özet ve sekmelerin gerçek hesaplanan renkleri açık; tarayıcı `color-scheme: light`.
+- Haritada doğrudan Yeşiltepe → İmrahor seçimi yapıldı; tüm parklara dönmeden liste erişilebilir. İmrahor için 196 eşleşen plan nesnesi görüntülendi (bu sayı doğrulanmış mevcut tesis sayısı anlamına gelmez).
+- Mobil filtre paneli kapatıldı; harita görünür kaldı. Harita ve kaynak kayıtları değiştirilmedi.
+- Ek-1 orijinal beyaz form şablonu açıldı; form tablosu görüntülendi ve sayfa taşması oluşmadı.
+- Tema dışındaki kaynak veri, harita, form şablonları, hesap motoru, geometri motoru ve iş akışı dosyalarının önceki sürümle SHA-256 eşitliği doğrulandı.
+
+Önceki harita/veri teyit eksikleri bu tema sürümünde tamamlanmış sayılmaz.
