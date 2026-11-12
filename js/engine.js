@@ -333,7 +333,8 @@
     const items = esl.items.filter((it) => it.park === p.kisa && it.grup === Y + ' tahakkuku' && muh(it));
     const ekler = esl.items.filter((it) => it.park === p.kisa && it.grup === 'Ek tahakkuk' && it.tur === 'Kira' && muh(it) && E.year(it.duz || it.vade || it.olusma) === Y);
     const kiraIt = items.filter((x) => x.tur === 'Kira').concat(ekler);
-    out.muhasebede = items.length > 0;
+    out.muhasebede = kiraIt.some((x) => !KIST.test(x.aciklama || ''));
+    if (items.length && !out.muhasebede) out.uyari.push('Yalnız vergi/fon veya kıst satırı var; yıllık kira tahakkuku bu dökümde doğrulanamadı.');
     out.muhKira = r2(kiraIt.filter((x) => !KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
     out.muhKist = r2(kiraIt.filter((x) => KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
     out.otoVar = veri.muhasebe.some((x) => x.oto === p.kisa + '|' + Y);

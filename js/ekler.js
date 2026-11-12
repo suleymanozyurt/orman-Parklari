@@ -321,6 +321,11 @@
       scale: m.fit ? undefined : (m.scale || 100), horizontalCentered: !!m.ortala,
       margins: { left: k[0], right: k[1], top: k[2], bottom: k[3], header: 0.3, footer: 0.3 },
       printArea: colL(C0) + (R0 + 1) + ':' + colL(C0 + m.cols.length - 1) + (R0 + m.rows.length) };
+    if (m.kaynakNotu) {
+      const kaynak = wb.addWorksheet('Kaynak bilgisi'); kaynak.getColumn(1).width = 100;
+      kaynak.getCell('A1').value = m.kaynakNotu;
+      kaynak.getCell('A1').alignment = {wrapText:true,vertical:'top'}; kaynak.getRow(1).height = 110;
+    }
     const buf = await wb.xlsx.writeBuffer();
     return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   };

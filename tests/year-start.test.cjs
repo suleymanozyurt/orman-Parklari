@@ -15,3 +15,4 @@ test('duplicate installments, impossible dates and due dates outside the account
   assert.equal(x.esasYili,2026);assert.equal(x.bedel,1641226.72);
  }
 });
+test('tax-only accounting entries do not prove a zero annual rent accrual',()=>{const q={...p,soz_bas:'2020-01-01',taban:'2020-01-01'},r={};for(let y=2019;y<=2026;y++)r[y]=Array(12).fill(.1);const esl={items:[{park:'Test',grup:'2026 tahakkuku',tur:'KDV',vade:'2026-01-30',tutar:5000,row:0}]},v={ek_kira:[],muhasebe:[{kaynak:'120',tarih:'2026-10-21',hesap:'120.99.99.05'}]};const t=E.tahakkukPlan(v,esl,q,r,2026,'2026-11-06');assert.equal(t.muhasebede,false);assert.notEqual(t.kod,'fark');assert.ok(t.uyari.some(x=>/Yalnız vergi/.test(x)));});

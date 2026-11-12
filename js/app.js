@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '42', date: '06.11.2026' };
+  const BUILD = { version: '45', date: '12.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -260,7 +260,7 @@
       let veri; try { veri = await K.coz(S.enc, pw); }
       catch (e) { $('#gerr').textContent = 'Parola yanlış veya şifreli veri doğrulanamadı. Tekrar deneyin.'; return; }
       const keep = $('#gkeep').checked; S.veri = veri; S.pw = pw; S.rol = {};
-      try { await acildi(); if (keep) ls.set('op_pw', pw); }
+      try { await acildi(); erisimKaydet('Ortak görüntüleme erişimi','Ortak erişim'); if (keep) ls.set('op_pw', pw); }
       catch (e) { gateGoster('hata', 'Erişim doğrulandı ancak uygulama başlatılamadı. Hesap ve veri kontrolü gerekli. Sayfayı yenileyerek tekrar deneyin.'); }
     };
   }
@@ -314,7 +314,7 @@
   const GEREK = { parkDuzenle: 'duzenle', defterEkle: 'duzenle', defterSil: 'duzenle', ekKiraEkle: 'duzenle', ekKiraSil: 'duzenle', denDuzenle: 'duzenle', kurumDuzenle: 'duzenle',
     fDuzenle: 'duzenle', fSifirla: 'duzenle', haritaYukle: 'duzenle', haritaSil: 'duzenle', gypSil: 'duzenle', planDuz: 'duzenle', islemDuzenle: 'duzenle', kaynakIncele: 'duzenle',
     csvYukle: 'muhasebe', kayitEkle: 'muhasebe', kayitSil: 'muhasebe', tahsilat: 'muhasebe', tahakkuk: 'muhasebe', tEt: 'muhasebe', tEtP: 'muhasebe', tGeri: 'muhasebe', vadeDuz: 'muhasebe', vadeSil: 'muhasebe',
-    gzGir: 'yonetim', gzSil: 'yonetim', tufeGir: 'yonetim', sifreDegis: 'yonetim', yPwDegis: 'yonetim', anahtarYenile: 'yonetim', yedekYukle: 'yonetim', kulEkle: 'yonetim', kulDuz: 'yonetim', kulSil: 'yonetim' };
+    gzGir: 'yonetim', gzSil: 'yonetim', tufeGir: 'yonetim', sifreDegis: 'yonetim', yPwDegis: 'yonetim', anahtarYenile: 'yonetim', yedekYukle: 'yonetim', kulEkle: 'yonetim', kulDuz: 'yonetim', kulSil: 'yonetim', driveIncele: 'yonetim' };
   async function shaAl(yol) { try { return (await gh('/contents/' + yol + '?ref=' + CFG.branch, { cache: 'no-store' })).sha; } catch (e) { return null; } }
   async function dosyaYaz(yol, txt, mesaj, beklenenSHA) {
     const sha = await shaAl(yol);
@@ -373,7 +373,7 @@
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
       '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Park, işletmeci, yevmiye ara" aria-label="Ara"></label><div class="sres" id="sRes"></div></div>' +
       '<div class="sbox" id="sPark"><span class="lbl">Seçili park</span><select id="sSel" aria-label="Park seçin"></select>' +
-      '<div class="sgrid"><button class="sbtn" data-a="prev">‹ Önceki</button><button class="sbtn" data-a="next">Sonraki ›</button></div>' +
+      '<a class="sbtn" href="#/park" id="sParkOpen">Park dosyasını aç →</a>' +
       '<span class="lbl" id="sQl">Vadesi geçmiş alacağı olan</span><div class="sq" id="sQuick"></div></div>' +
       '<div class="sbox"><span class="lbl">İşlemler</span>' +
       '<details class="side-tools"><summary>Çıktı ve paylaşım</summary><div class="sgrid"><button class="sbtn" data-a="geri">Geri</button><button class="sbtn" data-a="pdf">PDF kaydet</button></div>' +
@@ -381,7 +381,7 @@
       '</details><button class="sbtn" data-a="yenile">Verileri yenile</button>' +
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
-      '<div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
+      '<div id="adminTools"></div><div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
       '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span class="prepared">Hazırlayan <strong>Süleyman Özyurt</strong></span><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
@@ -402,6 +402,7 @@
       (tufeGecikti() ? '<br><span class="warn">TÜFE güncellemesi bekleniyor</span>' : '') + '<br>GZ oranı <b>%' + (gzSon()[1] * 100).toLocaleString('tr-TR') + '</b> · ' + fd(gzSon()[0]) +
       '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div><div id="syncStatus" role="status" style="margin-top:8px">' + esc(S.syncText || 'Otomatik senkronizasyon hazırlanıyor') + '</div>' + (S.lastRefresh ? '<div>Son yenileme <b>' + esc(S.lastRefresh) + '</b></div>' : '');
     const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : (S.writeStatus?.ok === false ? 'Kayıt bağlantısını düzelt' : 'Değişiklik yok');
+    const adminTools=$('#adminTools');if(adminTools)adminTools.innerHTML=yetki('yonetim')?'<button class="sbtn" style="width:calc(100% - 24px);margin:10px 12px 0" data-a="girisGecmisi">Giriş geçmişi · bu cihaz</button>':'';
     const connection = $('#sessionConnection'); if (connection) connection.innerHTML = S.owner && S.writeStatus?.ok === false ? '<button class="sbtn connection-warn" data-a="kayitBaglantisi">Yönetici açık · kayıt bağlantısı kapalı</button>' : '<span class="session-label">' + (S.owner ? (S.writeStatus?.ok ? 'Yönetici · kayıt bağlantısı açık' : 'Yönetici oturumu') : 'Görüntüleme modu') + '</span>';
   }
   const gzSon = () => S.gzO[S.gzO.length - 1];
@@ -425,7 +426,7 @@
       case 'yenile': yenile(); break;
       case 'kaydet': kaydet(); break;
       case 'giris': yoneticiGiris(); break;
-      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { ['op_gh', 'op_kim', 'op_rol', 'op_kul'].forEach((k) => { ls.del(k); ss.del(k); }); S.token = null; S.owner = false; S.authAdmin = false; S.writeStatus = null; S.rol = {}; S.kullanici = null; S.dirKey = null; S.yPw = null; S.kim = 'Yönetici'; rolSinif(); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Oturum kapatıldı; görüntüleme modundasınız.'); } break;
+      case 'cikis': if (!S.dirty || confirm('Kaydedilmemiş değişiklikler silinecek. Çıkılsın mı?')) { erisimKaydet(S.kim,S.kullanici?'Kişisel hesap':'Yönetici','çıkış'); ['op_gh', 'op_kim', 'op_rol', 'op_kul'].forEach((k) => { ls.del(k); ss.del(k); }); S.token = null; S.owner = false; S.authAdmin = false; S.writeStatus = null; S.rol = {}; S.kullanici = null; S.dirKey = null; S.yPw = null; S.kim = 'Yönetici'; rolSinif(); if (S.dirty) { location.reload(); return; } kabukDurum(); sayfaCiz(); toast('Oturum kapatıldı; görüntüleme modundasınız.'); } break;
       default: if (AKSIYON[a]) {
         const g = GEREK[a];
         if (g && !yetki(g)) { if (!S.owner) yoneticiGiris(); else toast('Bu işlem için “' + ROL[g] + '” yetkisi gerekiyor. Yetkiyi yönetici verir.', true); return; }
@@ -534,13 +535,14 @@
   function sayfaCiz() {
     if (S._hmap) { hKonumDurdur(); S._hmap.remove(); S._hmap = null; S._hIdx = null; }
     baglamBaglantilari();
-    const showPark = S.page !== 'genel';
+    const showPark = S.page !== 'genel' && S.page !== 'harita';
 
     $('#sPark').style.display = showPark ? '' : 'none';
     $('#sSel').value = S.park;
+    const parkLink=$('#sParkOpen'); if(parkLink)parkLink.href='#/park?p='+encodeURIComponent(S.park||'');
     const late = S.oz.filter((o) => o.vgec > 0).map((o) => o.kisa);
     $('#sQuick').innerHTML = late.map((k) => '<button data-a="park" data-k="' + esc(k) + '">' + esc(k) + '</button>').join('');
-    $('#sQl').style.display = late.length && S.page === 'park' ? '' : 'none'; $('#sQuick').style.display = late.length && S.page === 'park' ? '' : 'none';
+    $('#sQl').style.display = 'none'; $('#sQuick').style.display = 'none';
     $('#mTitle').textContent = (PAGES.find((p) => p.id === S.page) || {}).l || 'Orman Parkları';
     S.csv = null;
     const content = (SAYFA[S.page] || SAYFA.genel)();
@@ -644,7 +646,7 @@
       ['ekler', 'Tebliğ Ekleri', 'Resmî formlar, düzenleme ve belge çıktıları', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     const quick = '<nav class="quick-tasks noprint" aria-label="Hızlı işlemler"><a href="#/harita">' + svg(IC.map) + 'Harita ve tesisler</a><a href="#/parklar">' + svg(IC.list) + 'Park envanteri</a><a href="#/ekler">' + svg(IC.file) + 'Tebliğ ekleri</a><a href="#/tahakkuk">' + svg(IC.clock) + 'Kira ve tahakkuk</a></nav>';
-    return '<div class="pagehead overview-heading"><div><h1>Genel durum</h1><p>Parklar, mali takip ve yaklaşan işler.</p></div><span class="release-label">v' + BUILD.version + ' · ' + BUILD.date + '</span></div>' + quick + banners() + kpis + hero + '<div class="split">' + todoH + tlH + '</div><details class="overview-detail"><summary>' + y + ' ödeme takvimi · ' + S.veri.parks.length + ' park</summary>' + cal + '</details>';
+    return '<div class="pagehead overview-heading"><div><h1>Genel durum</h1><p>Parklar, mali takip ve yaklaşan işler.</p></div><span class="release-label">v' + BUILD.version + ' · ' + BUILD.date + '</span></div>' + quick + banners() + kpis + '<details class="overview-detail overview-balances"><summary>Muhasebe dökümlerine göre vadesi geçmiş alacaklar · ' + late.length + ' park</summary>' + hero + '</details><div class="split">' + todoH + tlH + '</div><details class="overview-detail overview-calendar"><summary>' + y + ' ödeme takvimi · ' + S.veri.parks.length + ' park</summary>' + cal + '</details>';
   };
   // Alacak ve tahakkuk sonuçları yüklenen dökümlerin son yevmiye tarihine kadar geçerlidir; güncel borç durumu değildir.
   function dokumNotu(kisa) {
@@ -655,7 +657,7 @@
   }
   function banners() {
     const ds = E.dokumSon(S.veri), son = sonTufeAyi();
-    let h = '<details class="freshness noprint"><summary><span class="freshness-dot"></span><b>Veri kapsamı</b><span>120: ' + fd(ds['120']) + ' · 127: ' + fd(ds['127']) + ' · TÜFE: ' + (son ? AY[son[1]-1] + ' ' + son[0] : '—') + '</span><small>Ayrıntılar</small></summary><div>' + dokumNotu() + '<p>Program sürümü v' + BUILD.version + ' (' + BUILD.date + '). Kaynakla eşleşme, muhasebe dökümünün bugüne ait olduğu anlamına gelmez.</p><button class="btn sm" data-a="yenile">Kaynakları yeniden kontrol et</button></div></details>';
+    let h = '<details class="freshness noprint"><summary><span class="freshness-dot"></span><b>Veri kapsamı</b><span>120: ' + fd(ds['120']) + ' · 127: ' + fd(ds['127']) + ' · TÜFE: ' + (son ? AY[son[1]-1] + ' ' + son[0] : '—') + '</span><small>Ayrıntılar</small></summary><div>' + dokumNotu() + '<p>Drive kaynak karşılaştırması: ' + esc(S.veri.meta.drive_kontrol?.tarih ? fd(S.veri.meta.drive_kontrol.tarih) : 'Kayıt yok') + '. Bu tarih muhasebe döküm tarihi değildir.</p><p>Program sürümü v' + BUILD.version + ' (' + BUILD.date + '). Kaynakla eşleşme, muhasebe dökümünün bugüne ait olduğu anlamına gelmez.</p><button class="btn sm" data-a="yenile">Kaynakları yeniden kontrol et</button></div></details>';
     if (tufeGecikti()) { const s = sonTufeAyi(); h += '<div class="banner noprint">' + svg(IC.clock, 18, 2) + '<div><b>TÜFE güncellemesi bekleniyor.</b> Elde en son ' + (s ? AY[s[1] - 1] + ' ' + s[0] : '—') + ' verisi var. Otomatik güncelleme günde bir kez TÜİK’ten denenir' + (S.oran.tufe.durum ? ' (' + esc(S.oran.tufe.durum) + ')' : '') + '. Kira hesapları bu aya kadar doğrudur.</div></div>'; }
     if (S.esl.uyarilar.length) h += '<div class="banner">' + svg(IC.check, 18, 2) + '<div><b>Muhasebe eşleştirme uyarısı:</b> ' + S.esl.uyarilar.map(esc).join(' · ') + '</div></div>';
     return h;
@@ -700,7 +702,7 @@
       kv('Güvence', p.guv == null ? 'Sözleşmede yok' : E.pct(p.guv, 0) + ' · ' + tl(r2(yk * p.guv))) + kv('Depozito', p.dep == null ? 'Sözleşmede yok' : E.pct(p.dep, 0) + ' · ' + tl(r2(yk * p.dep))) +
       kv('Ağaçlandırma (Md. 33, %5)', yk != null ? tl(r2(yk * .05)) : '—') + kv('KDV (%20)', yk != null ? tl(r2((yk + r2(yk * .05)) * .2)) : '—') + kv('Devirde kira (Md. 35/3, +%30)', yk != null ? tl(r2(yk * 1.3)) : '—') +
       '<h3>Kira kontrolü</h3>' + kv('Karşılaştırılan dönem başı', fd(kk.bas)) + kv('Uygulanan TÜFE', kk.tufe != null ? E.pct(kk.tufe) + (kk.tufeAy ? ' (' + AY[kk.tufeAy[1] - 1] + ' ' + kk.tufeAy[0] + ')' : '') : (kk.donem === 1 ? 'İlk dönem (ihale bedeli)' : '—')) +
-      kv('Tebliğe göre dönem kirası', tl(kk.hesap)) + kv('Muhasebedeki yıllık kira', tl(kk.muh)) +
+      kv('Sözleşme zinciriyle hesaplanan kira', tl(kk.hesap)) + kv('Muhasebedeki yıllık kira', tl(kk.muh)) +
       '<div class="verd"><span>Sonuç</span><span class="badge ' + (kk.durum === 'Uyumlu' ? 'b-ok' : kk.durum === 'Fark var' ? 'b-no' : 'b-gray') + '">' + kk.durum + (kk.fark && kk.durum === 'Fark var' ? ' · ' + tl(kk.fark) : '') + '</span></div>' +
       (p.kz_not ? '<div class="quote">' + esc(p.kz_not) + '</div>' : '') + '</section>';
     const d = (S.veri.denetim || []).find((x) => x.park === p.kisa);
@@ -938,7 +940,7 @@
         '<p style="font-size:13px;margin:10px 0 0;line-height:1.45;color:var(--ink2)">' + esc(r.durum) + '.</p><p class="muted" style="font-size:12.5px;margin:6px 0 0;line-height:1.45">' + esc(pl.aciklama) + (pl.belgeler ? ' Belgeler: ' + esc(pl.belgeler) : '') + '</p></div>'; }).join('');
     S.csv = { name: 'denetim', head: ['Park', 'Dönem', 'Tarih'].concat(C).concat(['Genel kanaat']), rows: D.map((d) => [d.park, d.donem, fd(d.tarih)].concat(C.map((k) => d[k])).concat([d['Genel kanaat']])) };
     const tk = (S.veri.takip || []).slice().sort((a, b) => ((b.tarih || '') > (a.tarih || '') ? 1 : -1));
-    return '<div class="pagehead"><div><h1>Denetim ve planlar</h1><p>' + (son ? E.year(son) + ' yılı ' + (D[0] ? esc(D[0].donem.split(' (')[0].split('/ ')[1] || '') : '') + ' Ek-10 denetim raporları ' + fd(son) + '’da imzalandı. ' : '') + 'Komisyon yılda iki kez denetler (Md. 42/3); temizlik ve bakım her ay denetlenir (Md. 42/7).</p></div></div>' +
+    return '<div class="pagehead"><div><h1>Denetim ve planlar</h1><p>' + (son ? E.year(son) + ' yılı ' + (D[0] ? esc(D[0].donem.split(' (')[0].split('/ ')[1] || '') : '') + ' Ek-10 denetim raporları ' + fd(son) + '’da imzalandı. ' : '') + 'Komisyon yılda iki kez denetler (Md. 42/3); temizlik ve bakım her ay denetlenir (Md. 42/7).</p></div></div>' + denRaporPanel() +
       '<section class="sumrow">' + sm.map((s) => '<div class="sm"><b class="n" style="color:' + s[2] + '">' + s[0] + '</b><span>' + s[1] + '</span></div>').join('') + '</section>' +
       '<section class="card"><div class="ch"><h2>' + (D[0] ? esc(D[0].donem.split(' (')[0]) : 'Denetim') + ' sonuçları</h2><span class="muted" style="font-size:13px">Kaynak: imzalı Ek-10 raporları</span></div><div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Park</th>' +
       ['Ödeme planı', 'Onaylı plan', 'Tesis bakımı', 'Saha temizliği', 'Şartname ve sözleşme'].map((h) => '<th style="text-align:center">' + h + '</th>').join('') + '<th>Komisyonun kanaati</th><th class="noprint"></th></tr></thead><tbody>' +
@@ -1065,7 +1067,7 @@
     const o = S.ozBy[p.kisa], kk = o.kk;
     const dolu = [['Orman parkı', p.ad], ['Şeflik', p.seflik + ' İşletme Şefliği'], ['İşletme müdürlüğü', (S.veri.kurum || {}).isletme], ['İşletmeci', p.isletmeci], ['Vergi / T.C. no', p.vkn], ['Alan', p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : null],
       ['İhale usulü / tarihi', (p.sekil || '—') + ' · ' + fd(p.ihale_t)], ['İhale bedeli', p.ihale_b != null ? tl(p.ihale_b) + ' ₺' : null], ['Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : null], ['Saha teslimi', fd(p.teslim)],
-      ['Bu yılki kira (Tebliğe göre)', kk.hesap != null ? tl(kk.hesap) + ' ₺' : null], ['Kesin teminat (%6)', p.ihale_b != null ? tl(r2(p.ihale_b * .06)) + ' ₺' : null], ['Kayıtlı kesin teminat', p.kesin != null ? tl(p.kesin) + ' ₺' : null], ['Gelişim ve yönetim planı', p.plan]];
+      ['Bu yılki kira (sözleşme zinciri)', kk.hesap != null ? tl(kk.hesap) + ' ₺' : null], ['Kesin teminat (%6)', p.ihale_b != null ? tl(r2(p.ihale_b * .06)) + ' ₺' : null], ['Kayıtlı kesin teminat', p.kesin != null ? tl(p.kesin) + ' ₺' : null], ['Gelişim ve yönetim planı', p.plan]];
     modal(f.e + ' · ' + f.ad, '<div class="kv"><span>Kim, ne zaman</span><span>' + esc(f.kim) + '</span></div><div class="kv"><span>Süre ve gönderim</span><span>' + esc(f.sure) + '</span></div><div class="kv"><span>Dayanak</span><span>' + esc(f.md) + '</span></div>' +
       (f.pv ? '<div class="quote"><b>' + esc(p.kisa) + ':</b> ' + esc(f.pv) + '</div>' : '') + '<h3 style="margin:8px 0 0;font-size:15.5px">Forma yazılacak değerler</h3>' +
       dolu.filter((d) => d[1]).map((d) => '<div class="kv"><span>' + d[0] + '</span><span>' + esc(d[1]) + '</span></div>').join('') +
@@ -1313,7 +1315,7 @@
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
     if (q.has('p')) { const k = q.get('p'); S.hP = S.pBy[k] ? k : ''; if (S.hP) S.park = S.hP; S.hT = q.get('t') || null; }
     else if (S.hP === undefined) S.hP = S.park || '';
-    if (!S.hF) S.hF = { q: '', tur: '', d: { M: 1, P: 1, O: 1, V: 1, S: 1, K: 1, Y: 1, A: 1, B: 1 }, arsiv: 0, alt: 1, kapali: {}, pk: {}, acik: window.innerWidth >= 900 };
+    if (!S.hF) S.hF = { q: '', tur: '', d: { M: 1, P: 1, O: 1, V: 1, S: 1, K: 1, Y: 1, A: 1, B: 1 }, arsiv: 0, alt: 1, kapali: {}, pk: {}, acik: false };
     const F = S.hF;
     return '<div class="pagehead"><div><h1>Harita ve Tesis Envanteri</h1><p>Orman parkı sınırları, Gelişim ve Yönetim Planı / vaziyet planı tesisleri ve tesis envanteri. Parkı seçin; tesise dokununca bilgi kutusu açılır.</p></div></div>' +
       '<div id="hwrap" class="hwrap"><div class="htool">' +
@@ -1383,7 +1385,7 @@
     if (!Array.isArray(j.eksik) || j.eksik.length > 100) throw Error('Eksik listesi geçersiz.');
     out.eksik=j.eksik.map((x)=>({konu:metin(x.konu,1000),gerekli:metin(x.gerekli,2000)}));
     if (j.tesis_cetveli && (!Array.isArray(j.tesis_cetveli)||j.tesis_cetveli.length>500)) throw Error('Tesis cetveli geçersiz.');
-    out.tesis_cetveli=(j.tesis_cetveli||[]).map((f)=>{ if (!['Çizimde mevcut','Planlanan','İşlevi değiştirilen'].includes(f.durum)) throw Error('Plandaki tesis durumu gerekli.'); for(const k of ['adet','alan_m2','hmax_m']) if(f[k]!=null && (!Number.isFinite(f[k])||f[k]<=0)) throw Error('Tesis ölçüsü pozitif sayı olmalı.'); const b=Number(f.belge);if(!Number.isInteger(b)||b<0||b>=out.belgeler.length)throw Error('Tesisin kaynak belgesi bulunamadı.');return {ad:metin(f.ad,500),kod:metin(f.kod||'',500),durum:f.durum,adet:f.adet??null,alan_m2:f.alan_m2??null,hmax_m:f.hmax_m??null,sayfa:metin(f.sayfa,150),belge:b,not:metin(f.not||'',2000),konum:'Teyit gerekli',saha:'Teyit gerekli'}; });
+    out.tesis_cetveli=(j.tesis_cetveli||[]).map((f)=>{ if (!['Çizimde mevcut','Planlanan','İşlevi değiştirilen','Belirtilmemiş'].includes(f.durum)) throw Error('Plandaki tesis durumu gerekli.'); for(const k of ['adet','alan_m2','hmax_m']) if(f[k]!=null && (!Number.isFinite(f[k])||f[k]<=0)) throw Error('Tesis ölçüsü pozitif sayı olmalı.'); const b=Number(f.belge);if(!Number.isInteger(b)||b<0||b>=out.belgeler.length)throw Error('Tesisin kaynak belgesi bulunamadı.');return {ad:metin(f.ad,500),kod:metin(f.kod||'',500),durum:f.durum,adet:f.adet??null,alan_m2:f.alan_m2??null,hmax_m:f.hmax_m??null,sayfa:metin(f.sayfa,150),belge:b,not:metin(f.not||'',2000),konum:'Teyit gerekli',saha:'Teyit gerekli'}; });
     return out;
   }
   function kaynakPanel(p) {
@@ -1400,6 +1402,54 @@
     $('#krJson').oninput=()=>{next=null;$('#krApply').disabled=true;};
     $('#krCheck').onclick=()=>{try{next=incelemeDogrula(JSON.parse($('#krJson').value),p.kisa);$('#krPreview').textContent=next.belgeler.length+' belge · '+next.tesis_cetveli.length+' cetvel satırı · '+next.eksik.length+' teyit konusu. Güven: İncelemede. Haritaya koordinat eklenmeyecek.';$('#krApply').disabled=false;}catch(e){next=null;$('#krApply').disabled=true;$('#krPreview').textContent=e.message;}};
     $('#krApply').onclick=()=>{if(!next||!yetki('duzenle')||p.kisa!==S.park)return;const h=p.harita=p.harita||{};if(h.belge_incelemesi){h.inceleme_gecmisi=h.inceleme_gecmisi||[];h.inceleme_gecmisi.push(JSON.parse(JSON.stringify(h.belge_incelemesi)));}h.belge_incelemesi=next;h.belge_incelemesi.kayit_tarihi=new Date().toISOString();h.belge_incelemesi.kaydeden=S.kim||'Yetkili';modalKapat();degisti(p.kisa+' kaynak belge incelemesi eklendi',p.kisa);};
+  };
+  // Belge incelemesi aktarımı yalnız dayanakları günceller; mali hareket ve geometriye dokunmaz.
+  function driveKaydiHazirla(j) {
+    if (!j || j.v !== 1 || !/^[a-zA-Z0-9_.-]{1,100}$/.test(j.id || '')) throw Error('Geçerli aktarım kimliği gerekli.');
+    if ((S.veri.meta.drive_aktarimlari || []).includes(j.id)) throw Error('Bu inceleme daha önce aktarıldı. Yeni kayıt oluşturulmadı.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(j.tarih || '') || !Number.isFinite(Date.parse(j.tarih)) || new Date(j.tarih).toISOString().slice(0,10) !== j.tarih || j.tarih > bugun()) throw Error('Geçerli kaynak kontrol tarihi gerekli.');
+    if (!Array.isArray(j.kaynaklar) || !j.kaynaklar.length || j.kaynaklar.length > 100) throw Error('Kaynak dosyaları gerekli.');
+    const known = new Set([...(S.veri.meta.muhasebe_aktarim?.dosyalar || []), ...(S.veri.meta.dokumler || []).flatMap(d => d.dosyalar || [])].map(f => f.sha256).filter(Boolean));
+    const clean = (s, n) => { if (typeof s !== 'string' || !s.trim() || s.length > n) throw Error('Kaynak açıklaması eksik veya çok uzun.'); return s.trim(); };
+    const sources = j.kaynaklar.map(f => {
+      if (!/^[a-f0-9]{64}$/.test(f.sha256 || '') || !['muhasebe','harita'].includes(f.tur)) throw Error('Dosya özeti ve kaynak türü gerekli.');
+      const url = OPGeo.safeURL(f.url); if (!url || !url.startsWith('https:') || new URL(url).username || new URL(url).password) throw Error('Geçerli HTTPS kaynak bağlantısı gerekli.');
+      if (f.tur === 'muhasebe' && !known.has(f.sha256)) throw Error('Muhasebe dosyası mevcut aktarım kaynağıyla eşleşmiyor. Yeni döküm muhasebe yükleme akışında incelenmeli.');
+      return {ad:clean(f.ad,500),url,sha256:f.sha256,tur:f.tur,sonuc:clean(f.sonuc,2000)};
+    });
+    if (!Array.isArray(j.incelemeler) || j.incelemeler.length > S.veri.parks.length) throw Error('Park incelemeleri geçersiz.');
+    const seen = new Set(), changes = [], skipped = [];
+    for (const item of j.incelemeler) {
+      if (!S.pBy[item.park] || seen.has(item.park)) throw Error('Park bulunamadı veya aynı park iki kez yazıldı.');
+      seen.add(item.park); const review = incelemeDogrula(item,item.park);
+      if (review.tarih > j.tarih) throw Error('Park incelemesi kaynak kontrolünden sonraki tarihli olamaz.');
+      const old = belgeIncelemesi(S.pBy[item.park]);
+      if (old?.tarih > review.tarih) { skipped.push(item.park); continue; }
+      changes.push({park:item.park,review});
+    }
+    return {id:j.id,tarih:j.tarih,kaynaklar:sources,changes,skipped};
+  }
+  function drivePanel() {
+    const d=S.veri.meta.drive_kontrol;
+    return '<section class="card"><div class="ch"><h2>Drive kaynak kontrolü</h2><span class="badge b-amb">' + (d ? fd(d.tarih) : 'Kayıt yok') + '</span>' + (yetki('yonetim') ? '<button class="btn sm" data-a="driveIncele">İnceleme aktar</button>' : '') + '</div><div class="card-body"><p class="hnote">Bu kayıt incelenen dosyaları kapsar. Kaynak kontrol tarihi, son muhasebe yevmiyesi ve planın onay tarihi ayrı tutulur. Özel Drive arşivi için sürekli bağlantı henüz bağlı değildir.</p>' +
+      (d ? '<details><summary>'+(d.kaynaklar||[]).length+' kaynak dosyası ve karşılaştırma sonucu</summary>'+(d.kaynaklar||[]).map(f=>'<p class="hnote"><a target="_blank" rel="noopener" href="'+esc(OPGeo.safeURL(f.url))+'">'+esc(f.ad)+'</a><br>'+esc(f.sonuc)+'<br><small>SHA-256: '+esc(f.sha256)+'</small></p>').join('')+'</details>' : '') + '</div></section>';
+  }
+  AKSIYON.driveIncele=()=>{
+    if(!yetki('yonetim'))return; let next=null;
+    modal('Drive kaynak incelemesini aktar','<p>İncelenen dosyaların özetleri mevcut muhasebe kaynaklarıyla karşılaştırılır. Önceki park incelemesi arşivlenir; daha yeni incelemeler korunur. Mali hareketler, vadeler, sözleşmeler ve harita geometrileri değişmez.</p><label for="drJson">Kaynak inceleme paketi (JSON)</label><textarea id="drJson" class="fld" rows="8" spellcheck="false"></textarea><p id="drPreview" role="status"></p>','<button class="btn" id="drCheck">Farkları kontrol et</button><button class="btn pri" id="drApply" disabled>İncelemeleri aktar</button>');
+    $('#drJson').oninput=()=>{next=null;$('#drApply').disabled=true;$('#drPreview').textContent='';};
+    $('#drCheck').onclick=()=>{try{next=driveKaydiHazirla(JSON.parse($('#drJson').value));$('#drPreview').textContent=next.kaynaklar.length+' kaynak; '+next.changes.map(c=>c.park+': '+c.review.tesis_cetveli.length+' cetvel satırı').join(' · ')+(next.skipped.length?' · Daha yeni inceleme korundu: '+next.skipped.join(', '):'')+'. Muhasebe ve geometri değişikliği: 0.';$('#drApply').disabled=false;}catch(e){next=null;$('#drApply').disabled=true;$('#drPreview').textContent=e.message;}};
+    $('#drApply').onclick=()=>{
+      if(!next||!yetki('yonetim'))return;
+      try{
+        const current=driveKaydiHazirla(JSON.parse($('#drJson').value));if(JSON.stringify(current)!==JSON.stringify(next))throw Error('Kayıtlar değişti. Farkları tekrar kontrol edin.');
+        const stamp=new Date().toISOString();
+        for(const c of current.changes){const p=S.pBy[c.park],h=p.harita=p.harita||{};if(h.belge_incelemesi)(h.inceleme_gecmisi=h.inceleme_gecmisi||[]).push(JSON.parse(JSON.stringify(h.belge_incelemesi)));h.belge_incelemesi={...c.review,kayit_tarihi:stamp,kaydeden:S.kim||'Yetkili'};}
+        S.veri.meta.drive_kontrol={tarih:current.tarih,kaynaklar:current.kaynaklar,mali_degisim:false,not:'Yalnız listelenen kaynaklar kontrol edildi. Tarih muhasebe döküm tarihi değildir.'};
+        S.veri.meta.kaynak='Muhasebe: '+current.kaynaklar.filter(f=>f.tur==='muhasebe').map(f=>f.ad).join('; ')+'. Kaynak kontrolü '+current.tarih+'. Son yevmiye tarihleri Veri kapsamı bölümündedir. Park, plan ve denetim dayanakları ilgili kayıtlarda ayrıca belirtilir.';
+        S.veri.meta.drive_aktarimlari=[...(S.veri.meta.drive_aktarimlari||[]),current.id];modalKapat();degisti('Drive kaynak incelemesi aktarıldı ('+current.id+'); muhasebe ve geometri korunarak '+current.changes.length+' park incelemesi işlendi.');
+      }catch(e){next=null;$('#drApply').disabled=true;$('#drPreview').textContent=e.message;}
+    };
   };
   function hPlanPanel(p, g) {
     const pl = g.planlar || [], ky = g.kaynak || [];
@@ -1954,7 +2004,32 @@
       '<p style="margin:0 0 8px">TÜFE ve gecikme zammı oranları her gün resmî kaynaklardan otomatik denetlenir (TÜİK veri servisi, Resmî Gazete). Kayıtlar şifreli tutulur; yalnız erişim parolasını bilen açabilir, yalnız yönetici değiştirebilir.</p>' +
       '<p style="margin:0">Kaynak belgeler: ' + esc(S.veri.meta.kaynak) + '.</p></div></section>';
     S.csv = { name: 'tufe', head: ['Yıl'].concat(AY), rows: yrs.map((y) => [y].concat((T[y] || []).map((v) => (v == null ? '' : r2(v * 10000) / 100)))) };
-    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, kullanıcılar, işlem geçmişi ve program ayarları.</p></div></div>' + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + kulH + gecH + temaH;
+    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, kullanıcılar, işlem geçmişi ve program ayarları.</p></div></div>' + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + drivePanel() + kulH + erisimPanel() + gecH + temaH;
+  };
+
+  let erisimG;
+  function erisimGunlugu() {
+    if (!erisimG && window.OPAccess && crypto.subtle) erisimG=OPAccess.create({crypto,storage:localStorage,loadKey:async()=>{const r=await fetch('data/giris-public.json',{cache:'no-store'});if(!r.ok)throw Error('Giriş şifreleme anahtarı alınamadı.');return r.json();},userAgent:()=>navigator.userAgent});
+    return erisimG;
+  }
+  function erisimKaydet(who,method,event) {
+    try { const g=erisimGunlugu();if(g)g.append({who,method,event:event||'giriş'}).catch(()=>{S.accessLogError=true;}); } catch(_){S.accessLogError=true;}
+  }
+  function erisimPanel() {
+    if (!yetki('yonetim')) return '';
+    return '<section class="card admin-access"><div class="ch"><h2>Giriş geçmişi</h2><span class="badge b-amb">Bu cihaz</span><button class="btn sm" data-a="girisGecmisi">Şifreli kayıtları aç</button></div><p class="hnote">Bu tarayıcıda bu sürümden sonra gerçekleşen giriş ve çıkışlar yönetici anahtarıyla şifrelenir. Kişisel hesapta hesap adı; ortak erişimde yalnız “Ortak görüntüleme erişimi” yazılır. IP veya yaklaşık şehir toplanmaz. Bütün cihazları kapsayan merkezî kayıt hizmeti henüz bağlı değildir.</p>'+(S.accessLogError?'<p class="hnote red-t">Son erişim olayı bu cihazda kaydedilemedi; tarayıcı depolamasını kontrol edin.</p>':'')+'</section>';
+  }
+  AKSIYON.girisGecmisi=async()=>{
+    if(!yetki('yonetim')){toast('Bu kayıtlar yalnız yönetici tarafından açılabilir.',true);return;}
+    const pw=S.yPw||await parolaSor('Giriş geçmişi','Şifreli erişim kayıtlarını açmak için yönetici parolanızı girin.');if(!pw||!yetki('yonetim'))return;
+    try{
+      const text=await yoneticiDosya();if(!text)throw Error('Yönetici kaydı alınamadı.');
+      let k;try{k=await K.coz(text,pw);}catch(_){throw Error('Yönetici parolası doğrulanamadı.');}
+      if(!k.giris?.privateKey)throw Error('Bu yönetici kaydında giriş günlüğü anahtarı yok.');
+      const g=erisimGunlugu();if(!g)throw Error('Bu tarayıcı güvenli kayıt açmayı desteklemiyor.');const out=await g.read(k.giris.privateKey);
+      if(!yetki('yonetim'))return;
+      modal('Giriş geçmişi · yalnız bu cihaz','<p class="muted">Kapsam: bu tarayıcıda tutulan son 200 şifreli olay. Saat cihazdan gelir ve İstanbul saatiyle gösterilir. Başka cihazların girişleri, başarısız giriş denemeleri ve IP/şehir bilgisi bu listede bulunmaz.</p><div class="scroll"><table><thead><tr><th>Zaman</th><th>Hesap</th><th>Erişim</th><th>Olay</th><th>Cihaz / tarayıcı</th></tr></thead><tbody>'+out.rows.map(x=>'<tr>'+td(esc(new Date(x.at).toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'})))+td(esc(x.who))+td(esc(x.method))+td(esc(x.event))+td(esc(x.device))+'</tr>').join('')+'</tbody></table></div>'+(!out.rows.length?'<p class="muted">Bu anahtarla açılan erişim olayı bulunmuyor.</p>':'')+(out.unavailable?'<p class="amb-t">'+out.unavailable+' olay farklı anahtarla şifrelenmiş veya okunamıyor; içerikleri tahmin edilmedi.</p>':''));
+    }catch(e){toast(e.message,true);}
   };
 
   // =============== YÖNETİCİ İŞLEMLERİ (formlar) ===============
@@ -2001,7 +2076,7 @@
         const ok = await yetkiKontrol(true);
         if (!active()) { Object.assign(S, prior); rolSinif(); return; }
         S.rol = TUM_ROL; S.kullanici = null; S.dirKey = o.dirKey || null;
-        oturumAc(o.token, o.kim, keep.checked); S.yPw = pw;
+        oturumAc(o.token, o.kim, keep.checked); S.yPw = pw; erisimKaydet(o.kim||'Yönetici','Yönetici');
         if (!S.dirty) S.sha = await veriSHA(S.enc);
         modalKapat(); kabukDurum(); sayfaCiz();
         toast(ok ? 'Yönetici oturumu ve kayıt bağlantısı açıldı.' : 'Yönetici oturumu açıldı. Sunucuya kayıt için yazma anahtarını yenileyin.', !ok);
@@ -2127,7 +2202,7 @@
         const yaz = Object.keys(ROL).some((r) => S.rol[r]);
         S.token = yaz ? d.token : null; S.owner = false;
         const keep = $('#kgKeep').checked; if (keep) ls.set('op_pw', d.pw);
-        oturumAc(S.token, d.ad, keep);
+        oturumAc(S.token, d.ad, keep); erisimKaydet(d.ad,'Kişisel hesap');
         if (S.token) { const ok = await yetkiKontrol(true); if (!ok) toast('Hesabınızdaki GitHub anahtarı geçersiz; yöneticiden kayıtları yenilemesini isteyin. Şimdilik görüntüleme modundasınız.', true); }
         rolSinif();
         if (gate) await acildi(); else { modalKapat(); if (!S.dirty) S.sha = await veriSHA(S.enc); kabukDurum(); sayfaCiz(); }
@@ -2455,7 +2530,7 @@
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn pri" id="ypOk">Değiştir</button>');
     $('#ypOk').onclick = async () => { const a = $('#yp1').value, b = $('#yp2').value;
       if (a.length < 8 || a !== b) { toast('Parolalar aynı ve en az 8 karakter olmalı.', true); return; } if (a === S.pw) { toast('Erişim parolasıyla aynı olamaz.', true); return; }
-      try { await dosyaYaz(CFG.yonetici, await K.sifrele({ token: S.token, kim: S.kim, t: new Date().toISOString() }, a), 'Yönetici parolası değiştirildi (' + S.kim + ')'); S.yPw = a; modalKapat(); toast('Yönetici parolası değiştirildi.'); }
+      try { const oldPw=S.yPw||await parolaSor('Mevcut yönetici parolası','Kullanıcı dizini ve giriş günlüğü anahtarlarını korumak için mevcut parolayı doğrulayın.');if(!oldPw)return;const prior=await K.coz(await yoneticiDosya(),oldPw);const next=Object.assign({},prior,{ token:S.token, kim:S.kim, t:new Date().toISOString() });await dosyaYaz(CFG.yonetici,await K.sifrele(next,a),'Yönetici parolası değiştirildi ('+S.kim+')');S.yPw=a;modalKapat();toast('Yönetici parolası değiştirildi; kullanıcı ve giriş günlüğü anahtarları korundu.'); }
       catch (e) { toast('Değiştirilemedi: ' + e.message, true); } };
   };
   AKSIYON.anahtarYenile = () => kurulum('yenile');
@@ -2527,6 +2602,7 @@
   };
   // =============== EK FORMLARI, TAHAKKUK, TEBLİĞ ===============
   async function ekPaket() {
+    if (!S.kaynakKontrol && S.pw) { try { S.kaynakKontrol = await K.coz(await veriGetir(S.dataRef, 'data/kaynak-kontrol.enc'), S.pw); } catch(e) { /* Ek-10, yardımcı kaynak kaydı olmadan da açılır. */ } }
     if (S.ekB) return S.ekB;
     const enc = await veriGetir(S.dataRef, CFG.ekler);
     S.ekB = await K.coz(enc, S.pw);
@@ -2536,22 +2612,93 @@
     'Ek-5': 'Uygulama Projesi Onay Sayfası', 'Ek-6': 'Sınır Değişikliği Teklif Raporu', 'Ek-7': 'Statü Değişikliği Teklif Raporu', 'Ek-8': 'İptal Teklif Raporu',
     'Ek-9': 'Saha Teslim Tesellüm Tutanağı', 'Ek-10': 'Denetim Raporu', 'Ek-11': 'Tip Şartname', 'Ek-12': 'Teklif Mektubu', 'Ek-13': 'İş Ortaklığı Beyannamesi',
     'Ek-14': 'Geçici Teminat Mektubu', 'Ek-15': 'Kesin Teminat Mektubu', 'Ek-16': 'İhale İlanı Örneği', 'Ek-17': 'Tip Sözleşme', 'Ek-18': 'Devir Taahhütnamesi', 'R10': 'İmzalı Ek-10 Denetim Raporu' };
-  function odemeMetni(p) {
-    const y = E.year(S.rapor);
+  function odemeMetni(p, rapor) {
+    const y = E.year(rapor || S.rapor);
     const it = S.esl.items.filter((x) => x.park === p.kisa && x.grup === y + ' tahakkuku' && x.tur === 'Kira').sort((a, b) => ((a.duz || a.vade) < (b.duz || b.vade) ? -1 : 1));
     const L = it.length ? it.map((x) => ({ v: x.duz || x.vade, t: x.tutar })) : (((S.plan[y] || {})[p.kisa] || {}).vadeler || []).map((x) => ({ v: x.vade, t: x.kira }));
     if (!L.length) return '';
     const sek = L.length === 4 ? 'Üçer aylık dört eşit taksit (Tebliğ Md. 32/3)' : L.length === 1 ? 'Tek seferde peşin' : L.length + ' taksit';
     return 'Ödeme şekli: ' + sek + '\n' + L.map((x, i) => (L.length > 1 ? (i + 1) + '. Taksit: ' : 'Vade: ') + fd(x.v) + ' – ' + tl(x.t) + ' ₺').join('\n');
   }
+  // Her saha raporu ayrı bir kayıt ve mali veri anlık görüntüsüdür; imzalı arşive yazmaz.
+  function denAktif() {
+    return S.form?.ek === 'Ek-10' ? (S.veri.denetim_raporlari || []).find((d) => d.id === S.form.denId && d.park === S.park) || null : null;
+  }
+  function denRaporPanel() {
+    const d = denAktif(), rows = (S.veri.denetim_raporlari || []).filter((r) => r.park === S.park).slice().reverse();
+    return '<section class="card den-report noprint"><div class="ch"><h2>' + (d ? esc(d.yil + ' / ' + d.donem + '. dönem · ' + fd(d.tarih)) : 'Saha denetim raporları') + '</h2><button class="btn pri duz-only" data-a="denYeni">Yeni saha raporu</button>' + (d ? '<button class="btn duz-only" data-a="denKaydet">Kaydet ve senkronize et</button>' : '') + '</div>' +
+      '<div class="den-report-body"><p>' + (d ? 'Taslak · İmzalı belge değildir. Park ve mali bilgiler rapor açıldığı andaki kayıttan alınmıştır. Saha bulguları denetimde doldurulur; PDF / Excel çıktısı ayrıca imzalanır.' : 'Önce parkı seçin, ardından tarih ve dönemle yeni rapor açın. Önceki imzalı raporlar korunur.') + '</p>' +
+      (d ? '<p class="hnote">Mali kaynak: ' + esc(d.mali.kaynak) + ' · 120 son yevmiye ' + fd(d.mali.son120) + ' · 127 son yevmiye ' + fd(d.mali.son127) + '. ' + esc(d.mali.uyari) + '</p><button class="btn sm duz-only" data-a="denMali">Park ve mali bilgileri güncel kayıttan al</button> ' : '') +
+      (S.kaynakKontrol?.denetim ? '<a class="btn sm" target="_blank" rel="noopener" href="' + esc(S.kaynakKontrol.denetim) + '">Drive denetim belgeleri</a>' : '') +
+      '<p id="denLocalStatus" role="status">' + esc(S.denYerelDurum || 'Sunucuda saklamak için Kaydet ve senkronize et düğmesini kullanın.') + '</p>' + (ls.get('op_den_taslak') ? '<button class="btn sm duz-only" data-a="denYerelKurtar">Bu cihazdaki taslakları kurtar</button>' : '') +
+      '<details><summary>Bu parkın saha raporları (' + rows.length + ')</summary>' + (rows.length ? rows.map((r) => '<div class="kv"><span>' + esc(r.yil + ' / ' + r.donem + '. dönem') + ' · ' + fd(r.tarih) + ' · Taslak</span><button class="btn sm" data-a="denAc" data-id="' + esc(r.id) + '">Aç</button></div>').join('') : '<p>Henüz yeni saha raporu kaydedilmedi.</p>') + '</details></div></section>';
+  }
+  function denMaliHazirla(p, tarih) {
+    const y = E.year(tarih), pl = planAl(y)[p.kisa], ds = E.dokumSon(S.veri);
+    const hesap = pl?.kira, kayit = pl?.muhasebede ? pl.muhKira : null;
+    return { tarih: new Date().toISOString(), son120: ds['120'] || null, son127: ds['127'] || null, kira: kayit, hesap,
+      kaynak: kayit != null ? y + ' yılı muhasebe tahakkuku' : 'Yıllık kira tahakkuku bu dökümde doğrulanamadı',
+      uyari: (pl?.kod === 'fark' ? 'Hesaplanan kira ile muhasebe farklı; fark otomatik borç değildir. ' : '') + (kayit == null ? 'Hesap tutarı kesin muhasebe tahakkuku yerine yazılmadı. ' : '') + 'Döküm sonrasındaki ödeme ve tahakkuklar muhasebeden teyit edilir.' };
+  }
+  function denKaynakNotu(d) {
+    return 'Saha raporu taslağı · '+d.park+' · '+fd(d.tarih)+' · '+d.yil+'/'+d.donem+'. dönem. Mali kaynak: '+d.mali.kaynak+'; 120 son yevmiye '+fd(d.mali.son120)+', 127 son yevmiye '+fd(d.mali.son127)+'. '+d.mali.uyari+' Rapor kimliği: '+d.id+'. Bu çıktı elektronik imza veya imzalı rapor onayı içermez.';
+  }
+  AKSIYON.denYeni = async () => {
+    if (!yetki('duzenle')) return yoneticiGiris();
+    try { await ekPaket(); } catch (e) { toast('Ek-10 şablonu açılamadı: ' + e.message, true); return; }
+    const p = S.pBy[S.park]; if (!p) return;
+    modal('Yeni saha denetimi · ' + p.kisa, '<p>Önceki rapora dokunulmadan ayrı bir taslak açılır. Önceki dönem saha bulguları yeni rapora otomatik aktarılmaz.</p>' + fi('denTarih','Denetim tarihi',S.rapor,'date') + fi('denDonem','Dönem',+S.rapor.slice(5,7) <= 6 ? '1. dönem (Ocak–Haziran)' : '2. dönem (Temmuz–Aralık)',null,['1. dönem (Ocak–Haziran)','2. dönem (Temmuz–Aralık)']) + '<p id="denError" class="red-t" role="alert"></p>', '<button class="btn pri" id="denOlustur">Raporu aç</button>');
+    $('#denOlustur').onclick = () => {
+      const tarih = gv('denTarih'), donem = +gv('denDonem').slice(0,1), date = new Date(tarih + 'T12:00:00Z');
+      if (!/^\d{4}-\d\d-\d\d$/.test(tarih) || isNaN(+date) || date.toISOString().slice(0,10) !== tarih || ((+tarih.slice(5,7) <= 6 ? 1 : 2) !== donem)) { $('#denError').textContent = 'Geçerli tarih girin; dönem denetim tarihiyle aynı olmalıdır.'; return; }
+      const d = { id: crypto.randomUUID(), park: p.kisa, yil: E.year(tarih), donem, tarih, olusturan: S.kim || 'Yönetici', olusturuldu: new Date().toISOString(), hucreler: {}, degerler: {}, mali: denMaliHazirla(p,tarih) };
+      (S.veri.denetim_raporlari = S.veri.denetim_raporlari || []).push(d);
+      S.form = { ek:'Ek-10',denId:d.id,duzenle:true }; denAnlikAl(d,true); denYerelKaydet(); modalKapat(); S.page='form'; location.hash='#/form'; degisti('Yeni saha denetim taslağı açıldı: ' + d.yil + '/' + d.donem,p.kisa);
+    };
+  };
+  function denAnlikAl(d, yeni) {
+    const p = S.pBy[d.park], m = S.ekB.sheets['Ek-10'], F = EK.alanlar(ekCtx(p));
+    const V = EK.degerler('Ek-10',m,F,{},d.tarih); d.mali = denMaliHazirla(p,d.tarih);
+    // Eski rapordaki plan ve saha tespitlerini yeni gözlem gibi sunma.
+    m.cells.filter((c) => c.slot && EK.slotAlan('Ek-10',EK.adres(m,c),c.lab)?.startsWith('r10:')).forEach((c) => { V[EK.adres(m,c)] = {v:'',k:'ipucu',slot:1,ipucu:'Güncel belge / saha tespitiyle doldurun'}; });
+    V.A7 = {v:d.yil + ' YILI ' + d.donem + '. DÖNEM DENETİM RAPORU',k:'oto'};
+    V.D17 = d.mali.kira != null ? {v:tl(d.mali.kira)+' ₺',k:'oto',slot:1} : {v:'Muhasebe tahakkuku teyit gerekli',k:'oto',slot:1};
+    if (d.mali.kira == null) V.D18={v:'Muhasebe vade ve taksit kaydı teyit gerekli',k:'oto',slot:1};
+    for (const a of ['A42','B42','D42','E42','D48']) V[a] = {v:fd(d.tarih),k:'oto'};
+    if (yeni) d.degerler = V;
+    else { for (const [a,v] of Object.entries(V)) if (v.k === 'oto') d.degerler[a] = v; }
+    d.guncellendi = new Date().toISOString();
+  }
+  AKSIYON.denAc = (t) => { const d=(S.veri.denetim_raporlari||[]).find((x)=>x.id===t.dataset.id); if(!d)return; S.park=d.park; S.form={ek:'Ek-10',denId:d.id,duzenle:false}; S.page='form'; location.hash='#/form?p='+encodeURIComponent(d.park); sayfaCiz(); };
+  AKSIYON.denMali = () => { const d=denAktif(); if(!d || !yetki('duzenle'))return; denAnlikAl(d,false); denYerelKaydet(); degisti('Saha raporunun park ve mali kaynak bilgileri yenilendi',d.park); };
+  AKSIYON.denKaydet = async () => { if (!denAktif() || !yetki('duzenle'))return; document.activeElement?.blur(); await denYerelKaydet(); await kaydet(); };
+  async function denYerelKaydet() {
+    if (!S.pw || !yetki('duzenle')) return false;
+    const n = S.denYerelN = (S.denYerelN || 0) + 1;
+    const snapshot = JSON.parse(JSON.stringify({v:1,raporlar:S.veri.denetim_raporlari || []}));
+    try {
+      const enc = await K.sifrele(snapshot,S.pw); if(n !== S.denYerelN)return false;
+      localStorage.setItem('op_den_taslak',enc);
+      S.denYerelDurum='Taslak bu cihazda şifreli saklandı. Sunucuya kayıt ayrıca Kaydet ve senkronize et ile yapılır.';
+      if ($('#denLocalStatus')) $('#denLocalStatus').textContent=S.denYerelDurum; return true;
+    } catch(e) { S.denYerelDurum='Bu cihazda taslak saklanamadı; sunucuya kaydedin veya Excel çıktısı alın.'; if($('#denLocalStatus'))$('#denLocalStatus').textContent=S.denYerelDurum; return false; }
+  }
+  AKSIYON.denYerelKurtar = async () => {
+    if(!yetki('duzenle') || !S.pw)return;
+    try { const j=await K.coz(ls.get('op_den_taslak'),S.pw); if(j.v!==1 || !Array.isArray(j.raporlar))throw Error('Taslak biçimi geçersiz');
+      const L=S.veri.denetim_raporlari=S.veri.denetim_raporlari||[]; let n=0;
+      for(const d of j.raporlar) { if(!d.id || !S.pBy[d.park] || !d.degerler || !d.mali)continue; const i=L.findIndex(x=>x.id===d.id); if(i<0){L.push(d);n++;}else if((d.guncellendi||d.olusturuldu)>(L[i].guncellendi||L[i].olusturuldu)){L[i]=d;n++;} }
+      if(n)degisti(n+' saha raporu bu cihazdaki şifreli taslaktan kurtarıldı'); else toast('Bu cihazda sunucudakinden yeni bir saha raporu yok.');
+    } catch(e) { toast('Şifreli saha taslağı açılamadı: '+e.message,true); }
+  };
   function ekCtx(p) {
-    const y = E.year(S.rapor);
+    const tarih = denAktif()?.tarih || S.rapor, y = E.year(tarih);
     const r10 = {};
     const m = S.ekB && S.ekB.rapor10[p.r10 || p.kisa];
     if (m) m.cells.forEach((c) => { if (c.slot && c.t) r10[EK.norm(c.lab)] = c.t; });
-    return { p, ku: S.veri.kurum || {}, plan: (S.plan[y] || {})[p.kisa] || {}, rapor: S.rapor, odemeDonem: odemeMetni(p), r10 };
+    return { p, ku: S.veri.kurum || {}, plan: planAl(y)[p.kisa] || {}, rapor: tarih, odemeDonem: odemeMetni(p, tarih), r10 };
   }
-  function elDeger(park, ek) { const e = S.veri.ekler || {}; return (e[park] && e[park][ek]) || {}; }
+  function elDeger(park, ek) { const d = denAktif(); if (ek === 'Ek-10' && d && d.park === park) return d.hucreler || {}; const e = S.veri.ekler || {}; return (e[park] && e[park][ek]) || {}; }
   AKSIYON.formAc = (t) => { S.form = { ek: t.dataset.e, duzenle: false }; S.fOnizle = false; if (t.dataset.k) S.park = t.dataset.k; if (location.hash === '#/form') sayfaCiz(); else location.hash = '#/form'; };
   AKSIYON.formBilgi = (t) => { formBilgi(t.dataset.e); };
   SAYFA.form = function () {
@@ -2560,16 +2707,16 @@
     const nm = f.ek === 'R10' ? 'Ek-10' : f.ek;
     const ekler = Object.keys(EKAD).filter((k) => k !== 'R10');
     return mpick() + '<div class="pagehead ftool"><div><h1>' + esc(r10 ? 'İmzalı Ek-10 · ' + p.kisa : f.ek + ' · ' + EKAD[f.ek]) + '</h1><p>' +
-      (r10 ? 'Komisyonun imzaladığı rapor, orijinal düzeniyle. Yönetici yeni dönem tespitlerini doğrudan hücrelere yazabilir.' :
+      (r10 ? 'Arşivdeki önceki rapor. Yeni saha bulgularını ayrı bir denetim raporuna kaydedin; bu raporun üzerine yazılmaz.' :
         'Orijinal şablon. Park, sözleşme, kurum ve hesap bilgileri kayıtlardan gelir; yetkili kullanıcı bu forma özel alanları uygulama içinde düzenleyebilir.') + '</p></div></div>' +
       '<div class="ftool frow2"><select id="fEk" class="fld" aria-label="Ek seç">' + ekler.map((k) => '<option value="' + k + '"' + (k === f.ek ? ' selected' : '') + '>' + k + ' · ' + EKAD[k] + '</option>').join('') +
       (S.ekB === null || (S.ekB && S.ekB.rapor10[p.r10 || p.kisa]) ? '<option value="R10"' + (r10 ? ' selected' : '') + '>İmzalı Ek-10 raporu (' + esc(p.kisa) + ')</option>' : '') + '</select>' +
       '<button class="btn pri" data-a="fYazdir">Yazdır / PDF</button>' + (docx ? '<button class="btn" data-a="fWord">Word indir</button>' : '<button class="btn" data-a="fExcel">Excel indir</button>') +
-      '<button class="btn duz-only" data-a="fDuzenle">' + (f.duzenle ? 'Önizlemeye dön' : 'Form üzerinde düzenle') + '</button><button class="btn duz-only" data-a="fSifirla">Elle girilenleri sil</button>' +
+      (r10 ? '<button class="btn duz-only" data-a="denYeni">Yeni saha raporu</button>' : '<button class="btn duz-only" data-a="fDuzenle">' + (f.duzenle ? 'Önizlemeye dön' : 'Form üzerinde düzenle') + '</button><button class="btn duz-only" data-a="fSifirla">Elle girilenleri sil</button>') +
       '<button class="btn own-only" data-a="parkDuzenle" data-k="' + esc(p.kisa) + '">Park bilgilerini düzenle</button>' +
       '<button class="btn" data-a="teblig" data-pg="' + (EKSAYFA[nm] || 1) + '">Tebliğdeki asıl form</button></div>' +
       '<div class="ftool eks-leg"><span><i class="lg-oto"></i>Kayıtlardan otomatik</span><span><i class="lg-el"></i>Elle girilen</span><span><i class="lg-ip"></i>Doldurulacak alan</span><span id="fEksik"></span></div>' +
-      '<div id="ekAlan" class="ekalan"><div class="empty"><span class="spin"></span> Şablon açılıyor…</div></div>';
+      (f.ek === 'Ek-10' ? denRaporPanel() : '') + '<div id="ekAlan" class="ekalan"><div class="empty"><span class="spin"></span> Şablon açılıyor…</div></div>';
   };
   AFTER.form = async () => {
     const sel = $('#fEk'); if (sel) sel.onchange = (e) => { S.form = { ek: e.target.value, duzenle: false }; S.fOnizle = false; sayfaCiz(); };
@@ -2580,10 +2727,13 @@
     if (['Ek-11', 'Ek-16', 'Ek-17'].includes(f.ek)) return wordGoster(f.ek, p);
     const m = f.ek === 'R10' ? S.ekB.rapor10[p.r10 || p.kisa] : S.ekB.sheets[f.ek];
     const F = EK.alanlar(ekCtx(p)), el = elDeger(p.kisa, f.ek);
-    const V = EK.degerler(f.ek === 'R10' ? 'R10' : f.ek, m, F, el, S.rapor);
-    S.fV = { m, V, F };
+    const dr = denAktif();
+    const V = dr ? Object.assign(JSON.parse(JSON.stringify(dr.degerler)), Object.fromEntries(Object.entries(el).map(([a,v]) => [a,{v,k:'el',slot:1}]))) : EK.degerler(f.ek === 'R10' ? 'R10' : f.ek, m, F, el, S.rapor);
+    S.fV = { m: dr ? Object.assign({},m,{kaynakNotu:denKaynakNotu(dr)}) : m, V, F };
     const kutu = $('#ekAlan');
     kutu.innerHTML = EK.ciz(f.ek, m, V, { duzenle: !!(f.duzenle && S.owner) });
+    if(dr)kutu.insertAdjacentHTML('beforeend','<aside class="den-source-print">'+esc(denKaynakNotu(dr))+'</aside>');
+    if (dr) ['D17','D18'].forEach((a) => { const c=kutu.querySelector('td[data-ad="'+a+'"]'); if(c) { c.removeAttribute('contenteditable'); c.removeAttribute('data-ad'); c.title='Muhasebe kaynağından alınır; mali bilgileri güncelle düğmesini kullanın.'; } });
     sigdir(kutu, m);
     const eks = EK.eksikler(m, V);
     $('#fEksik').innerHTML = eks.length ? '<b class="amb-t">' + eks.length + ' alan boş:</b> ' + esc(Array.from(new Set(eks.map((x) => x.lab))).slice(0, 8).join(', ')) + (eks.length > 8 ? '…' : '') : (m.dolu ? '' : '<b class="ok-t">Kayıtlardan gelen bütün alanlar dolu.</b>');
@@ -2608,7 +2758,7 @@
       '.ekalan .eks-kagit{zoom:' + z.toFixed(3) + ' !important;margin:' + (m.ortala ? '0 auto' : '0') + '}}';
   }
   function ekYaz(a, v) {
-    const f = S.form, p = S.park; S.veri.ekler = S.veri.ekler || {};
+    const f = S.form, p = S.park; const dr = denAktif(); if (f.ek === 'R10') return; if (dr && ['D17','D18'].includes(a)) return; if (dr) { dr.hucreler = dr.hucreler || {}; if (v == null) delete dr.hucreler[a]; else dr.hucreler[a] = v; dr.guncellendi = new Date().toISOString(); S.dirty++; kabukDurum(); denYerelKaydet(); return; } S.veri.ekler = S.veri.ekler || {};
     const E1 = S.veri.ekler[p] = S.veri.ekler[p] || {}; const D = E1[f.ek] = E1[f.ek] || {};
     if (v == null) delete D[a]; else D[a] = v;
     S.fW = null; S.fWek = null;
@@ -2629,8 +2779,8 @@
     if (yeni === Vo.v) { ekYaz(a, null); S.fV.V[a] = Vo; td.className = td.className.replace(/k-\w+/, 'k-' + Vo.k); return; }
     ekYaz(a, yeni); S.fV.V[a] = { v: yeni, k: 'el' }; td.className = td.className.replace(/k-\w+/, 'k-el');
   }
-  AKSIYON.fDuzenle = () => { if (!S.owner) return yoneticiGiris(); S.form.duzenle = !S.form.duzenle; sayfaCiz(); };
-  AKSIYON.fSifirla = () => { const el = elDeger(S.park, S.form.ek); const n = Object.keys(el).length; if (!n) { toast('Bu formda elle girilmiş değer yok.'); return; }
+  AKSIYON.fDuzenle = () => { if (!S.owner) return yoneticiGiris(); if (S.form.ek === 'R10') return; S.form.duzenle = !S.form.duzenle; sayfaCiz(); };
+  AKSIYON.fSifirla = () => { const dr = denAktif(); if (S.form.ek === 'R10') return; if (dr) { if (!confirm('Bu raporda elle girilen alanlar temizlensin mi?')) return; dr.hucreler = {}; dr.guncellendi=new Date().toISOString(); denYerelKaydet(); degisti('Saha raporunun elle girilen alanları temizlendi', dr.park); return; } const el = elDeger(S.park, S.form.ek); const n = Object.keys(el).length; if (!n) { toast('Bu formda elle girilmiş değer yok.'); return; }
     if (!confirm(n + ' elle girilmiş değer silinsin mi? Otomatik değerler yerine gelir.')) return; delete S.veri.ekler[S.park][S.form.ek]; degisti(S.form.ek + ' elle girilen değerleri silindi', S.park); };
   AKSIYON.fYazdir = async () => {
     if (['Ek-11', 'Ek-16', 'Ek-17'].includes(S.form.ek)) {

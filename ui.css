@@ -150,3 +150,26 @@
  .ekalan{background:#E8EDF2}.freshness-dot{background:var(--amb)}.freshness summary>small{position:static}
  @media(max-width:860px){.mbar{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line);box-shadow:none}.mbar .ib{background:var(--soft);color:var(--ink2)}.tabbar{background:var(--glass)}.main{background:var(--mist)}.freshness summary>small{position:static;margin-left:auto}.kpi strong{font-size:25px}}
 }
+@media screen{.den-report-body{padding:0 22px 18px;font-size:13px;line-height:1.6;color:var(--ink2)}.den-report-body>p{margin:0 0 12px}.den-report-body details{margin-top:14px}.den-report-body summary{cursor:pointer;font-weight:600}.den-report-body .kv{align-items:center}.den-report .ch{gap:10px}.den-report .ch h2{font-size:18px}@media(max-width:600px){.den-report-body{padding:0 15px 16px}.den-report .ch{padding:15px}.den-report .ch>.btn{flex:1;font-size:12px}.den-report .ch h2{flex-basis:100%}}}
+.den-source-print{margin:14px auto 0;padding:10px 12px;max-width:800px;font:12px/1.5 Barlow,system-ui,sans-serif;color:#425466;background:#FFF;border:1px solid #D9E2EA;border-radius:8px}
+/* v44: seçili kayıt önde, ayrıntılar gerektiğinde açılır. */
+@media screen{
+ .app{grid-template-columns:224px minmax(0,1fr)}.side{width:224px}.wrap{gap:16px;padding:22px clamp(16px,2vw,32px) 42px}
+ .brand{padding:18px 16px 16px;gap:10px}.brand b{font-size:16px}.brand .park-logo{width:34px;height:34px}
+ .side .nav{padding:12px 10px 0;gap:3px}.side .nav>a{padding:10px;font-size:14px;min-height:24px}
+ .side .sbox{margin:12px 12px 0;padding:10px;background:transparent;border:0}.side .sbox .sbtn{font-size:13px}
+ .side #sPark{border:1px solid var(--line);background:var(--paper);border-radius:9px}.side-credit{padding:12px 16px}
+ .pagehead h1{font-size:25px}.pagehead p{max-width:75ch;font-size:13px}.overview-heading h1{font-size:25px}
+ .quick-tasks{gap:8px}.quick-tasks a{border-radius:8px;min-height:42px;padding:10px 12px}
+ .kpis{gap:10px}.kpi{padding:14px 16px}.kpi strong{font-size:28px}.kpi:before{display:none}
+ .overview-balances .hero{border:0;border-top:1px solid var(--line);border-radius:0;background:var(--paper);padding:18px 20px;gap:16px}
+ .overview-balances .hero .big{background:var(--soft);border-color:var(--line)}.overview-balances>summary{font-size:13px;padding:14px 18px}
+ .overview-balances .hero .overview-alert-title{font-size:18px}.overview-balances .hero .big strong{font-size:28px}
+ .admin-access .hnote{margin:0;padding:0 22px 18px;font-size:13px;line-height:1.65;color:var(--ink2)}
+ .fld,.hsel input,.hsel select{background:var(--paper);border-color:var(--line)}
+ .hfil{border-radius:8px}.htool{gap:10px}.hresult{font-size:12px}.hgrid{gap:14px}
+ @media(max-width:1100px){.app{grid-template-columns:210px minmax(0,1fr)}.side{width:210px}.hgrid{grid-template-columns:minmax(0,1fr)}.hside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.hside>.panel{margin:0}}
+ @media(max-width:860px){.app{display:block!important}.side{display:none}.wrap{padding:18px 14px 88px}.hside{display:block}.pagehead h1,.overview-heading h1{font-size:23px}.quick-tasks a{font-size:12px}.kpi strong{font-size:24px}}
+ @media(max-width:600px){.pagehead{gap:10px}.kpis{gap:8px}.kpi{padding:12px}.kpi em{font-size:11px}.overview-balances .hero{padding:14px}.admin-access .ch{gap:8px}.admin-access .ch h2{flex-basis:100%}.hsel.hq{flex:1 1 100%}.hmap{height:58dvh;min-height:330px}.htool>.btn{font-size:12px}}
+}
+@media print{.den-source-print{font:8pt/1.3 Arial,sans-serif;max-width:none;border:0;padding:6pt 0;margin:8pt 0 0;break-inside:avoid;color:#333}}
