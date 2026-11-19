@@ -372,7 +372,8 @@
     out.vadeler = vadeler.map((v, i) => ({ vade: v, kira: kTut[i], agac: i === 0 ? agac : 0, kdv: i === 0 ? kdv : 0 }));
     out.agac = agac; out.kdv = kdv; out.toplam = r2(kira + agac + kdv); out.kaynak = kaynak;
     // güvence ve depozito (Md. 10/2): yıllık kira artış oranıyla güncellenir
-    const onc = ky.onceki && ky.onceki.bedel != null ? ky.onceki.bedel : null;
+    // Önceki yıl esası: o yıl onaylanan ek tesis kirası dahil (depozito ve güvence o tutar üzerinden güncellenmiştir; 2026 tahakkuk fişi örneği).
+    const onc = ky.onceki && ky.onceki.bedel != null ? r2(ky.onceki.bedel + (ky.onceki.ek || 0)) : null;
     if (p.guv != null) { out.guv = r2(kira * p.guv); out.guvFark = onc != null ? r2(out.guv - onc * p.guv) : null; }
     if (p.dep != null) { out.dep = r2(kira * p.dep); out.depFark = onc != null ? r2(out.dep - onc * p.dep) : null; }
     // örnek hesap kodları
