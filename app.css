@@ -477,7 +477,7 @@ details.hfr summary{cursor:pointer;font-size:13px;font-weight:600}.hsl{display:f
 .hwrap.hfull .htool,.hwrap.hfull .hfil,.hwrap.hfull .hside{display:none}.hwrap.hfull .hgrid{display:block;height:100%}.hwrap.hfull .hmap{height:100vh;height:100dvh;border-radius:0;border:0}
 body.hfull-on{overflow:hidden}
 @media (max-width:900px){.hfr select.fld{max-width:100%}.hcoord{font-size:10px}.henvt{max-height:60vh}}
-@media (max-width:600px){.htool{gap:8px}.hselr{width:100%}#hPark{flex:1;width:auto}.hfbtn{width:100%}.hsel{width:100%}}
+@media (max-width:600px){.htool{gap:8px}.hselr{width:100%}#hPark{flex:1;width:auto}.hfbtn,.hfclr{flex:1 1 0;min-width:0}.hsel{width:100%}}
 .band{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:2000;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 24px);padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 .band-guncel{background:var(--pine);color:#fff}.band-guncel button{background:#FFD34E;color:#16221B;border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
 .band-cevrimdisi{background:#FBF0D9;color:#8A5A0B;bottom:auto;top:calc(8px + env(safe-area-inset-top))}
@@ -495,3 +495,8 @@ body.hfull-on{overflow:hidden}
 @media(min-width:901px){.hmapw{position:sticky;top:16px}.hside{max-height:none}}
 
 .hmeta{margin:10px 0;padding:10px 0;border-top:1px solid var(--line)}.hmeta summary{font-size:13px;font-weight:600;cursor:pointer;min-height:28px}.hmeta[open] summary{margin-bottom:10px}.hmeta .hnote{overflow-wrap:anywhere}.hps .hbtns{margin-top:14px}
+
+/* v46: harita yan paneli park tablosu dar panelde kesilmesin */
+.hside .htes{width:100%;table-layout:auto}.hside .htes th,.hside .htes td{padding:7px 6px;white-space:nowrap}.hside .htes td:first-child{white-space:normal;overflow-wrap:anywhere;min-width:0}.hside .htes th{font-size:12px}
+/* v46: bilgi kartında etiket harf harf bölünmesin */
+.hside .kv span:first-child{overflow-wrap:normal;word-break:normal;flex:0 0 auto;max-width:42%}.hside .kv span:last-child{min-width:0}
