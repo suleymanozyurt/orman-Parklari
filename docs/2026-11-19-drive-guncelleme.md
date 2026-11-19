@@ -23,6 +23,13 @@
 - **Boğazköy:** 71 mevcut ve 207 planlanan tesis noktası (WGS84 UTM 6°); satır sayısı belgedeki son kodla (T.242) tutuyor. Belgede hatalı/çizili satırlar alınmadı; sınır dışında kalan 3 nokta işaretli.
 - Noktalar fotoğraf taramasından okunmuş konumlardır; oturum geometrisi ve saha teyidi değildir.
 
+## Kira ve tahakkuk (2027 ve sonrası)
+
+- Bütün parklarda sonraki yıl kirası 1 Ocak’tan, önceki yılın yıllık kirası × (1 + Aralık TÜFE 12 aylık ortalama) olarak hesaplanır; Aralık oranı yayımlanmadan tutar gösterilmez.
+- Yıl içinde onaylanan ek tesis kirası (Md. 30) artıştan önce tabana eklenir. Bu, Drive’daki Tayakadın 2026 tahakkuk fişindeki yöntemdir: (1.605.000,00 + 643.050,00) × %34,88 = 784.119,84 TL artış. 2027’de Tayakadın II. Revize (879.329,25 TL) ve Kayabaşı II. Revize (3.866.794,84 TL) ek kiraları tabana girer.
+- Dönem yılı yıl ortasında başlayan sözleşmelerde önceki yılın vadeleri yeni yılın ödeme planına karışmıyor (Tayakadın).
+- İmrahor 19.01.2026/203 tahsilat fişi muhasebe verisiyle birebir eşleşti.
+
 ## Arayüz
 
 - İlk açılışta yanlış “Yeni sürüm hazır” bandı çıkmıyor.

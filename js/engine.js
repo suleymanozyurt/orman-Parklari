@@ -280,6 +280,12 @@
   E.tufeYayim = (ta) => (ta ? iso(ta[1] === 12 ? ta[0] + 1 : ta[0], ta[1] === 12 ? 1 : ta[1] + 1, 3) : null);
   // 18.10.2026 kullanıcı talimatı: 2027 ve sonrası yılbaşı çalışma hesabı.
   // Sözleşmedeki tarihsel zincir ayrıca korunur; bu tercih mevzuat hükmü değildir.
+  // Ek tesis kirasının yürürlük yılı: nottaki onay tarihi; yoksa sözleşme döneminin ortası.
+  E.ekKiraYili = function (p, e) {
+    const m = String(e.not_ || '').match(/(\d{2})\.(\d{2})\.(\d{4})/); if (m) return Number(m[3]);
+    if (!p.soz_bas || !Number.isInteger(e.donem)) return null;
+    return E.year(E.addMonths(p.soz_bas, (e.donem - 1) * 12 + 6));
+  };
   E.yilbasiKira = function (p, tufe, Y, rapor, context) {
     const bas = iso(Y, 1, 1), ta = [Y - 1, 12], out = { bas, tufeAy: ta, tufe: E.tufeAl(tufe, ...ta), bedel: null, ek: 0, donem: Y - E.year(p.soz_bas) + 1, zincir: [], onceki: null, yilbasi: true };
     if (rapor < bas) return Object.assign(out, { bekleme: 'Yılbaşı bekleniyor', zamanBekle: true });
@@ -295,15 +301,17 @@
     }
     if (sy >= 2027 && (!Number.isFinite(b) || by < sy)) { by = sy; b = p.ihale_b; }
     if (!Number.isInteger(by) || by > Y || by < sy || !Number.isFinite(b) || b <= 0) return Object.assign(out, { bekleme: 'Belgeli yıllık kira ve yılı gerekli', esasEksik: true });
-    out.zincir.push({ n: by - sy + 1, bas: iso(by,1,1), bedel: b, ek: 0, belge: by + ' muhasebe yıllık kira esası' });
+    // Yıl içinde onaylanan ek tesis kirası (Md. 30) o yılın tabanına eklenir, sonraki yılbaşında birlikte artar (2026 tahakkuk fişi örneği).
+    const ekYil = (y) => (ctx.veri && ctx.veri.ek_kira || []).filter((e) => e.park === p.kisa && Number.isFinite(e.tutar) && e.tutar > 0 && E.ekKiraYili(p, e) === y).reduce((s, e) => r2(s + e.tutar), 0);
+    out.zincir.push({ n: by - sy + 1, bas: iso(by,1,1), bedel: b, ek: ekYil(by), belge: by + ' muhasebe yıllık kira esası' });
     for (let y = by + 1; y <= Y; y++) {
       const ay = [y - 1,12], t = E.tufeAl(tufe, ...ay), prev = out.zincir[out.zincir.length - 1];
-      const next = { n: y - sy + 1, bas: iso(y,1,1), tufeAy: ay, tufe: t, bedel: !Number.isFinite(t) || t <= -1 || prev.bedel == null ? null : r2(prev.bedel * (1 + t)), ek: 0 };
+      const next = { n: y - sy + 1, bas: iso(y,1,1), tufeAy: ay, tufe: t, bedel: !Number.isFinite(t) || t <= -1 || prev.bedel == null ? null : r2((prev.bedel + prev.ek) * (1 + t)), ek: y < Y ? ekYil(y) : 0 };
       out.zincir.push(next);
       if (next.bedel == null) return Object.assign(out, { tufeAy: ay, tufe: t, bekleme: 'TÜFE bekleniyor' });
     }
     const last = out.zincir[out.zincir.length - 1];
-    return Object.assign(out, { bedel: last.bedel, tufe: last.tufe ?? null, tufeAy: last.tufeAy || null, onceki: out.zincir.length > 1 ? out.zincir[out.zincir.length - 2] : null, esasYili: by, esasBedeli: b, esasKaynak: 'Muhasebe yıllık kira kaydı; ek tesis ve geçiş kıstı ayrıca karşılaştırılır' });
+    return Object.assign(out, { bedel: last.bedel, tufe: last.tufe ?? null, tufeAy: last.tufeAy || null, onceki: out.zincir.length > 1 ? out.zincir[out.zincir.length - 2] : null, esasYili: by, esasBedeli: b, esasKaynak: 'Muhasebe yıllık kira kaydı' + (out.zincir.some((z) => z.ek) ? ' + aynı yıl onaylanan ek tesis kirası (Md. 30)' : '') + '; Aralık TÜFE (12 aylık ortalama) ile 1 Ocak’tan; geçiş kıstı ayrıca karşılaştırılır' });
   };
   E.kistHesap = function (bedel, bas, bit, esas) {
     const valid = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0,10) === s;
@@ -347,7 +355,9 @@
     let vadeler, kaynak;
     const own = (p.taksit_vade || '').split(/[,;\s]+/).filter((s) => /^\d\d-\d\d$/.test(s));
     if (ornek) {
-      const kv = Array.from(new Set(ornek.items.filter((x) => x.tur === 'Kira').map((x) => x.vade || x.duz).filter(Boolean))).sort();
+      const kv0 = Array.from(new Set(ornek.items.filter((x) => x.tur === 'Kira').map((x) => x.vade || x.duz).filter(Boolean))).sort();
+      // Önceki dönemden taşan vadeler (ör. dönem yılı yıl ortasında başlayan sözleşmeler) yeni yılın planına karışmasın.
+      const kv = kv0.filter((v) => E.year(v) === ornek.yil).length ? kv0.filter((v) => E.year(v) === ornek.yil) : kv0;
       vadeler = kv.map((v) => E.addMonths(v, (Y - ornek.yil) * 12)); kaynak = ornek.yil + ' tahakkukunun ödeme günleri (ilgili yıla taşındı)';
     } else if (own.length) { vadeler = own.map((s) => Y + '-' + s).sort(); kaynak = 'Muhasebe örneği yok; parkta tanımlı ödeme günleri'; }
     else {
