@@ -95,7 +95,57 @@
   const OZEL = {
     'Ek-2': { J21: 'il_ilce', J22: 'alan_ha', J23: 'tescil_t' },
     'Ek-18': { D6: '', D7: '', D8: '', D9: '', D10: '', D13: 'soz_konu', D14: 'soz_konu_hak', D15: 'is_adres', D16: 'isletme', D17: '', D18: 'soz_bas', D19: 'soz_bit' },
+    'TF': { B6: 'tf_isletmeci', D6: 'tf_vkn', F6: 'tf_adres', B8: 'tf_seflik', C8: 'tf_il_ilce', D8: 'tf_mahalle', G8: 'tf_alan', F10: 'tf_sure', G10: '', C11: 'tf_park',
+      B14: 'tf_esas_lab', D14: 'tf_esas', G14: 'tf_vade', B15: 'tf_artis_lab', D15: 'tf_artis', B16: 'tf_kira_lab', D16: 'tf_kira', B17: 'tf_tem_lab', D17: 'tf_tem',
+      B18: 'tf_dep_lab', D18: 'tf_dep', B19: 'tf_guv_lab', D19: 'tf_guv', D20: 'tf_agac', D21: 'tf_kdv', D22: 'tf_toplam', C25: 'tf_gy', D25: 'tf_gy_bedel', F25: 'tf_gy_top',
+      B29: 'tf_sef', D29: 'tf_yrd', F29: 'tf_mudur', B32: 'tf_tarih', D32: 'tf_tarih', F32: 'tf_tarih', G32: 'tf_tarih', B37: 'tf_not', B38: 'tf_tem_not' },
     'Ek-14': { C7: '', C8: '' }, 'Ek-15': { C8: '', C9: '' }, 'Ek-1': { C4: '' }, 'Ek-3': { D4: '' }
+  };
+  // ---------------------------------------------------------------- tahakkuk fişi (İşletme şablonu: peşin ve taksit fişleri)
+  // ctx.tf = { Y, taksit (0 = yıllık/peşin, 1–4), plan (E.tahakkukPlan), ky (kira zinciri: onceki, tufe, tufeAy, bas) }.
+  // Tutarlar hesap motorundan gelir; TÜFE açıklanmadıysa alanlar boş kalır ve form “bekliyor” olarak işaretlenir.
+  const TF_SEF = { 'Arnavutköy': 'Güven KAVRAZ', 'Fenertepe': 'Oktay KAYA' };
+  const TF_YRD = { 'Arnavutköy': 'Ergün TUNCER' };
+  const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  EK.tfAlanlar = function (ctx) {
+    const E = root.E, r2 = E.r2, tl = E.tl, fd = E.fmtDate, p = ctx.p || {}, ku = ctx.ku || {}, tf = ctx.tf || {};
+    const Y = tf.Y, n = tf.taksit || 0, pl = tf.plan || {}, ky = tf.ky || {}, F = {};
+    F.tf_isletmeci = p.isletmeci || ''; F.tf_vkn = p.vkn || p.vkn_muh || ''; F.tf_adres = p.adres || '';
+    F.tf_seflik = p.seflik || ''; F.tf_il_ilce = [p.il || ku.il || 'İstanbul', p.ilce].filter(Boolean).join('/'); F.tf_mahalle = p.mahalle || p.mevki || '';
+    F.tf_alan = p.alan != null ? Number(p.alan).toLocaleString('tr-TR') : '';
+    F.tf_sure = p.soz_bas && p.soz_bit ? String(Math.max(1, Math.round(E.days(p.soz_bas, p.soz_bit) / 365.25))) : '';
+    F.tf_park = (p.ad || p.kisa || '').replace(/\s+/g, ' ');
+    F.tf_sef = TF_SEF[p.seflik] || ''; F.tf_yrd = TF_YRD[p.seflik] || ''; F.tf_mudur = ku.mudur || '';
+    F.tf_tarih = Y ? '…/…./' + Y : '';
+    if (!Y || pl.kira == null) return F;                      // TÜFE ya da yıllık esas bekleniyor
+    const ilk = n <= 1, kira = pl.kira, vd = pl.vadeler || [], vi = n ? vd[n - 1] : null;
+    if (n && !vi) return F;
+    const on = ky.onceki || null, esas = on && on.bedel != null ? r2(on.bedel + (on.ek || 0)) : null;
+    const yuzde = (x) => '%' + (x * 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+    const ay = ky.tufeAy ? AYLAR[ky.tufeAy[1] - 1] + ' ' + ky.tufeAy[0] : '';
+    F.tf_esas_lab = 'ORMAN PARKI KİRA BEDELİ (' + (Y - 1) + ')' + (on && on.ek ? '  [' + tl(on.bedel) + ' kira bedeli + ' + tl(on.ek) + ' ek tesis kira bedeli]' : '');
+    F.tf_esas = ilk && esas != null ? tl(esas) : '_';
+    F.tf_artis_lab = 'Cari Yıl İçerisindeki Kira Artış Bedeli (' + (ay ? ay + ' TÜFE ' : 'TÜFE ') + (ky.tufe != null ? yuzde(ky.tufe) : '') + ')';
+    F.tf_artis = n === 0 && esas != null ? tl(r2(kira - esas)) : '_';
+    const bas = pl.bas || (Y + '-01-01'), bit = E.addDays(E.addMonths(bas, 12), -1);
+    F.tf_kira_lab = Y + ' kira bedeli ' + (n ? '(' + n + '. taksit)' : '(' + fd(bas) + '-' + fd(bit) + ')');
+    F.tf_kira = tl(n ? vi.kira : kira);
+    F.tf_tem_lab = 'Orman Parkı %6 Kesin Teminat (Md. 9/1: ihale bedeli)';
+    F.tf_tem = n === 0 && p.ihale_b != null ? tl(r2(p.ihale_b * 0.06)) : '_';
+    F.tf_dep_lab = 'Cari Yıl İçerisindeki ' + (p.dep != null ? yuzde(p.dep) : '%10') + ' Depozito Artış Bedeli';
+    F.tf_guv_lab = 'Cari Yıl İçerisindeki ' + (p.guv != null ? yuzde(p.guv) : '%25') + ' Güvence Artış Bedeli';
+    const dep = ilk && pl.depFark != null ? pl.depFark : 0, guv = ilk && pl.guvFark != null ? pl.guvFark : 0;
+    const agac = ilk ? pl.agac || 0 : 0, kdv = ilk ? pl.kdv || 0 : 0;
+    F.tf_dep = ilk && pl.depFark != null ? tl(dep) : '_'; F.tf_guv = ilk && pl.guvFark != null ? tl(guv) : '_';
+    F.tf_agac = ilk ? tl(agac) : '_'; F.tf_kdv = ilk ? tl(kdv) : '_';
+    F.tf_toplam = tl(r2((n ? vi.kira : kira) + dep + guv + agac + kdv));
+    F.tf_vade = n ? fd(vi.vade) : vd.map((v) => fd(v.vade)).join('\n');
+    const kalan = p.soz_bit ? Math.max(0, E.year(p.soz_bit) - Y) : null;
+    F.tf_gy = kalan != null ? String(kalan) : ''; F.tf_gy_bedel = tl(kira); F.tf_gy_top = kalan != null ? tl(r2(kira * kalan)) : '';
+    F.tf_not = 'NOT: ' + Y + ' yılı kira bedeli, ' + (Y - 1) + ' yılı kira bedeli' + (on && on.ek ? ' ile aynı yıl onaylanan ek tesis kira bedelinin (' + tl(on.ek) + ' TL) toplamı (313 Sayılı Tebliğ Md. 30/1 son cümlesi)' : '') +
+      ' üzerinden ' + (ay ? ay + ' ' : '') + 'TÜFE (on iki aylık ortalamalara göre) ' + (ky.tufe != null ? yuzde(ky.tufe) : '') + ' oranında artırılarak hesaplanmıştır.';
+    F.tf_tem_not = 'NOT: %6 kesin teminat, Tebliğin 9 uncu maddesinin birinci fıkrası uyarınca ihale bedeli üzerinden gösterilmiştir; ek yapı ve tesislere ait kesin teminat aynı maddenin ikinci fıkrası uyarınca ayrıca hesaplanır.';
+    return F;
   };
   EK.slotAlan = function (ek, addr, lab) {
     const o = OZEL[ek];

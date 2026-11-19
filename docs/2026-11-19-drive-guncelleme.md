@@ -30,6 +30,19 @@
 - Dönem yılı yıl ortasında başlayan sözleşmelerde önceki yılın vadeleri yeni yılın ödeme planına karışmıyor (Tayakadın).
 - İmrahor 19.01.2026/203 tahsilat fişi muhasebe verisiyle birebir eşleşti.
 
+## Tahakkuk fişi (v47)
+
+- İşletmenin tahakkuk fişi şablonu (peşin ve 1–4. taksit) “Ekler ve Formlar > Tahakkuk Fişi” olarak eklendi; Kira ve Tahakkuk tablosundaki “Fiş” ve park sayfasındaki “Tahakkuk fişi” düğmeleriyle doğrudan açılır.
+- Fiş park kaydı, kurum bilgisi ve kira motorundan dolar: önceki yıl kirası (+ aynı yıl ek tesis kirası), Aralık TÜFE artışı, cari yıl kirası, depozito ve güvence artışı, %5 ağaçlandırma, %20 KDV, vadeler ve gelecek yıl bedelleri. Muhasebede tahakkuku olan yılda vadeler muhasebeden alınır.
+- Tayakadın 2026 fişi Drive’daki örnekle kuruşu kuruşuna aynı (peşin toplam 4.094.975,94 TL; taksit 758.042,46 TL).
+- Kesin teminat Tebliğ Md. 9/1’e göre ihale bedeli × %6 gösterilir (örnek şablon cari yıl kirasının %6’sını almıştı; dayanağı varsa [TEYİT GEREKLİ]).
+- Aralık TÜFE’si açıklanmadan sonraki yılın fişi “bekliyor” görünür; oran günlük güncellemeyle gelince kendiliğinden dolar.
+- İşletme şefi adı Arnavutköy (Güven KAVRAZ) ve Fenertepe (Oktay KAYA) için belgelerden gelir; İstanbul ve Kemerburgaz şeflikleri için formda elle girilir.
+
+## Arazi
+
+- Haritada “Konumumu izle” açıkken panel, bulunduğunuz parkı (içinde/dışında, uzaklık) ve en yakın plan tesisini (uzaklık, yön, “Tesisi göster”) gösterir.
+
 ## Arayüz
 
 - İlk açılışta yanlış “Yeni sürüm hazır” bandı çıkmıyor.
