@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '45', date: '12.11.2026' };
+  const BUILD = { version: '46', date: '19.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -189,7 +189,8 @@
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       const offer = () => {
-        if (!reg.waiting) return;
+        // İlk kurulumda etkin sürüm yokken yeni çalışan kısa süre bekleme durumundan geçer; bu güncelleme değildir.
+        if (!reg.waiting || !reg.active) return;
         bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle');
         const b = $('#band-guncel button');
         if (b) b.onclick = () => {
@@ -1087,10 +1088,10 @@
     return '<div class="pagehead"><div><h1>Orman Parkı Envanteri</h1><p>Bütün parkların kayıtları, işletmecileri ve mali özeti. Ayrıntılar için park adını seçin. Mali sütunlar muhasebe dökümünden otomatik hesaplanır; park bilgilerini yalnız yönetici değiştirebilir.</p></div><button class="btn pri own-only" data-a="parkDuzenle" data-k="">Yeni orman parkı ekle</button></div>' +
       '<section class="card"><div class="scroll" style="padding-top:8px"><table class="rt" style="min-width:1180px"><thead><tr><th>Park</th><th>Durum</th><th>İşletmeci</th><th>Sözleşme</th><th class="r">Kalan</th><th class="r">Bu yıl kira</th><th class="r">Tahsil edilen</th><th class="r">Açık</th><th class="r">Vadesi geçmiş</th><th>Uyarılar</th><th class="noprint"></th></tr></thead><tbody>' +
       P.map((p) => { const o = S.ozBy[p.kisa]; return '<tr>' + td('<a class="pk" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.seflik) + ' · ' + esc(p.statu || '') + '</small></a>', '', 'lead') +
-        td('<span class="' + stCls(p.durum) + '">' + esc(p.durum) + '</span>', 'Durum') + td(esc(p.isletmeci || '—'), 'İşletmeci', 'wide', ' style="white-space:normal;max-width:240px;font-size:13.5px"') +
+        td('<span class="' + stCls(p.durum) + '">' + esc(p.durum) + '</span>', 'Durum') + td(esc(p.isletmeci || '—'), 'İşletmeci', 'wide', ' style="white-space:normal;min-width:170px;max-width:240px;font-size:13.5px"') +
         td(p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '—', 'Sözleşme', 'n') + td(o.kalan != null ? o.kalan.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' yıl' : '—', 'Kalan', 'r') +
         td(o.kira_yil ? tl(o.kira_yil) : '–', 'Bu yıl kira', 'n r') + td(o.tahsil ? tl(o.tahsil) : '–', 'Tahsil', 'n r') + td('<b>' + (o.acik ? tl(o.acik) : '–') + '</b>', 'Açık', 'n r') + td(o.vgec ? tl(o.vgec) : '–', 'Vadesi geçmiş', 'n r ' + (o.vgec ? 'red-t' : 'muted')) +
-        td(o.uyari.length ? o.uyari.map((u) => '<span class="tag2">' + esc(u) + '</span>').join(' ') : '<span class="muted">—</span>', 'Uyarılar', 'wide', ' style="white-space:normal;max-width:260px"') +
+        td(o.uyari.length ? o.uyari.map((u) => '<span class="tag2">' + esc(u) + '</span>').join(' ') : '<span class="muted">—</span>', 'Uyarılar', 'wide', ' style="white-space:normal;min-width:190px;max-width:260px"') +
         td('<button class="btn sm own-only" data-a="parkDuzenle" data-k="' + esc(p.kisa) + '">Düzenle</button><a class="btn sm view-only" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">Aç</a>', '', 'noprint') + '</tr>'; }).join('') +
       '</tbody></table></div></section>';
   };
@@ -1322,7 +1323,7 @@
       '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><div class="park-picker" id="hPicker"><div class="park-picker-field"><input id="hPark" class="fld" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hParkL" placeholder="Park arayın veya listeden seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><button type="button" class="park-picker-toggle" id="hParkOpen" aria-label="Bütün orman parklarını göster" aria-expanded="false" aria-controls="hParkL">⌄</button></div><div id="hParkL" class="park-options" role="listbox" aria-label="Orman parkları" hidden></div></div>' +
       '<button class="btn sm" data-a="hTum">Tüm parklar</button></div></div>' +
       '<div class="hsel hq"><label for="hQ">Tesis ara</label><input id="hQ" class="fld" type="search" placeholder="Ad, plan kodu ya da tür" value="' + esc(F.q) + '"></div>' +
-      '<button class="btn sm" data-a="hFiltreSifirla">Filtreleri temizle</button>' +
+      '<button class="btn sm hfclr" data-a="hFiltreSifirla">Filtreleri temizle</button>' +
       '<button class="btn sm hfbtn" data-a="hFiltre" aria-expanded="' + (F.acik ? 'true' : 'false') + '" aria-controls="hfil">Filtre ve katmanlar</button></div>' +
       '<p id="hSonuc" class="hresult" role="status" aria-live="polite"></p><div id="hfil" class="hfil"' + (F.acik ? '' : ' hidden') + '></div>' +
       '<div class="hgrid"><div class="hmapw"><div id="hmap" class="hmap"><div class="empty"><span class="spin"></span> Harita yükleniyor…</div></div></div><div class="hside" id="hside"></div></div></div>';
