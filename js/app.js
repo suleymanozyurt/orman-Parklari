@@ -189,7 +189,8 @@
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       const offer = () => {
-        if (!reg.waiting) return;
+        // İlk kurulumda etkin sürüm yokken yeni çalışan kısa süre bekleme durumundan geçer; bu güncelleme değildir.
+        if (!reg.waiting || !reg.active) return;
         bandGoster('guncel', 'Yeni sürüm hazır.', 'Güncelle');
         const b = $('#band-guncel button');
         if (b) b.onclick = () => {
