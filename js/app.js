@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '47', date: '19.11.2026' };
+  const BUILD = { version: '48', date: '20.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -27,6 +27,7 @@
   // Beş çalışma alanı; eski sayfa adresleri ve bütün işlemler korunur.
   const MODULES = [
     { id: 'genel', l: 'Genel Durum', ic: IC.home, pages: [['genel','Özet'],['eksik','Veri Kontrolü'],['veriler','Veriler ve Ayarlar']] },
+    { id: 'sor', l: 'Sor', ic: IC.search, pages: [['sor','Sor Asistanı']] },
     { id: 'harita', l: 'Harita', ic: IC.map, pages: [['harita','Harita ve Tesis Envanteri']] },
     { id: 'parklar', l: 'Orman Parkları', ic: IC.park, pages: [['parklar','Park Envanteri'],['park','Park Dosyası'],['denetim','Denetim ve Planlar'],['defter','Kayıt Defteri'],['islem','İşlem ve Belge Kontrolü']] },
     { id: 'muhasebe', l: 'Muhasebe', ic: IC.money, pages: [['alacaklar','Alacak ve Tahsilat'],['tahakkuk','Kira ve Tahakkuk'],['muhasebe','Hesap Dökümleri'],['zincir','Kira Bedeli Geçmişi'],['hesap','Hesaplama Araçları']] },
@@ -372,7 +373,7 @@
       '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
       '<aside class="side"><div class="side-scroll"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b></div></div>' +
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
-      '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Park, işletmeci, yevmiye ara" aria-label="Ara"></label><div class="sres" id="sRes"></div></div>' +
+      '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Ara ya da sor (Enter)" aria-label="Ara ya da sor"></label><div class="sres" id="sRes"></div></div>' +
       '<div class="sbox" id="sPark"><span class="lbl">Seçili park</span><select id="sSel" aria-label="Park seçin"></select>' +
       '<a class="sbtn" href="#/park" id="sParkOpen">Park dosyasını aç →</a>' +
       '<span class="lbl" id="sQl">Vadesi geçmiş alacağı olan</span><div class="sq" id="sQuick"></div></div>' +
@@ -388,7 +389,8 @@
     $('#sSel').onchange = (e) => parkSec(e.target.value);
     A.addEventListener('click', tikla);
     $('#sQ').addEventListener('input', (e) => ara(e.target.value, $('#sRes')));
-    $('#mSearch').onclick = aramaSheet; $('#mMore').onclick = menuSheet; $('#tMore').onclick = menuSheet;
+    $('#sQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.value.trim()) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; $('#sRes').classList.remove('on'); S.sorQ = null; location.hash = '#/sor?q=' + encodeURIComponent(v); } });
+    $('#mSearch').onclick = () => { location.hash = '#/sor'; }; $('#mMore').onclick = menuSheet; $('#tMore').onclick = menuSheet;
     window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
     document.body.classList.toggle('is-owner', S.owner);
     kabukDurum();
@@ -513,7 +515,7 @@
     const out = [];
     S.veri.parks.forEach((p) => { const t = [p.kisa, p.ad, p.isletmeci, p.vkn, p.seflik].join(' ').toLocaleLowerCase('tr-TR'); if (t.includes(q)) out.push('<a href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">' + esc(p.kisa) + '<small>' + esc(p.isletmeci || '') + '</small></a>'); });
     S.veri.muhasebe.forEach((x) => { if (out.length > 30) return; const t = (String(x.yev) + ' ' + x.aciklama + ' ' + x.musteri).toLocaleLowerCase('tr-TR'); if (t.includes(q)) out.push('<a href="#/muhasebe" data-a="muhara" data-q="' + esc(String(x.yev)) + '">Yev. ' + x.yev + ' · ' + fd(x.tarih) + '<small>' + esc(x.aciklama) + ' · ' + tl(x.borc || x.alacak) + '</small></a>'); });
-    box.innerHTML = out.length ? out.slice(0, 30).join('') : '<a class="muted">Sonuç yok</a>'; box.classList.add('on');
+    box.innerHTML = '<a href="#/sor?q=' + encodeURIComponent(q) + '" class="sres-sor"><b>Sor: “' + esc(q) + '”</b><small>Bütün kayıtlarda ara, doğrudan cevap al (Enter)</small></a>' + out.slice(0, 30).join(''); box.classList.add('on');
   }
 
   // ---------------- yönlendirme ----------------
@@ -536,7 +538,7 @@
   function sayfaCiz() {
     if (S._hmap) { hKonumDurdur(); S._hmap.remove(); S._hmap = null; S._hIdx = null; }
     baglamBaglantilari();
-    const showPark = S.page !== 'genel' && S.page !== 'harita';
+    const showPark = !['genel', 'harita', 'sor'].includes(S.page);
 
     $('#sPark').style.display = showPark ? '' : 'none';
     $('#sSel').value = S.park;
@@ -1496,7 +1498,7 @@
   function hTumPanel() {
     const P = S.veri.parks; let ekN = 0;
     const satir = P.map((p) => { const h = p.harita || {}, k = alanKontrol(p), g = S.gyp && S.gyp.parklar[p.kisa], n = g ? g.f.filter((f) => !arsivMi(g, f)).length : 0, na = g ? g.f.length - n : 0, e = g ? belgeEksikleri(p, g).length : 0; ekN += e;
-      return '<tr data-a="hParkSec" data-k="' + esc(p.kisa) + '"><td><b>' + esc(p.kisa) + '</b>' + (e ? ' <i class="amb-t" title="eksik belge">•</i>' : '') + '</td><td class="r n">' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') : '<i class="amb-t">yok</i>') + '</td><td class="r n">' + (p.alan != null ? p.alan.toLocaleString('tr-TR') : '—') + (k && !k.ok ? ' <i class="red-t">≠</i>' : '') + '</td><td class="r n">' + (n || '<span class="muted">0</span>') + (na ? '<small class="muted"> +' + na + '</small>' : '') + '</td></tr>'; }).join('');
+      return '<tr data-a="hParkSec" data-k="' + esc(p.kisa) + '"><td><b>' + esc(p.kisa) + '</b>' + (e ? ' <i class="amb-t" title="eksik belge">•</i>' : '') + '</td><td class="r n">' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '<i class="amb-t">yok</i>') + '</td><td class="r n">' + (p.alan != null ? p.alan.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—') + (k && !k.ok ? ' <i class="red-t">≠</i>' : '') + '</td><td class="r n">' + (n || '<span class="muted">0</span>') + (na ? '<small class="muted"> +' + na + '</small>' : '') + '</td></tr>'; }).join('');
     return '<section class="panel"><h3>Bütün orman parkları</h3><div class="sl"><table class="htes"><thead><tr><th>Park</th><th class="r">Harita ha</th><th class="r">Kayıt ha</th><th class="r">Çizim</th></tr></thead><tbody>' + satir +
       '</tbody></table></div><p class="muted" style="font-size:12.5px;line-height:1.45">Satıra dokunarak parkı seçin. “+n”: arşiv (önceki plan) çizimleri. ≠: haritadan alan kayıttan %2’den fazla farklı. Tesisler yakın ölçekte (14+) bütün parklar için de görünür.</p></section>' +
       '<section class="panel"><h3>Tesis envanteri <small id="henvN"></small></h3><div id="henv"></div></section>' +
@@ -2617,6 +2619,136 @@
       if (w) w.location.href = u; else location.href = u;
     } catch (e) { if (w) w.close(); toast('Tebliğ açılamadı: ' + e.message, true); }
   };
+  // =============== SOR ASİSTANI ===============
+  // Yerel dizin: park, sözleşme, tahakkuk, alacak, muhasebe, harita tesisleri, Tebliğ, denetim, defter, yazışma.
+  // Veri cihazda kalır. Yapay zekâ (Claude) isteğe bağlıdır; yalnız seçilen alıntılar gönderilir.
+  const AI_MODEL = 'claude-opus-5-5';
+  const sorKey = () => [S.sha, S.gypS, !!S.ekB, S.rapor, S.veri.parks.length].join('|');
+  async function sorDizin() {
+    if (S.sorDz && S.sorKeyV === sorKey()) return S.sorDz;
+    await Promise.allSettled([gypAl(), ekPaket()]);
+    const ctx = { parks: S.veri.parks, rapor: S.rapor, al: S.al, muhasebe: S.veri.muhasebe, teblig: S.ekB && S.ekB.teblig, gyp: S.gyp && !S.gyp.hata ? S.gyp : null, durumlar: S.gyp && S.gyp.durumlar,
+      tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD),
+      planAl: (Y, p) => { S.plan[Y] = S.plan[Y] || {}; if (!S.plan[Y][p.kisa]) S.plan[Y][p.kisa] = E.tahakkukPlan(S.veri, S.esl, p, S.tufe, Y, S.rapor); return S.plan[Y][p.kisa]; },
+      yilbasiAl: (Y, p) => E.yilbasiKira(p, S.tufe, Y, Y + '-01-02', { veri: S.veri, esl: S.esl }) };
+    S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey();
+    return S.sorDz;
+  }
+  const SOR_ORNEK = ['Tayakadın 2027 kira ne kadar olacak?', 'Borcu olan parklar', 'Kayabaşı’nda kaç kameriye var?', 'Hangi parklarda WC var?', 'Md. 32 ne diyor?', 'Kesin teminat oranı nedir?', 'Boğazköy işletmecisi ve telefonu', 'Sözleşmesi 2 yıl içinde bitecek parklar', 'Aralık 2025 TÜFE', 'Sözleşme devri şartları'];
+  function sorKart(c) {
+    let h = '<article class="sor-kart' + (c.yakin ? ' yakin' : '') + '"><h3>' + esc(c.baslik) + '</h3>';
+    if (c.yakin) h += '<p class="muted sor-not">Doğrudan bir hesap bulunamadı; sorunuza en yakın Tebliğ maddesi gösteriliyor.</p>';
+    if (c.metin) h += '<div class="sor-metin">' + c.metin.split('\n').map((x) => '<p>' + esc(x) + '</p>').join('') + '</div>';
+    if (c.satirlar && c.satirlar.length) h += '<dl class="sor-kv">' + c.satirlar.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>';
+    if (c.tablo) h += '<div class="sl"><table class="sor-t"><thead><tr>' + c.tablo.b.map((x) => '<th>' + esc(x) + '</th>').join('') + '</tr></thead><tbody>' + c.tablo.s.map((r) => '<tr>' + r.map((x, i) => td(esc(x), c.tablo.b[i])).join('') + '</tr>').join('') + '</tbody></table></div>';
+    if (c.not) h += '<p class="muted sor-not">' + esc(c.not) + '</p>';
+    if (c.kaynak) h += '<p class="muted sor-not">Kaynak: ' + esc(c.kaynak) + '</p>';
+    const btn = [];
+    if (c.mdLink) btn.push('<button class="btn sm" data-a="sorMd" data-v="' + esc(c.mdLink) + '">' + esc(c.linkAd || 'Aç') + '</button>');
+    else if (c.link) btn.push('<a class="btn sm" href="' + esc(c.link) + '">' + esc(c.linkAd || 'Aç') + '</a>');
+    if (c.ek && c.ek.formTF) btn.push('<button class="btn sm pri" data-a="formAc" data-e="TF" data-k="' + esc(c.ek.formTF) + '" data-y="' + c.ek.yil + '">Tahakkuk fişini aç</button>');
+    if (btn.length) h += '<div class="chiprow">' + btn.join('') + '</div>';
+    return h + '</article>';
+  }
+  const sorAnahtar = () => ls.get('op_ai_key') || '';
+  function sorSonucHtml(r) {
+    if (!r) return '';
+    const turler = [...new Set(r.sonuclar.map((d) => d.tur))], F = S.sorTur && turler.includes(S.sorTur) ? S.sorTur : '';
+    const L = r.sonuclar.filter((d) => !F || d.tur === F).slice(0, 25);
+    const anl = [r.parks.length ? 'Park: ' + r.parks.join(', ') : '', r.yil ? 'Yıl: ' + r.yil : '', r.madde ? 'Madde: ' + r.madde : ''].filter(Boolean).join(' · ');
+    return (anl ? '<p class="muted sor-anl">Anlaşılan: ' + esc(anl) + '</p>' : '') +
+      (r.cevaplar.length ? r.cevaplar.map(sorKart).join('') : '<article class="sor-kart"><h3>Doğrudan hesaplanmış bir cevap yok</h3><p class="muted">Aşağıda sorunuzla en çok eşleşen kayıtlar var. “Yapay zekâ ile cevapla” bu kayıtları okuyup cevap yazar.</p></article>') +
+      '<div id="sorAi"></div>' +
+      (r.sonuclar.length ? '<section class="panel sor-ilgili"><h3>İlgili kayıtlar <small class="muted">' + r.sonuclar.length + '</small></h3>' +
+        (turler.length > 1 ? '<div class="chiprow"><button class="hchip' + (!F ? ' on' : '') + '" data-a="sorTur" data-v="">Tümü</button>' + turler.map((t) => '<button class="hchip' + (F === t ? ' on' : '') + '" data-a="sorTur" data-v="' + esc(t) + '">' + esc(t) + ' ' + r.sonuclar.filter((d) => d.tur === t).length + '</button>').join('') + '</div>' : '') +
+        '<ol class="sor-l">' + L.map((d) => '<li>' + (d.mdLink ? '<a href="#/teblig" data-a="sorMd" data-v="' + esc(d.mdLink) + '">' : '<a href="' + esc(d.link) + '">') + '<span class="badge b-gray">' + esc(d.tur) + '</span><b>' + esc(d.baslik) + '</b><small>' + esc(String(d.ozet || '').slice(0, 220)) + '</small></a></li>').join('') + '</ol></section>' : '');
+  }
+  SAYFA.sor = function () {
+    const q = new URLSearchParams(location.hash.split('?')[1] || '').get('q');
+    if (q != null && q !== S.sorQ) { S.sorQ = q; S.sorR = null; }
+    const gecmis = (() => { try { return JSON.parse(ls.get('op_sor_gecmis') || '[]'); } catch (e) { return []; } })();
+    return '<div class="pagehead"><div><h1>Sor</h1><p>Parklar, sözleşmeler, kira ve tahakkuklar, alacaklar, muhasebe kayıtları, harita tesisleri, Tebliğ maddeleri, denetimler ve yazışmalar içinde arar; hesaplanabilen soruları doğrudan cevaplar. Arama bu cihazda yapılır.</p></div></div>' +
+      '<form class="sor-form" id="sorForm" role="search"><input class="fld" id="sorQ" type="search" autocomplete="off" enterkeyhint="search" placeholder="Sorunuzu yazın: “Tayakadın 2027 kira”, “Kayabaşı kaç kameriye”, “Md. 35”" value="' + esc(S.sorQ || '') + '" aria-label="Soru"><button class="btn pri" type="submit">Sor</button>' +
+      '<button class="btn" type="button" data-a="sorAi" id="sorAiBtn"' + (S.sorR ? '' : ' disabled') + '>Yapay zekâ ile cevapla</button><button class="btn sm" type="button" data-a="sorAyar" title="Yapay zekâ ayarı" aria-label="Yapay zekâ ayarı">' + svg(IC.gear, 16) + '</button></form>' +
+      '<div class="chiprow sor-ornek">' + (gecmis.length ? gecmis.slice(0, 6) : SOR_ORNEK).map((x) => '<button class="hchip" data-a="sorOrnek" data-v="' + esc(x) + '">' + esc(x) + '</button>').join('') + (gecmis.length ? '<button class="hchip" data-a="sorGecmisSil" title="Son soruları sil" aria-label="Son soruları sil">×</button>' : '') + '</div>' +
+      '<div id="sorSonuc">' + (S.sorR ? sorSonucHtml(S.sorR) : (S.sorQ ? '<div class="empty"><span class="spin"></span> Kayıtlar hazırlanıyor…</div>' : '<div class="empty sor-bos">Örneklerden birine dokunun ya da sorunuzu yazın.<br><small class="muted">Doğrudan cevaplar sitenin kendi hesaplarından gelir; tutarlar Kira ve Tahakkuk sayfasıyla aynıdır.</small></div>')) + '</div>';
+  };
+  async function sorCalistir(q) {
+    q = String(q || '').trim(); if (!q) return;
+    S.sorQ = q; S.sorTur = '';
+    const box = $('#sorSonuc'); if (box) box.innerHTML = '<div class="empty"><span class="spin"></span> Kayıtlar taranıyor…</div>';
+    try {
+      const dz = await sorDizin(); S.sorR = SOR.sor(dz, q);
+      try { const g = JSON.parse(ls.get('op_sor_gecmis') || '[]').filter((x) => x !== q); g.unshift(q); ls.set('op_sor_gecmis', JSON.stringify(g.slice(0, 12))); } catch (e) {}
+      if (S.page !== 'sor') return;
+      const target = '#/sor?q=' + encodeURIComponent(q);
+      if (location.hash !== target) history.replaceState(null, '', target);
+      const b2 = $('#sorSonuc'); if (b2) b2.innerHTML = sorSonucHtml(S.sorR);
+      const ai = $('#sorAiBtn'); if (ai) ai.disabled = false;
+    } catch (e) { const b3 = $('#sorSonuc'); if (b3) b3.innerHTML = '<div class="empty">Arama yapılamadı: ' + esc(e.message) + '</div>'; }
+  }
+  AFTER.sor = () => {
+    const f = $('#sorForm'), i = $('#sorQ');
+    if (f) f.onsubmit = (e) => { e.preventDefault(); sorCalistir(i.value); };
+    if (S.sorQ && !S.sorR) sorCalistir(S.sorQ);
+    else if (!S.sorQ && i && window.innerWidth > 860) i.focus();
+  };
+  AKSIYON.sorOrnek = (t) => { const i = $('#sorQ'); if (i) i.value = t.dataset.v; sorCalistir(t.dataset.v); };
+  AKSIYON.sorGecmisSil = () => { ls.del('op_sor_gecmis'); sayfaCiz(); };
+  AKSIYON.sorTur = (t) => { S.sorTur = t.dataset.v; const b = $('#sorSonuc'); if (b) b.innerHTML = sorSonucHtml(S.sorR); };
+  AKSIYON.sorMd = (t, ev) => { if (ev) ev.preventDefault(); S.tMd = t.dataset.v; S.tQ = ''; location.hash = '#/teblig'; };
+  AKSIYON.sorAyar = () => {
+    const k = sorAnahtar();
+    modal('Yapay zekâ ayarı', '<p style="margin:0 0 10px">“Yapay zekâ ile cevapla”, sorunuzu ve <b>yalnız bu soruyla ilgili bulunan kayıtlardan alıntıları</b> Anthropic’in Claude modeline (' + AI_MODEL + ') gönderir; model cevabı kaynak numaralarıyla yazar. Bu alıntılar kişisel ve kurumsal bilgi içerebilir ve cihazdan çıkar; kullanmak sizin tercihinizdir. Yerel arama ve doğrudan cevaplar anahtarsız çalışır.</p>' +
+      '<div class="f"><label for="aiKey">Anthropic API anahtarı</label><input class="fld" id="aiKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="sk-ant-…" value="' + esc(k) + '"></div>' +
+      '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Anahtar yalnız bu cihazın tarayıcısında saklanır; siteye, veri dosyalarına veya GitHub’a yazılmaz. Anahtar console.anthropic.com adresinden alınır; kullanım ücreti anahtarın hesabına yansır.</p>',
+      '<button class="btn" data-a="sorAyarSil">Anahtarı sil</button><button class="btn pri" data-a="sorAyarKaydet">Kaydet</button>');
+  };
+  AKSIYON.sorAyarKaydet = () => { const v = (($('#aiKey') || {}).value || '').trim(); if (v) ls.set('op_ai_key', v); else ls.del('op_ai_key'); modalKapat(); toast(v ? 'Yapay zekâ anahtarı bu cihaza kaydedildi.' : 'Anahtar silindi.'); };
+  AKSIYON.sorAyarSil = () => { ls.del('op_ai_key'); modalKapat(); toast('Yapay zekâ anahtarı bu cihazdan silindi.'); };
+  function sorSdk() {
+    if (window.Anthropic) return Promise.resolve(window.Anthropic);
+    return S._sdkP || (S._sdkP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/anthropic-sdk.min.js?v=1'; s.onload = () => (window.Anthropic ? res(window.Anthropic) : rej(new Error('Claude kitaplığı yüklenemedi.'))); s.onerror = () => { S._sdkP = null; rej(new Error('Claude kitaplığı yüklenemedi (çevrimdışı olabilir).')); }; document.head.appendChild(s); }));
+  }
+  // Güvenli biçimlendirme: kaçışlı metin, **kalın**, başlık, madde işaretleri, [n] kaynak bağlantıları
+  function sorAiHtml(t, r) {
+    const kay = (n, h) => { if (h) return '<sup class="sor-k" title="Sitenin hesapladığı cevap ' + n + '">H' + n + '</sup>'; const d = r.sonuclar[n - 1]; return d ? '<a class="sor-k" href="' + esc(d.mdLink ? '#/teblig' : d.link) + '"' + (d.mdLink ? ' data-a="sorMd" data-v="' + esc(d.mdLink) + '"' : '') + ' title="' + esc(d.tur + ' · ' + d.baslik) + '">' + n + '</a>' : '[' + n + ']'; };
+    const satir = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[(H?)(\d{1,2})\]/g, (m, h, n) => kay(Number(n), !!h)).replace(/\[(TEYİT GEREKLİ|ÇIKARIM)\]/g, '<i class="amb-t">[$1]</i>');
+    const out = []; let liste = false;
+    t.split('\n').forEach((l) => { const m = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/); if (m) { if (!liste) { out.push('<ul>'); liste = true; } out.push('<li>' + satir(m[1]) + '</li>'); } else { if (liste) { out.push('</ul>'); liste = false; } const h = l.match(/^#{1,4}\s+(.*)/); if (h) out.push('<h4>' + satir(h[1]) + '</h4>'); else if (l.trim()) out.push('<p>' + satir(l) + '</p>'); } });
+    if (liste) out.push('</ul>');
+    return out.join('');
+  }
+  AKSIYON.sorAi = async () => {
+    const r = S.sorR; if (!r) return;
+    const key = sorAnahtar(); if (!key) { AKSIYON.sorAyar(); return; }
+    const box = $('#sorAi'), btn = $('#sorAiBtn'); if (!box) return;
+    if (S._aiStream) { try { S._aiStream.abort(); } catch (e) {} S._aiStream = null; }
+    box.innerHTML = '<article class="sor-kart sor-ai"><h3>Yapay zekâ cevabı <small class="muted">' + AI_MODEL + '</small></h3><div class="sor-ai-m"><span class="spin"></span> Kayıtlar okunuyor…</div><p class="muted sor-not">Cevap yalnız “İlgili kayıtlar”dan ve sitenin hesaplarından alıntılarla yazılır; numaralar kaynağa gider. Önemli işlemlerde kaynağı açıp kontrol edin.</p></article>';
+    if (btn) btn.disabled = true;
+    const m = box.querySelector('.sor-ai-m');
+    try {
+      const Anthropic = await sorSdk();
+      const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+      const stream = client.beta.messages.stream({
+        model: AI_MODEL, max_tokens: 4000, output_config: { effort: 'medium' },
+        betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+        system: SOR.SISTEM,
+        messages: [{ role: 'user', content: '<alintilar>\n' + SOR.baglam(S.sorDz, r) + '\n</alintilar>\n\nSoru: ' + r.soru }]
+      });
+      S._aiStream = stream; let metin = '';
+      stream.on('text', (d) => { metin += d; if (S.sorR === r && m.isConnected) m.innerHTML = sorAiHtml(metin, r); });
+      const son = await stream.finalMessage();
+      if (son.stop_reason === 'refusal') metin += (metin ? '\n\n' : '') + 'Model bu soruyu yanıtlamadı. Doğrudan cevaplar ve ilgili kayıtlar sayfada.';
+      else if (son.stop_reason === 'max_tokens') metin += '\n\n[Cevap uzunluk sınırında kesildi.]';
+      if (m.isConnected) m.innerHTML = sorAiHtml(metin || 'Cevap alınamadı.', r);
+    } catch (e) {
+      const A = window.Anthropic;
+      const msg = !A ? e.message : e instanceof A.AuthenticationError ? 'API anahtarı geçersiz; ayardan kontrol edin.' : e instanceof A.PermissionDeniedError ? 'Bu anahtarın bu modele erişimi yok.' : e instanceof A.RateLimitError ? 'İstek sınırına ulaşıldı; biraz sonra yeniden deneyin.' : e instanceof A.APIConnectionError ? 'Claude’a bağlanılamadı; internet bağlantısını kontrol edin.' : e instanceof A.APIError ? 'Claude hatası (' + (e.status || '') + '): ' + e.message : e.message;
+      if (m.isConnected) m.innerHTML = '<p class="red-t">' + esc(msg) + '</p>';
+    } finally { S._aiStream = null; const b = $('#sorAiBtn'); if (b) b.disabled = false; }
+  };
+
   // =============== EK FORMLARI, TAHAKKUK, TEBLİĞ ===============
   async function ekPaket() {
     if (!S.kaynakKontrol && S.pw) { try { S.kaynakKontrol = await K.coz(await veriGetir(S.dataRef, 'data/kaynak-kontrol.enc'), S.pw); } catch(e) { /* Ek-10, yardımcı kaynak kaydı olmadan da açılır. */ } }

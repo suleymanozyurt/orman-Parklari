@@ -70,3 +70,12 @@
 - 2026 kira esasları Drive'daki park tahakkuk fişleriyle karşılaştırıldı (Ekosistem Hizmetleri › Tahakkuk-2026.xlsx): Azizpaşa 3.271.113,81; Boğazköy 1.306.627,27; Hacı Bektaş-i Veli 837.279,87; Işıklar 3.182.675,00; Kayabaşı 8.406.075,71; Kağıthane 667.452,81; Kurtyolu 1.243.353,57; Taşoluk 1.998.105,35; Türkköşe 32.357.509,80; Çiçekçiler 974.800,00; Tayakadın 3.032.169,84 (ek kira dahil peşin sayfası). Hepsi sitedeki değerle aynı.
 - Göktürk için 2026 fişi Drive'da yok; 913.387,92 = 2025 fişindeki 677.185,59 × 1,3488 [ÇIKARIM].
 - İmrahor 2026 esası 964.859,80 (15.11.2025 vadeli dönem); 15.11.2026 tahakkuku muhasebe dökümünde henüz yok [TEYİT GEREKLİ].
+
+## 20.11.2026 – Harita denetimi ve Sor asistanı (v48)
+
+- 17 parkın haritası tarayıcıda tek tek açıldı; her çizimin her köşesi park sınırına göre ölçüldü.
+- Mimar Sinan 2018 nokta listesi (81 nokta) ITRF kabulüyle çevrildiği için 60–230 m kaymıştı (42'si sınır dışında, bir kısmı göl üstünde). ED50 TM 3° DOM 30 (sitedeki 7 parametre) ile yeniden çevrildi; 18 nokta 2021 saha teslim sınırına 1 m içinde oturuyor [ÇIKARIM: datum ED50].
+- Diğer parklarda sınır dışı çizimler: Kayabaşı/Taşoluk/Tayakadın arşiv plan ve yol çizgileri; Kağıthane 2021 GYP "mevcut" katmanı (83–149 m, belge gerekli, zaten eksik listesinde); Çiçekçiler Terkos koruma bandı (bilgi); Boğazköy M.26, M.28, T.47 (kayıtlı).
+- Tesis çizimi olmayan parklar: Kurtyolu, Ağaçlı, Işıklar, Avrupa Yakası Kent Ormanı (okunabilir çizim yok).
+- Parklar tablosunda alanlar iki ondalıkla gösteriliyor (İmrahor 54,711 → 54,71).
+- Sor asistanı: sol menü › Sor; yan menü aramasında Enter; telefonda üstteki büyüteç. Yerel dizin (park, tahakkuk, alacak, muhasebe, tesis, Tebliğ, denetim, defter, yazışma, plan revizyonu); doğrudan cevaplar sitenin kendi hesaplarından. İsteğe bağlı "Yapay zekâ ile cevapla" (Claude Opus 5.5, kaynak numaralı; anahtar yalnız cihazda saklanır).
