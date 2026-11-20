@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '55', date: '20.11.2026' };
+  const BUILD = { version: '56', date: '20.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -91,6 +91,7 @@
     S.rapor = bugun();
     S.gzO = gzOranlar();
     S.esl = E.eslestir(V);
+    S.sorDz = null;
     S.al = E.alacakHesapla(S.esl.parcalar, S.rapor, S.gzO, S.oran.gz_kdv);
     S.belgeliBorclar = E.belgeliBorclar(V, S.rapor).sort((a, b) => b.hesap_tarihi.localeCompare(a.hesap_tarihi))
       .map(b => E.belgeliBorcHesapla(b, S.esl.parcalar, S.al, S.rapor, S.gzO, S.oran.gz_kdv));
@@ -375,7 +376,7 @@
     const tab = ['genel', 'harita', 'parklar', 'muhasebe'].map((id) => { const x = PAGES.find((p) => p.id === id); return '<a href="#/' + id + '" data-p="' + id + '">' + svg(x.ic, 22) + x.s + (id === 'alacaklar' ? '<span class="cnt" id="cntAl2"></span>' : '') + '</a>'; }).join('');
     A.innerHTML =
       '<header class="mbar">' + LOGO(34) + '<b id="mTitle">Orman Parkları</b>' +
-      '<button class="ib" id="mSearch" aria-label="Ara">' + svg(IC.search, 18, 2) + '</button><button class="ib" id="mMore" aria-label="İşlemler">' +
+      '<button class="ib" id="mSearch" aria-label="Sor asistanı" aria-controls="sohbet" aria-expanded="false">' + svg(IC.search, 18, 2) + '</button><button class="ib" id="mMore" aria-label="İşlemler">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button></header>' +
       '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
       '<aside class="side"><div class="side-scroll"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b></div></div>' +
@@ -397,7 +398,7 @@
     A.addEventListener('click', tikla);
     $('#sQ').addEventListener('input', (e) => ara(e.target.value, $('#sRes')));
     $('#sQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.value.trim()) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; $('#sRes').classList.remove('on'); S.sorQ = null; location.hash = '#/sor?q=' + encodeURIComponent(v); } });
-    $('#mSearch').onclick = () => sohbetAcKapat(true);
+    $('#mSearch').onclick = () => sohbetAcKapat();
     sohbetKur(); $('#mMore').onclick = menuSheet; $('#tMore').onclick = menuSheet;
     window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
     document.body.classList.toggle('is-owner', S.owner);
@@ -2914,15 +2915,15 @@
   // Veri cihazda kalır. Yapay zekâ (Claude) isteğe bağlıdır; yalnız seçilen alıntılar gönderilir.
   const AI_MODEL = 'claude-opus-5-5';
   const sorKey = () => [S.sha, S.gypS, !!S.ekB, S.rapor, S.veri.parks.length].join('|');
-  async function sorDizin() {
-    if (S.sorDz && S.sorKeyV === sorKey()) return S.sorDz;
-    await Promise.allSettled([gypAl(), ekPaket()]);
+  async function sorDizin(tam = true) {
+    if (S.sorDz && S.sorKeyV === sorKey() && (!tam || S.sorTam)) return S.sorDz;
+    if (tam) await Promise.allSettled([gypAl(), ekPaket()]);
     const ctx = { parks: S.veri.parks, rapor: S.rapor, al: S.al, muhasebe: S.veri.muhasebe, teblig: S.ekB && S.ekB.teblig, gyp: S.gyp && !S.gyp.hata ? S.gyp : null, durumlar: S.gyp && S.gyp.durumlar,
       tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD), belgeliBorclar: S.belgeliBorclar,
       kurum: S.veri.kurum, sefler: (window.EK && EK.TF_SEF) || {}, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira, fisKalemleri: E.tahakkukFisKalemleri,
       planAl: (Y, p) => { S.plan[Y] = S.plan[Y] || {}; if (!S.plan[Y][p.kisa]) S.plan[Y][p.kisa] = parkTahakkuk(p, Y); return S.plan[Y][p.kisa]; },
       yilbasiAl: (Y, p) => E.yilbasiKira(p, kiraOranlari(Y), Y, Y + '-01-02', { veri: S.veri, esl: S.esl }) };
-    S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey();
+    S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey(); S.sorTam = tam;
     return S.sorDz;
   }
   const SOR_ORNEK = ['Tayakadın 2027 kira ne kadar olacak?', 'Borcu olan parklar', 'Kayabaşı’nda kaç kameriye var?', 'Hangi parklarda WC var?', 'Md. 32 ne diyor?', 'Kesin teminat oranı nedir?', 'Boğazköy işletmecisi ve telefonu', 'Sözleşmesi 2 yıl içinde bitecek parklar', 'Aralık 2025 TÜFE', 'Sözleşme devri şartları'];
@@ -3016,26 +3017,41 @@
     const key = sorAnahtar(); if (!key) return false;
     if (S._aiStream) { try { S._aiStream.abort(); } catch (e) {} S._aiStream = null; }
     m.innerHTML = '<span class="spin"></span> Kayıtlar okunuyor…';
+    let frame = null, stream;
     try {
       const Anthropic = await sorSdk();
       const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
       const msgs = [];
       (gecmis || []).slice(-3).forEach((x) => { msgs.push({ role: 'user', content: x.q }); msgs.push({ role: 'assistant', content: x.a || '(Sitenin doğrudan cevabı gösterildi.)' }); });
       msgs.push({ role: 'user', content: '<alintilar>\n' + SOR.baglam(S.sorDz, r) + '\n</alintilar>\n\nSoru: ' + r.soru + (r.devraldi ? '\n(Not: soru önceki konuşmadaki ' + r.parks.join(', ') + ' parkıyla ilgili kabul edildi.)' : '') });
-      const stream = client.beta.messages.stream({ model: AI_MODEL, max_tokens: 4000, output_config: { effort: 'medium' }, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', system: SOR.SISTEM, messages: msgs });
+      stream = client.beta.messages.stream({ model: AI_MODEL, max_tokens: 4000, output_config: { effort: 'medium' }, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', system: SOR.SISTEM, messages: msgs });
       S._aiStream = stream; let metin = '';
-      stream.on('text', (d) => { metin += d; if (m.isConnected) { m.innerHTML = sorAiHtml(metin, r); const k = m.closest('.sohbet-akis'); if (k) k.scrollTop = k.scrollHeight; } });
+      const ciz = () => {
+        frame = null; if (!m.isConnected) return;
+        const k = m.closest('.sohbet-akis');
+        const takip = k && k.scrollHeight - k.scrollTop - k.clientHeight < 72;
+        m.innerHTML = sorAiHtml(metin || 'Cevap alınamadı.', r);
+        if (takip) k.scrollTop = k.scrollHeight;
+      };
+      stream.on('text', (d) => {
+        metin += d;
+        if (frame == null) frame = window.requestAnimationFrame(ciz);
+      });
       const son = await stream.finalMessage();
       if (son.stop_reason === 'refusal') metin += (metin ? '\n\n' : '') + 'Model bu soruyu yanıtlamadı; sitenin doğrudan cevabı ve ilgili kayıtlar yukarıda.';
       else if (son.stop_reason === 'max_tokens') metin += '\n\n[Cevap uzunluk sınırında kesildi.]';
-      if (m.isConnected) m.innerHTML = sorAiHtml(metin || 'Cevap alınamadı.', r);
+      if (frame != null) window.cancelAnimationFrame(frame);
+      ciz();
       return metin;
     } catch (e) {
       const A = window.Anthropic;
       const msg = !A ? e.message : e instanceof A.AuthenticationError ? 'API anahtarı geçersiz; ayardan kontrol edin.' : e instanceof A.PermissionDeniedError ? 'Bu anahtarın bu modele erişimi yok.' : e instanceof A.RateLimitError ? 'İstek sınırına ulaşıldı; biraz sonra yeniden deneyin.' : e instanceof A.APIConnectionError ? 'Claude’a bağlanılamadı; internet bağlantısını kontrol edin.' : e instanceof A.APIError ? 'Claude hatası (' + (e.status || '') + '): ' + e.message : e.message;
       if (m.isConnected) m.innerHTML = '<p class="red-t">' + esc(msg) + '</p>';
       return '';
-    } finally { S._aiStream = null; }
+    } finally {
+      if (frame != null) window.cancelAnimationFrame(frame);
+      if (S._aiStream === stream) S._aiStream = null;
+    }
   }
   AKSIYON.sorAi = async () => {
     const r = S.sorR; if (!r) return;
@@ -3102,14 +3118,18 @@
     const el = k.lastElementChild; k.scrollTop = k.scrollHeight;
     sohbetDurum(true);
     try {
-      const dz = await sorDizin();
-      const r = SOR.sor(dz, scoped ? scope + ' ' + q : q, prior);
+      const soru = scoped ? scope + ' ' + q : q;
+      const hizli = /borc|tahsil|tahakkuk|kira|isletmeci|sozlesme/.test(raw) && !/tesis|plan|harita|madde|teblig|md\b|saha|sinir|nasil|nedir|fesih/.test(raw);
+      let r = SOR.sor(await sorDizin(!hizli), soru, prior);
+      if (hizli && !r.cevaplar.length) r = SOR.sor(await sorDizin(), soru, prior);
       if (L !== S.sohbet) return;
       const context = { parks: r.parks, yil: r.yil };
       S.sohbetOnceki = r.parks.length ? context : (prior && !r.cevaplar.length ? prior : context);
       const html = (scoped ? '<p class="muted sohbet-devam">Park: ' + esc(scope) + '</p>' : '') + sohbetCevapHtml(r);
       el.innerHTML = html;
-      const kayit = { q, html, context: S.sohbetOnceki }; L.push(kayit); sohbetSakla(); k.scrollTop = k.scrollHeight;
+      const kayit = { q, html, context: S.sohbetOnceki }; L.push(kayit);
+      if (L.length > 40) { L.shift(); k.firstElementChild?.remove(); k.firstElementChild?.remove(); }
+      sohbetSakla(); k.scrollTop = k.scrollHeight;
       if (sorAnahtar() && ls.get('op_ai_oto') !== '0') {
         el.insertAdjacentHTML('beforeend', '<div class="sohbet-ai"><b class="sohbet-ai-b">Yapay zekâ</b><div class="sor-ai-m"></div></div>');
         const gecmis = L.slice(0, -1).map((x) => ({ q: x.q, a: x.aiText || '' }));
@@ -3119,14 +3139,35 @@
     } catch (e) { el.innerHTML = '<p class="red-t">Cevap hazırlanamadı: ' + esc(e.message) + '</p>'; }
     finally { sohbetDurum(false); }
   }
-  function sohbetAcKapat(ac) {
-    const p = $('#sohbet'), b = $('#sohbetAc'); if (!p) return;
-    const acik = ac == null ? p.hidden : ac; p.hidden = !acik; document.body.classList.toggle('sohbet-acik', acik); if (b) b.setAttribute('aria-expanded', String(acik));
-    if (acik) { sohbetYukle(); sohbetBaglam(); if (!S.sohbetPending) sohbetCiz(); const ai = $('#sohbetAiDurum'); if (ai) ai.textContent = sorAnahtar() ? (ls.get('op_ai_oto') === '0' ? 'Yapay zekâ kapalı' : 'Yapay zekâ açık') : 'Yerel cevap'; setTimeout(() => { const i = $('#sohbetQ'); if (i && window.innerWidth > 860) i.focus(); }, 60); }
+  function sohbetGorunum(p) {
+    const view = window.visualViewport;
+    if (!view || !matchMedia('(max-width: 860px)').matches) return;
+    const alt = Math.max(0, document.documentElement.clientHeight - view.height - view.offsetTop);
+    p.style.setProperty('--sohbet-klavye', Math.round(alt) + 'px');
+    p.style.setProperty('--sohbet-yukseklik', Math.floor(view.height) + 'px');
+    p.classList.toggle('klavye-acik', alt > 100);
+  }
+  function sohbetAcKapat(ac, odak = false) {
+    const p = $('#sohbet'); if (!p) return;
+    const acik = ac == null ? p.hidden : ac, onceki = p.hidden;
+    if (acik && onceki) S.sohbetAcici = document.activeElement;
+    p.hidden = !acik; document.body.classList.toggle('sohbet-acik', acik);
+    [$('#sohbetAc'), $('#mSearch')].forEach(b => { if (b) b.setAttribute('aria-expanded', String(acik)); });
+    if (!acik) {
+      const ayar = $('#sohbetMenu'); if (ayar) ayar.open = false;
+      if (p.contains(document.activeElement)) document.activeElement.blur();
+      if (odak) (S.sohbetAcici?.isConnected ? S.sohbetAcici : $('#sohbetAc'))?.focus({ preventScroll: true });
+      return;
+    }
+    sohbetGorunum(p); sohbetYukle(); sohbetBaglam();
+    if (!S.sohbetPending && !$('#sohbetAkis').hasChildNodes()) sohbetCiz();
+    const ai = $('#sohbetAiDurum');
+    if (ai) ai.textContent = sorAnahtar() ? (ls.get('op_ai_oto') === '0' ? 'Yapay zekâ kapalı' : 'Yapay zekâ açık') : 'Yerel cevap';
+    if (onceki && window.innerWidth > 860) $('#sohbetQ').focus({ preventScroll: true });
   }
   AKSIYON.sohbetOrnek = (t) => sohbetGonder(t.dataset.v);
   AKSIYON.sohbetTemizle = () => { S.sohbet = []; S.sohbetOnceki = null; sohbetSakla(); sohbetCiz(); };
-  AKSIYON.sohbetKapat = () => { sohbetAcKapat(false); $('#sohbetAc')?.focus(); };
+  AKSIYON.sohbetKapat = () => sohbetAcKapat(false, true);
   AKSIYON.sohbetKopyala = async () => {
     const answer = $('#sohbetAkis .sb-a:last-child');
     if (!answer || S.sohbetPending) { toast('Önce bir soru sorun.'); return; }
@@ -3139,8 +3180,8 @@
     document.body.insertAdjacentHTML('beforeend',
       '<button class="sohbet-ac noprint" id="sohbetAc" type="button" aria-controls="sohbet" aria-expanded="false" aria-label="Sor asistanını aç"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M9 10h6M9 14h4"></path></svg><span>Sor <small>Kayıt ve belge bul</small></span></button>' +
       '<aside class="sohbet noprint" id="sohbet" role="region" aria-label="Sor asistanı" hidden><header class="sohbet-bas"><div><b>Sor asistanı</b><button class="sohbet-ai-dur" id="sohbetAiDurum" data-a="sohbetAiDegis" title="Yapay zekâyı aç / kapat"></button></div>' +
-      '<div class="sohbet-dug"><button class="ib" data-a="sorAyar" aria-label="Yapay zekâ ayarı" title="Yapay zekâ ayarı">' + svg(IC.gear, 17) + '</button><button class="ib" data-a="sohbetTemizle" aria-label="Sohbeti temizle" title="Sohbeti temizle">' + svg('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3', 17) + '</button><button class="ib" data-a="sohbetKapat" aria-label="Kapat" title="Kapat">' + svg(IC.x, 18) + '</button></div></header>' +
-      '<div class="sohbet-scope"><label for="sohbetPark">Park <select class="fld" id="sohbetPark"></select></label><div id="sohbetOrnekler" class="chiprow"></div></div><div class="sohbet-akis" id="sohbetAkis" role="log" aria-live="polite"></div><div class="sohbet-alt"><span id="sohbetDurum" role="status"></span><button class="btn sm" type="button" data-a="sohbetKopyala">Son cevabı kopyala</button></div>' +
+      '<div class="sohbet-dug"><details class="sohbet-menu" id="sohbetMenu"><summary class="ib" aria-label="Sohbet seçenekleri">' + svg(IC.gear, 17) + '</summary><div><button type="button" data-a="sohbetKopyala">Son cevabı kopyala</button><button type="button" data-a="sorAyar">Yapay zekâ ayarı</button><button type="button" data-a="sohbetTemizle">Sohbeti temizle</button></div></details><button class="sohbet-kapat" type="button" data-a="sohbetKapat" aria-label="Kapat">' + svg(IC.x, 16) + '<span>Kapat</span></button></div></header>' +
+      '<div class="sohbet-scope"><label for="sohbetPark">Park <select class="fld" id="sohbetPark"></select></label><div id="sohbetOrnekler" class="chiprow"></div></div><div class="sohbet-akis" id="sohbetAkis" role="log" aria-live="polite"></div><span class="sohbet-durum" id="sohbetDurum" role="status"></span>' +
       '<form class="sohbet-form" id="sohbetForm"><input class="fld" id="sohbetQ" type="text" autocomplete="off" enterkeyhint="send" placeholder="Sorunuzu yazın…" aria-label="Soru"><button class="btn pri" type="submit" aria-label="Gönder">' + svg('M4 12 20 4l-6 16-3-7z', 18) + '</button></form></aside>');
     $('#sohbetAc').onclick = () => sohbetAcKapat();
     $('#sohbetPark').onchange = (e) => {
@@ -3150,8 +3191,20 @@
       $('#sohbetPark').focus();
     };
     $('#sohbetForm').onsubmit = (e) => { e.preventDefault(); sohbetGonder($('#sohbetQ').value); };
-    $('#sohbet').addEventListener('click', (e) => { tikla(e); const l = e.target.closest('a[href^="#/"], [data-a="formAc"], [data-a="sorMd"]'); if (l) sohbetAcKapat(false); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#sohbet').hidden && !document.querySelector('.modal.on')) sohbetAcKapat(false); });
+    const panel = $('#sohbet');
+    panel.addEventListener('click', (e) => {
+      tikla(e);
+      if (e.target.closest('#sohbetMenu button')) $('#sohbetMenu').open = false;
+      if (e.target.closest('a[href^="#/"], [data-a="formAc"], [data-a="sorMd"]')) sohbetAcKapat(false);
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.hidden && !document.querySelector('#modal.on') && !e.target.closest?.('#sohbet, #sohbetAc, #mSearch')) sohbetAcKapat(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden && !document.querySelector('#modal.on')) sohbetAcKapat(false, true);
+    });
+    const view = window.visualViewport;
+    if (view) ['resize', 'scroll'].forEach(event => view.addEventListener(event, () => { if (!panel.hidden) sohbetGorunum(panel); }));
   }
 
   // =============== EK FORMLARI, TAHAKKUK, TEBLİĞ ===============

@@ -218,7 +218,8 @@
 .sohbet-scope select{flex:1;min-width:0}
 .sohbet-scope .chiprow{margin:0}
 .sohbet-scope .hchip{min-height:34px}
-.sohbet-alt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 12px;color:var(--mute);font-size:12px}
+.sohbet-durum{padding:4px 12px;color:var(--mute);font-size:12px}
+.sohbet-durum:empty{display:none}
 .debt-source{margin:0 0 14px}
 .debt-source-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
 .debt-source-head p{margin:4px 0 9px;font-size:13px}
@@ -248,15 +249,21 @@ body.sohbet-acik .sohbet-ac,body[data-page="sor"] .sohbet-ac{display:none}
 #gate:not([style*="none"]) ~ .sohbet-ac{display:none}
 .sohbet{position:fixed;top:12px;right:12px;bottom:12px;width:min(440px,calc(100vw - 24px));z-index:70;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.25);overflow:hidden}
 .sohbet[hidden]{display:none}
-.sohbet-bas{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line)}
+.sohbet-bas{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;padding:8px 10px 8px 12px;border-bottom:1px solid var(--line)}
 .sohbet-bas b{font-size:16px;display:block}
 .sohbet-ai-dur{border:0;background:none;padding:0;font:inherit;font-size:12px;color:var(--mute);cursor:pointer;text-decoration:underline dotted}
-.sohbet-dug{display:flex;gap:4px}
-.sohbet-dug .ib{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:10px;background:var(--soft);color:var(--ink2);cursor:pointer}
-.sohbet-akis{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;background:var(--mist,var(--paper))}
+.sohbet-dug{display:flex;align-items:center;gap:6px}
+.sohbet-dug .ib,.sohbet-kapat{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:10px;background:var(--soft);color:var(--ink2);cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+.sohbet-dug .ib{width:44px;list-style:none}.sohbet-dug .ib::-webkit-details-marker{display:none}
+.sohbet-kapat{padding:0 10px}
+.sohbet-menu{position:relative;z-index:1}
+.sohbet-menu>div{position:absolute;right:0;top:calc(100% + 6px);width:184px;padding:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 22px rgba(0,0,0,.16)}
+.sohbet-menu button{display:block;width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;text-align:left;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.sohbet-menu button:hover,.sohbet-menu button:focus-visible{background:var(--soft)}
+.sohbet-akis{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--mist,var(--paper))}
 .sohbet-hos{font-size:14px;line-height:1.5;color:var(--ink)}
 .sohbet-hos .chiprow{margin-top:10px}
-.sb{max-width:100%;font-size:14px;line-height:1.5}
+.sb{flex:0 0 auto;min-width:0;max-width:100%;font-size:14px;line-height:1.5}
 .sb-k{align-self:flex-end;max-width:85%;background:var(--pine);color:#fff;padding:9px 13px;border-radius:16px 16px 4px 16px;overflow-wrap:anywhere}
 .sb-a{align-self:stretch;background:var(--paper);border:1px solid var(--line);padding:10px 12px;border-radius:16px 16px 16px 4px}
 .sb-a>p{margin:0 0 6px}
@@ -274,8 +281,18 @@ body.sohbet-acik .sohbet-ac,body[data-page="sor"] .sohbet-ac{display:none}
 .sohbet-ai-b{display:inline-block;font-size:11.5px;letter-spacing:.02em;text-transform:uppercase;color:var(--pine);margin-bottom:4px}
 .sohbet-ai .sor-ai-m p,.sohbet-ai .sor-ai-m li{font-size:13.5px;line-height:1.55;margin:0 0 6px}
 .sohbet-ai .sor-ai-m ul{padding-left:18px;margin:0 0 6px}
-.sohbet-form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--paper)}
+.sohbet-form{display:flex;flex-shrink:0;gap:8px;padding:8px 10px;border-top:1px solid var(--line);background:var(--paper)}
 .sohbet-form .fld{flex:1;min-width:0;font-size:16px;padding:11px 14px;border-radius:999px}
 .sohbet-form .btn{border-radius:999px;padding:0 14px;display:grid;place-items:center}
-@media(max-width:860px){.sohbet-ac{right:14px;bottom:calc(82px + env(safe-area-inset-bottom,0px));padding:11px 15px 11px 12px}.sohbet{top:0;right:0;bottom:0;width:100vw;border-radius:0;border:0}.sb-a .sor-kv{grid-template-columns:1fr;gap:0}.sb-a .sor-kv dt{margin-top:6px}}
+@media(max-width:860px){
+  .sohbet-ac{right:14px;bottom:calc(82px + env(safe-area-inset-bottom,0px));padding:11px 15px 11px 12px}
+  .sohbet{top:auto;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100% - 24px));height:min(520px,62vh);height:min(520px,62dvh)}
+  .sohbet.klavye-acik{bottom:calc(8px + var(--sohbet-klavye,0px));height:min(435px,calc(var(--sohbet-yukseklik,100dvh) - 36px))}
+  .sohbet-scope{flex-shrink:0;gap:5px;padding:6px 10px}
+  .sohbet-scope .chiprow{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain}
+  .sohbet-scope .hchip{flex-shrink:0;min-height:36px;white-space:nowrap}
+  .sohbet.klavye-acik .sohbet-scope .chiprow{display:none}
+  .sb-a .sor-kv{grid-template-columns:1fr;gap:0}
+  .sb-a .sor-kv dt{margin-top:6px}
+}
 @media print{.sohbet,.sohbet-ac{display:none !important}}

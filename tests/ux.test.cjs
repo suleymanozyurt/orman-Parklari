@@ -22,7 +22,7 @@ test('update action blocks dirty records, shows progress, and handles another ta
 
 test('inventory park link selects the clicked park and opens its detail route',async()=>{const {dom,w,a}=app();try{w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.document.body.innerHTML='<div id="gate"></div><div id="app"></div>';a.S.veri={parks:[{kisa:'Birinci',ad:'Birinci park'},{kisa:'İkinci',ad:'İkinci park'}],muhasebe:[],meta:{},kurum:{}};a.S.oran={tufe:{degerler:{}},gz:{oranlar:[['2025-01-01',.037]]},gz_kdv:.2};a.hesapla();a.S.page='parklar';w.location.hash='#/parklar';a.kabukKur();a.SAYFA.park=()=>'<h1>'+a.S.park+'</h1>';a.sayfaCiz();w.addEventListener('hashchange',a.yonlendir);await new Promise((resolve,reject)=>{const timeout=w.setTimeout(()=>reject(Error('park navigation did not complete')),1000);w.addEventListener('hashchange',()=>{if(w.location.hash==='#/park?p='+encodeURIComponent('İkinci')){w.clearTimeout(timeout);resolve();}});w.document.querySelectorAll('#page tbody .pk')[1].click();});assert.equal(a.S.park,'İkinci');assert.equal(w.location.hash,'#/park?p='+encodeURIComponent('İkinci'));assert.equal(w.document.querySelector('#page h1').textContent,'İkinci');}finally{dom.window.close();}});
 
-function preparedApp(){const x=app(),{w,a}=x;w.scrollTo=()=>{};w.TextEncoder=TextEncoder;w.Uint8Array=Uint8Array;Object.defineProperty(w,'crypto',{value:require('node:crypto').webcrypto});w.HTMLElement.prototype.scrollIntoView=()=>{};w.document.body.innerHTML='<div id="gate"></div><div id="app"></div>';a.S.veri={parks:[{kisa:'Test',soz_bas:'2020-01-01',soz_bit:'2045-12-31',taban:'2020-01-01',ihale_b:100000,durum:'Kirada'}],muhasebe:[],meta:{},kurum:{}};a.S.oran={tufe:{degerler:{}},gz:{oranlar:[['2025-01-01',.037]]},gz_kdv:.2};a.S.enc=JSON.stringify(a.S.veri);a.S.page='parklar';a.hesapla();a.kabukKur();w.K.coz=async text=>JSON.parse(text);return x;}
+function preparedApp(setup=()=>{}){const x=app(),{w,a}=x;setup(x);w.scrollTo=()=>{};w.TextEncoder=TextEncoder;w.Uint8Array=Uint8Array;Object.defineProperty(w,'crypto',{value:require('node:crypto').webcrypto});w.HTMLElement.prototype.scrollIntoView=()=>{};w.document.body.innerHTML='<div id="gate"></div><div id="app"></div>';a.S.veri={parks:[{kisa:'Test',soz_bas:'2020-01-01',soz_bit:'2045-12-31',taban:'2020-01-01',ihale_b:100000,durum:'Kirada'}],muhasebe:[],meta:{},kurum:{}};a.S.oran={tufe:{degerler:{}},gz:{oranlar:[['2025-01-01',.037]]},gz_kdv:.2};a.S.enc=JSON.stringify(a.S.veri);a.S.page='parklar';a.hesapla();a.kabukKur();w.K.coz=async text=>JSON.parse(text);return x;}
 test('year selectors extend to contract end, grow with new parks and keep unexplained future rent empty',()=>{const {dom,w,a}=preparedApp();try{assert.equal(a.planYillari().at(-1),2045);assert.equal(a.planYillari()[0],2020);const plan=a.planAl(2045).Test;assert.equal(plan.kod,'yilbasi');assert.equal(plan.kira,undefined);a.S.page='tahakkuk';w.document.querySelector('#page').innerHTML=a.SAYFA.tahakkuk();a.AFTER.tahakkuk();const year=w.document.querySelector('#tYear');assert.equal(year.lastElementChild.value,'2045');year.value='2045';year.dispatchEvent(new w.Event('change'));assert.equal(a.S.tY,2045);assert.match(w.document.querySelector('#page').textContent,/Yılbaşı bekleniyor/);a.S.veri.parks.push({kisa:'Uzayan',soz_bas:'2026-01-01',soz_bit:'2050-12-31'});a.hesapla();assert.equal(a.planYillari().at(-1),2050);}finally{dom.window.close();}});
 test('manual refresh downloads records and rates from one immutable revision and clears old document caches',async()=>{const {dom,w,a}=preparedApp();try{const fresh=JSON.parse(a.S.enc);fresh.parks.push({kisa:'Yeni kaynak'});const rates=JSON.parse(JSON.stringify(a.S.oran));rates.tufe.degerler={'2026':[.1]};const urls=[];w.fetch=async(u,o)=>{urls.push([u,o.cache]);return{ok:true,json:async()=>[{sha:'revision-two'}],text:async()=>JSON.stringify(u.includes('oranlar.json')?rates:fresh)};};a.S.gyp={old:true};a.S.ekB={old:true};assert.equal(await a.yenile(),true);assert.equal(a.S.veri.parks.length,2);assert.equal(a.S.dataRef,'revision-two');assert.equal(a.S.gyp,null);assert.equal(a.S.ekB,null);assert.ok(a.S.lastRefresh);assert.ok(urls.slice(1).every(([u,c])=>u.includes('ref=revision-two')&&c==='no-store'));assert.equal(a.S.tufe['2026'][0],.1);}finally{dom.window.close();}});
 test('failed and offline refresh preserve current records without a success message',async()=>{const {dom,w,a}=preparedApp();try{const old=a.S.veri;w.fetch=async()=>({ok:false});assert.equal(await a.yenile(),false);assert.equal(a.S.veri,old);assert.match(w.document.querySelector('#toast').textContent,/Yeni veri alınamadı/);Object.defineProperty(w.navigator,'onLine',{value:false});w.fetch=()=>{throw Error('must not request offline');};assert.equal(await a.yenile(),false);assert.equal(a.S.veri,old);}finally{dom.window.close();}});
@@ -566,5 +566,45 @@ test('reference layers can start hidden and keep their coordinates in KML export
     const folder = Array.from(kml.querySelectorAll('Folder')).find(f => f.firstElementChild.textContent === 'Sınır köşe numaraları');
     assert.equal(folder.querySelector('visibility').textContent, '0');
     assert.match(folder.querySelector('Point coordinates').textContent, /^28,41/);
+  } finally { dom.window.close(); }
+});
+
+test('mobile Sor dismisses with the close button, launcher, outside tap, and Escape while preserving its answer', async () => {
+  let vv;
+  const { dom, w } = preparedApp(({w}) => {
+    Object.defineProperty(w, 'innerWidth', { value: 390 });
+    w.matchMedia = () => ({ matches: true });
+    Object.defineProperty(w.document.documentElement, 'clientHeight', { value: 780 });
+    vv = new w.EventTarget(); Object.assign(vv, { height: 780, offsetTop: 0 });
+    Object.defineProperty(w, 'visualViewport', { value: vv });
+  });
+  try {
+    w.eval(fs.readFileSync('js/sor.js', 'utf8'));
+    const doc = w.document, panel = doc.querySelector('#sohbet'), launcher = doc.querySelector('#sohbetAc');
+    const shortcut = doc.querySelector('#mSearch'), input = doc.querySelector('#sohbetQ');
+    const close = panel.querySelector('[data-a=sohbetKapat]');
+    let unwanted = 0; w.fetch = async () => { unwanted++; throw Error('Offline fixture'); };
+    launcher.focus(); launcher.click();
+    assert.equal(panel.hidden, false);
+    assert.notEqual(doc.activeElement, input);
+    assert.equal(close.textContent, 'Kapat');
+    vv.height = 420; vv.dispatchEvent(new w.Event('resize'));
+    assert.equal(panel.style.getPropertyValue('--sohbet-klavye'), '360px');
+    assert.equal(panel.classList.contains('klavye-acik'), true);
+    input.value = 'Test borcu';
+    doc.querySelector('#sohbetForm').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setImmediate(r));
+    assert.equal(unwanted, 0);
+    assert.match(doc.querySelector('#sohbetAkis').textContent, /ödenmemiş alacak yok/);
+    close.querySelector('svg').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.equal(panel.hidden, true);
+    assert.equal(doc.activeElement, launcher);
+    shortcut.click(); assert.equal(panel.hidden, false);
+    assert.equal(shortcut.getAttribute('aria-expanded'), 'true');
+    assert.match(doc.querySelector('#sohbetAkis').textContent, /Test borcu/);
+    shortcut.click(); assert.equal(panel.hidden, true);
+    launcher.click(); doc.querySelector('#page').click(); assert.equal(panel.hidden, true);
+    launcher.click(); doc.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape', bubbles:true}));
+    assert.equal(panel.hidden, true);
   } finally { dom.window.close(); }
 });
