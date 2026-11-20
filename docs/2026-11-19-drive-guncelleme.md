@@ -59,3 +59,11 @@
 - Mimar Sinan 1. Revize Vaziyet Planındaki tesisler çok sayfalı köşe listeleri hâlinde; fotoğraftan güvenilir sayısallaştırılamadı, sayısal çizim (NCZ/KML) gerekli.
 - Göktürk ve Azizpaşa datumunun yazılı teyidi; Azizpaşa onaylı plan nüshası.
 - Mimar Sinan Ek-3 cetvelinin “kapalı teklif ortalaması” sayfasında Kurtyolu alanı 2,77 ha yazılı (kayıt 39,72 ha; 2,77 ha Kağıthane’nin alanı). Bedeller Ek-10 raporlarıyla aynı; Tayakadın için Ek-10 bedeli (2.164.824,00 TL) muhasebedeki 2026 kirasından (3.032.169,84 TL) farklı. Tutanak bu sayfayı yalnız bilgi amaçlı kullanıyor.
+
+## 20.11.2026 – Mimar Sinan sınırı
+
+- Sınır, 05.05.2021 tarihli Saha Teslim Tesellüm Tutanağının köşe koordinatlarıyla değiştirildi (289 nokta, UTM 3° ITRF-96 DOM 30).
+- Tutanakta 284 nokta okundu; `08- Sınır ve Tesis Planı.kml` sınır noktalarıyla en çok 1 mm fark. 63, 87, 151, 156, 280 no.lu noktalar taramada okunamadı, KML değeri alındı [TEYİT GEREKLİ].
+- Alan: 82,2265 ha (kaynak projeksiyon); kayıtlı 82,16 ha. Önceki OGM CBS sınırı (86,88 ha, %5,74 fazla) "önceki sınır" olarak saklandı.
+- Aynı KML'deki 1. Revize tesis poligonları alınmadı (pafta fotoğrafından sayısallaştırma; önceki karar).
+- 2027 tahakkuk denemesi (Aralık 2026 TÜFE %30 varsayımı): 14 kiradaki park hesaplandı; Yeşiltepe, AYKO ve Ağaçlı sözleşme bilgisi eksik, Mimar Sinan sözleşmesi sona erdi.
