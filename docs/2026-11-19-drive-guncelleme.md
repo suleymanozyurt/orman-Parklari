@@ -67,3 +67,6 @@
 - Alan: 82,2265 ha (kaynak projeksiyon); kayıtlı 82,16 ha. Önceki OGM CBS sınırı (86,88 ha, %5,74 fazla) "önceki sınır" olarak saklandı.
 - Aynı KML'deki 1. Revize tesis poligonları alınmadı (pafta fotoğrafından sayısallaştırma; önceki karar).
 - 2027 tahakkuk denemesi (Aralık 2026 TÜFE %30 varsayımı): 14 kiradaki park hesaplandı; Yeşiltepe, AYKO ve Ağaçlı sözleşme bilgisi eksik, Mimar Sinan sözleşmesi sona erdi.
+- 2026 kira esasları Drive'daki park tahakkuk fişleriyle karşılaştırıldı (Ekosistem Hizmetleri › Tahakkuk-2026.xlsx): Azizpaşa 3.271.113,81; Boğazköy 1.306.627,27; Hacı Bektaş-i Veli 837.279,87; Işıklar 3.182.675,00; Kayabaşı 8.406.075,71; Kağıthane 667.452,81; Kurtyolu 1.243.353,57; Taşoluk 1.998.105,35; Türkköşe 32.357.509,80; Çiçekçiler 974.800,00; Tayakadın 3.032.169,84 (ek kira dahil peşin sayfası). Hepsi sitedeki değerle aynı.
+- Göktürk için 2026 fişi Drive'da yok; 913.387,92 = 2025 fişindeki 677.185,59 × 1,3488 [ÇIKARIM].
+- İmrahor 2026 esası 964.859,80 (15.11.2025 vadeli dönem); 15.11.2026 tahakkuku muhasebe dökümünde henüz yok [TEYİT GEREKLİ].
