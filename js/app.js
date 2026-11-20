@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '54', date: '20.11.2026' };
+  const BUILD = { version: '55', date: '20.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -1404,7 +1404,8 @@
     return (S._hIdx = I);
   }
   function hOzellik() { const out = []; Object.values(hDizin()).forEach((o) => { if (!S.hP || o.p.kisa === S.hP) out.push(o); }); return out; }
-  function planGorunur(o) { const v = S.hF.pk[o.p.kisa + '#' + o.f.p]; return v != null ? v : (!arsivMi(o.g, o.f) || !!S.hF.arsiv); }
+  function planVarsayilan(pl) { return pl.durum === 'arsiv' ? !!S.hF.arsiv : !pl.varsayilan_kapali; }
+  function planGorunur(o) { const v = S.hF.pk[o.p.kisa + '#' + o.f.p]; return v != null ? v : planVarsayilan(plOf(o.g, o.f)); }
   const hCizilebilir = (f) => !(f._geo || OPGeo.validate(f)).length && !f._repeat;
   function hEsles(o) { const F = S.hF, f = o.f; if (!hCizilebilir(f) || !F.d[f.d]) return false; if (!planGorunur(o)) return false; if (F.tur && f.t !== F.tur) return false; if (F.g && f.g !== F.g) return false;
     if (F.q) { const h = OPGeo.normal((f.ad || '') + ' ' + f.t + ' ' + (f.id || '') + ' ' + (f.k || '') + ' ' + (f.b || []).map((x) => x[1]).join(' ')); if (!h.includes(OPGeo.normal(F.q))) return false; } return true; }
@@ -1525,7 +1526,7 @@
     const pl = g.planlar || [], ky = g.kaynak || [];
     if (!pl.length && !ky.length) return '<section class="panel"><h3>Plan ve revizyonlar</h3><p class="muted" style="font-size:13px">Koordinatlı plan katmanı bulunmuyor. Bu, kaynak plan belgesinin bulunmadığı anlamına gelmez.</p>' + (belgeIncelemesi(p) ? '<p class="hnote">' + esc(belgeIncelemesi(p).plan_notu) + '</p>' : '') + '</section>';
     const n = {}; g.f.forEach((f) => { n[f.p] = (n[f.p] || 0) + 1; });
-    return '<section class="panel"><h3>Plan ve revizyonlar</h3>' + (belgeIncelemesi(p) && belgeIncelemesi(p).plan_notu ? '<p class="hnote"><b>Belge incelemesi · ' + fd(belgeIncelemesi(p).tarih) + '</b><br>' + esc(belgeIncelemesi(p).plan_notu) + '</p>' : '') + pl.map((x) => { const key = p.kisa + '#' + x.id, on = S.hF.pk[key] != null ? S.hF.pk[key] : (x.durum !== 'arsiv' || !!S.hF.arsiv), k0 = ky.find((y) => y.k === x.k) || {}, b = PLD[x.durum] || PLD.belirsiz;
+    return '<section class="panel"><h3>Plan ve revizyonlar</h3>' + (belgeIncelemesi(p) && belgeIncelemesi(p).plan_notu ? '<p class="hnote"><b>Belge incelemesi · ' + fd(belgeIncelemesi(p).tarih) + '</b><br>' + esc(belgeIncelemesi(p).plan_notu) + '</p>' : '') + pl.map((x) => { const key = p.kisa + '#' + x.id, on = S.hF.pk[key] != null ? S.hF.pk[key] : planVarsayilan(x), k0 = ky.find((y) => y.k === x.k) || {}, b = PLD[x.durum] || PLD.belirsiz;
       return '<div class="hbel"><label class="hchip hplc"><input type="checkbox" data-hp="' + esc(key) + '"' + (on ? ' checked' : '') + (n[x.id] ? '' : ' disabled') + '><b>' + esc(x.ad) + '</b></label> <span class="badge ' + b[1] + '">' + esc(b[0]) + '</span>' +
         '<small>' + esc([planTarihMetin(x), (n[x.id] || 0) + ' çizim'].filter(Boolean).join(' · ')) + '</small>' + (x.not ? (belgeIncelemesi(p) ? '<details><summary>İçe aktarma sırasında kaydedilen not</summary><p class="hnote">' + esc(x.not) + '</p></details>' : '<span class="muted">' + esc(x.not) + '</span>') : '') +
         (k0.url ? '<a href="' + esc(k0.url) + '" target="_blank" rel="noopener">' + esc(k0.ad) + '</a>' : '') + '</div>'; }).join('') +
@@ -1736,7 +1737,7 @@
       const al = (h.alt || []).map((a) => OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha == null ? '—' : a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r.c, r.holes) + '</Placemark>').join('')).join('');
       const plk = (g.planlar || []).map((pl) => { const fs = g.f.filter((f) => f.p === pl.id && hCizilebilir(f)); if (!fs.length) return ''; const ar = pl.durum === 'arsiv';
         const kl = Object.keys(DUR).map((d) => { const x = fs.filter((f) => f.d === d); return x.length ? '<Folder><name>' + xe(DUR[d][0]) + ' (' + x.length + ')</name>' + x.map((f) => pm(p, g, f, ar ? 'ars' : 'd' + d)).join('') + '</Folder>' : ''; }).join('');
-        return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad) + '</name>' + (ar ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], planTarihMetin(pl), pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
+        return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad) + '</name>' + (ar || pl.varsayilan_kapali ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], planTarihMetin(pl), pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
       return '<Folder><name>' + xe(p.ad || p.kisa) + '</name><Folder><name>Güncel sınır</name>' + sn + '</Folder>' + (al ? '<Folder><name>Önceki / diğer sınır çizimleri</name>' + al + '</Folder>' : '') + plk + '</Folder>'; }).join('');
     return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + xe(baslik || 'İstanbul OİM orman parkları – sınır ve plan tesisleri') + ' (' + fd(bugun()) + ')</name>' + st + govde + '</Document></kml>';
   }

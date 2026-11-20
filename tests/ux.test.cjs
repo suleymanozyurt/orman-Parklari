@@ -546,3 +546,25 @@ test('coordinate paste puts facilities in the map layer without replacing old pa
     assert.match(doc.querySelector('#henv').textContent, /Sütun A/);
   } finally { dom.window.close(); }
 });
+
+test('reference layers can start hidden and keep their coordinates in KML export', async () => {
+  const { dom, w, a, p } = await fieldMap();
+  try {
+    const g = a.S.gyp.parklar.Test;
+    g.planlar.push({ id: 'corners', durum: 'bilgi', ad: 'Sınır köşe numaraları', varsayilan_kapali: true });
+    g.f.push({ id: 'vertex', p: 'corners', g: 'N', d: 'A', t: 'Sınır köşesi', c: [41, 28] });
+    a.S.hF.d.A = 1;
+    a.gypHazirla(g, p.kisa); a.S._hIdx = null;
+    a.hParkSec(p.kisa);
+    const toggle = w.document.querySelector('[data-hp="Test#corners"]');
+    assert.equal(toggle.checked, false);
+    assert.equal(a.S._hG.getLayers().length, 0);
+    toggle.checked = true;
+    toggle.dispatchEvent(new w.Event('change', { bubbles: true }));
+    assert.equal(a.S._hG.getLayers().length, 1);
+    const kml = new w.DOMParser().parseFromString(a.kmlUret([p], 'Test'), 'text/xml');
+    const folder = Array.from(kml.querySelectorAll('Folder')).find(f => f.firstElementChild.textContent === 'Sınır köşe numaraları');
+    assert.equal(folder.querySelector('visibility').textContent, '0');
+    assert.match(folder.querySelector('Point coordinates').textContent, /^28,41/);
+  } finally { dom.window.close(); }
+});
