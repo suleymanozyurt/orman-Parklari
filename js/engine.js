@@ -122,7 +122,7 @@
       if (x.kaynak === '127' && x.borc > 0 && ah === '120') continue;
       if (x.kaynak === '127' && bh === '127' && ah === '127') continue;
       if (x.kaynak === '127' && bh === '') continue;
-      const k = x.vkn + '|' + x.yev;
+      const k = x.vkn + '|' + x.yev + '|' + x.tarih;
       if (!fd.has(k)) fd.set(k, x.tarih);
       if (!fis.has(k)) fis.set(k, new Map());
       const g = fis.get(k), gk = aile(x.hesap) + '|' + (x.vade || '');
@@ -179,7 +179,7 @@
     });
     const parcalar = [];
     for (const it of sorted) {
-      const base = { park: it.park, vkn: it.vkn, grup: it.grup, tur: it.tur, vade: it.vade, duz: it.duz, aciklama: it.aciklama,
+      const base = { park: it.park, vkn: it.vkn, grup: it.grup, tur: it.tur, vade: it.vade, duz: it.duz, olusma: it.olusma, aciklama: it.aciklama,
         kaynak: 'yev. ' + it.yev + ' (' + it.hesap + ')', vnot: it.vnot, kalem_tutar: it.tutar, kalem: it.id };
       for (const o of it.odemeler) parcalar.push(Object.assign({}, base, { tutar: o.tutar, odeme: o.tarih, fis: 'yev. ' + o.yev }));
       const rem = r2(it.tutar - it.odenen);
@@ -195,7 +195,8 @@
 
   // ---------- alacak durumu ve gecikme zammı (rapor tarihine) ----------
   E.alacakHesapla = function (parcalar, rapor, oranlar, gzKdv) {
-    return parcalar.map((q) => {
+    return parcalar.filter((q) => !q.olusma || q.olusma <= rapor).map((row) => {
+      const q = row.odeme > rapor ? { ...row, odeme: null, fis: '' } : row;
       const esas = q.duz || q.vade || null;
       let durum;
       if (q.odeme) durum = !esas ? 'Ödendi' : (q.odeme > esas ? 'Geç ödendi' : 'Ödendi');
@@ -206,6 +207,13 @@
       const gzkdv = q.tur === 'Kira' ? r2(gz * gzKdv) : 0;
       return Object.assign({}, q, { esas, durum, gun, gz, gzkdv, gztop: r2(gz + gzkdv), acik: q.odeme ? 0 : q.tutar });
     });
+  };
+
+  // İmzalı yazıdaki tahakkuk etmiş gecikme bedeli 120/127 mutabakatından ayrı izlenir.
+  E.belgeliBorclar = function (veri, rapor) {
+    return (veri.belgeli_borclar || []).filter(b => b.hesap_tarihi <= rapor &&
+      Number.isFinite(b.tahakkuk) && Number.isFinite(b.kdv) && b.tahakkuk + b.kdv > 0 &&
+      (!b.tahsil_tarihi || b.tahsil_tarihi > rapor));
   };
 
   // ---------- kira zinciri (Md. 30/1, 31, 32) ----------

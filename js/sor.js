@@ -117,7 +117,7 @@
       const arsiv = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id));
       const say = {};
       (g.f || []).forEach((f) => {
-        if (arsiv.has(f.p)) return;
+        if (arsiv.has(f.p) || f._geo?.length || f._repeat) return;
         say[f.t] = (say[f.t] || 0) + 1;
         if (f.ad || f.k) ekle({ tur: 'Tesis', park: k, baslik: k + ' · ' + (f.ad || f.k) + ' · ' + f.t, link: '#/harita?p=' + encodeURIComponent(k) + (f.id ? '&t=' + encodeURIComponent(f.id) : ''),
           metin: [f.t, f.ad, f.k, (ctx.durumlar || {})[f.d], (f.b || []).map((x) => x.join(': ')).join('. ')].filter(Boolean).join(' · '), ozet: [f.t, (ctx.durumlar || {})[f.d]].filter(Boolean).join(' · '), agirlik: 0.6 });
@@ -166,10 +166,10 @@
         const zz = Y >= 2027 && ctx.yilbasiAl ? ((ctx.yilbasiAl(Y, p) || {}).zincir || []).filter((x) => x.bedel != null) : [], onc = zz[zz.length - 2];
         if (onc) sat.push(['Esas (' + (Y - 1) + ' kirası' + (onc.ek ? ' + ek tesis kirası' : '') + ')', tl(onc.bedel) + (onc.ek ? ' + ' + tl(onc.ek) + ' = ' + tl(r2(onc.bedel + onc.ek)) : '')]);
         else if (pl.esasBedeli != null) sat.push(['Esas alınan kira', tl(pl.esasBedeli) + (pl.esasYili ? ' (' + pl.esasYili + ')' : '')]);
-        sat.push(['%5 ağaçlandırma', tl(pl.agac)], ['%20 KDV', tl(pl.kdv)], ['Toplam', tl(pl.toplam)]);
+        sat.push(['%5 ağaçlandırma', tl(pl.agac)], ['%20 KDV', tl(pl.kdv)], ['Fiş toplamı', tl(ctx.fisKalemleri?.(pl)?.toplam ?? pl.toplam)]);
         if (pl.guvFark != null) sat.push(['Güvence farkı', tl(pl.guvFark)]);
         if (pl.depFark != null) sat.push(['Depozito farkı', tl(pl.depFark)]);
-        (pl.vadeler || []).forEach((v, i) => sat.push([(pl.vadeler.length > 1 ? (i + 1) + '. taksit' : 'Peşin') + ' · ' + fd(v.vade), tl(r2(v.kira + v.agac + v.kdv))]));
+        (pl.vadeler || []).forEach((v, i) => sat.push([(pl.vadeler.length > 1 ? (i + 1) + '. taksit' : 'Peşin') + ' · ' + fd(v.vade), tl(ctx.fisKalemleri?.(pl, i + 1)?.toplam ?? r2(v.kira + v.agac + v.kdv))]));
       } else if (pl.yayim) sat.push(['TÜFE yayımı', fd(pl.yayim) + ' (TÜİK); yayımlanınca kendiliğinden hesaplanır']);
       if (pl.kira == null && ctx.yilbasiAl && Y >= 2027) {
         const ky = ctx.yilbasiAl(Y, p), z = ky && ky.zincir && ky.zincir.filter((x) => x.bedel != null).pop();
@@ -180,7 +180,7 @@
         }
       }
       if (pl.kiraEsasi) sat.push(['Hesap kuralı', pl.kiraEsasi]);
-      out.push({ baslik: p.kisa + ' · ' + Y + ' kira ve tahakkuku', satirlar: sat, link: '#/tahakkuk?p=' + encodeURIComponent(p.kisa), linkAd: 'Kira ve Tahakkuk sayfasında aç', ek: { formTF: p.kisa, yil: Y } });
+      out.push({ baslik: p.kisa + ' · ' + Y + ' kira ve tahakkuku', satirlar: sat, link: '#/tahakkuk?p=' + encodeURIComponent(p.kisa) + '&y=' + Y, linkAd: 'Kira ve Tahakkuk sayfasında aç', ek: { formTF: p.kisa, yil: Y } });
     });
     return out;
   }
@@ -197,7 +197,7 @@
       const g = gyp[k]; if (!g) return; const arsiv = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id));
       const say = {};
       (g.f || []).forEach((f) => {
-        if (arsiv.has(f.p) || (durum && f.d !== durum)) return;
+        if (arsiv.has(f.p) || f._geo?.length || f._repeat || (durum && f.d !== durum)) return;
         let ad = null;
         if (hedef.every((h) => kokler(f.t).includes(h))) ad = f.t;
         else if (!String(f.ad || '').startsWith(f.t) && !/yol|patika|cizgi|cit/i.test(f.t)) { const a = String(f.ad || '').split(/\s[–-]\s/).pop(); if (a && a.length < 60 && hedef.every((h) => kokler(a).includes(h))) ad = a.trim(); }
@@ -207,7 +207,7 @@
     });
     if (!turler.size) return null;
     rows.sort((a, b) => b[1] - a[1]);
-    return { baslik: [...turler].slice(0, 3).join(', ') + (durum ? (durum === 'M' ? ' (mevcut)' : ' (planlanan)') : '') + ' · toplam ' + toplam, tablo: { b: ['Park', 'Adet', 'Tür'], s: rows }, link: '#/harita' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Haritada aç', not: 'Güncel onaylı plan katmanları sayıldı; arşiv (önceki plan) çizimleri hariç.' };
+    return { baslik: [...turler].slice(0, 3).join(', ') + (durum ? (durum === 'M' ? ' (planda mevcut)' : ' (planlanan)') : '') + ' · toplam ' + toplam, tablo: { b: ['Park', 'Adet', 'Tür'], s: rows }, link: '#/harita' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Haritada aç', not: 'Sayım arşiv dışındaki plan çizimlerinden gelir. Plan onayı ve saha teyidi haritada belirtilir.' };
   }
 
   // Önceki soruya bağlı kısa sorular ("peki 2026?", "sözleşmesi ne zaman bitiyor") önceki parkı ve yılı devralır.
@@ -295,6 +295,12 @@
     }
     // 3. alacak / borç
     if (var_(q, /borc|odenmedi|odenmemis|alacak|gecikme|tahsil|odeme durumu|odedi|odemis/)) {
+      const belgeli = (ctx.belgeliBorclar || []).filter(b => !parks.length || parks.some(p => p.kisa === b.park));
+      for (const b of belgeli) cevaplar.push({ baslik: b.park + ' · Belgeli borç (' + fd(b.hesap_tarihi) + ')',
+        satirlar: [['Belgeli toplam', tl(b.toplam)], ['Kira ve vergi/fon anaparası', tl(b.anapara)],
+          ['2025 bakiyesine işleyen gecikme ve KDV', tl(b.hesaplanan)], ['Tahakkuk etmiş 2026 gecikme bedeli ve KDV', tl(b.tahakkuk + b.kdv)]],
+        kaynak: fd(b.belge_tarihi) + ' tarihli ' + b.sayi + ' sayılı yazı. Sonraki tahsilatlar teyit bekliyor.',
+        link: '#/alacaklar?p=' + encodeURIComponent(b.park), linkAd: 'Borç kalemleri ve imzalı yazı' });
       const al = (ctx.al || []).filter((a) => (!parks.length || parks.some((p) => p.kisa === a.park)));
       const acik = al.filter((a) => a.durum === 'Ödenmedi');
       const by = {}; acik.forEach((a) => { const o = by[a.park] = by[a.park] || { n: 0, t: 0, gz: 0, en: null }; o.n++; o.t += a.tutar; o.gz += a.gztop || 0; if (!o.en || a.esas < o.en) o.en = a.esas; });
@@ -329,9 +335,11 @@
     // 5b. planlanan / mevcut tesis listesi (tür belirtilmeden)
     if (parks.length === 1 && /(planlanan|onerilen|yapilacak|mevcut|var olan|hangi) tesis|tesisler(i)?\b|tesis listesi|neler var/.test(q) && ctx.gyp && ctx.gyp.parklar[parks[0].kisa] && !cevaplar.some((c) => c.tablo && c.tablo.b[1] === 'Adet')) {
       const g = ctx.gyp.parklar[parks[0].kisa], ars = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id)), du = /planlanan|onerilen|yapilacak/.test(q) ? 'P' : /mevcut|var olan/.test(q) ? 'M' : null;
-      const say = {}; (g.f || []).forEach((f) => { if (ars.has(f.p) || (du && f.d !== du) || /yol|patika|cizgi|cit|ihata|etiket|nokta/i.test(f.t)) return; say[f.t] = (say[f.t] || 0) + 1; });
+      const say = {}; (g.f || []).forEach((f) => { if (ars.has(f.p) || f._geo?.length || f._repeat || ['A','Y','K'].includes(f.d) || (du && f.d !== du) || /yol|patika|cizgi|cit|ihata|etiket|nokta/i.test(norm(f.t))) return; say[f.t] = (say[f.t] || 0) + 1; });
       const L = Object.entries(say).sort((a, b) => b[1] - a[1]);
-      if (L.length) cevaplar.unshift({ baslik: parks[0].kisa + ' · ' + (du === 'P' ? 'planlanan' : du === 'M' ? 'mevcut' : 'güncel plandaki') + ' tesisler (' + L.reduce((s, x) => s + x[1], 0) + ')', tablo: { b: ['Tesis türü', 'Adet'], s: L.map(([t, n]) => [t, String(n)]) }, not: 'Yol, patika ve çit çizgileri hariç; arşiv planlar sayılmadı.', link: '#/harita?p=' + encodeURIComponent(parks[0].kisa), linkAd: 'Haritada aç' });
+      const link = '#/harita?p=' + encodeURIComponent(parks[0].kisa);
+      if (L.length) cevaplar.unshift({ baslik: parks[0].kisa + ' · ' + (du === 'P' ? 'planlanan' : du === 'M' ? 'planda mevcut' : 'arşiv dışındaki') + ' tesisler (' + L.reduce((s, x) => s + x[1], 0) + ')', tablo: { b: ['Tesis türü', 'Adet'], s: L.map(([t, n]) => [t, String(n)]) }, not: 'Sayım plan çizimlerinden gelir. Yol, patika, çit ve arşiv çizimleri hariç.', link, linkAd: 'Haritada aç' });
+      else cevaplar.unshift({ baslik: parks[0].kisa + ' · Bu seçimde tesis çizimi yok', metin: 'Haritadaki kaynak notları plan ve tesis kapsamını gösterir.', link, linkAd: 'Haritayı ve eksikleri aç' });
     }
     // 6. TÜFE
     if (var_(q, /tufe|enflasyon|ufe\b/) && ctx.tufe) {

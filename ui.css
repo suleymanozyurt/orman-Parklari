@@ -212,6 +212,26 @@
 .sohbet-ac span{text-align:left;line-height:1.1}
 .sohbet-ac small{display:block;margin-top:3px;font-size:11px;font-weight:500;color:#d4e9de}
 .sohbet-ac:focus-visible{outline:3px solid var(--pine);outline-offset:4px}
+.module-menu{display:none}
+.sohbet-scope{display:grid;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.sohbet-scope label{display:flex;gap:10px;align-items:center;font-size:13px}
+.sohbet-scope select{flex:1;min-width:0}
+.sohbet-scope .chiprow{margin:0}
+.sohbet-scope .hchip{min-height:34px}
+.sohbet-alt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 12px;color:var(--mute);font-size:12px}
+.debt-source{margin:0 0 14px}
+.debt-source-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.debt-source-head p{margin:4px 0 9px;font-size:13px}
+.debt-source-head strong{font-size:22px;white-space:nowrap}
+.debt-source details>summary{cursor:pointer;color:var(--pine);font-size:14px}
+@media(max-width:860px){
+  .module-tabs{display:none}
+  .module-menu{display:block;background:var(--paper);border:1px solid var(--line);border-radius:11px}
+  .module-menu summary{padding:12px 14px;cursor:pointer;font-weight:600}
+  .module-menu nav{display:grid;padding:4px 8px 8px}
+  .module-menu a{padding:10px 12px;border-radius:7px}
+  .module-menu a.on{background:var(--soft);color:var(--pine)}
+}
 .hquick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:8px 0}
 .hquick button,.hquick label{display:inline-flex;align-items:center;gap:7px}
 .hquick button svg{width:18px;height:18px}

@@ -70,3 +70,14 @@ test('kirada mı sorusu kira hesabına değil duruma gider', () => {
   const c = SOR.sor(dz, 'Mimar Sinan kirada mı').cevaplar[0];
   assert.ok(c.satirlar.some(([k, v]) => /durum/.test(k) && /Sona erdi/.test(v)));
 });
+
+test('signed debt and its date appear separately from ledger principal', () => {
+  const p = { kisa: 'Boğazköy', durum: 'Kirada' };
+  const d = SOR.dizin({ parks: [p], rapor: '2026-11-20', al: [{ park: p.kisa, durum: 'Ödenmedi', tutar: 533768.05, esas: '2025-10-30' }],
+    belgeliBorclar: [{ park: p.kisa, hesap_tarihi: '2026-10-23', belge_tarihi: '2026-10-26', sayi: '21582157', anapara: 533768.05,
+      hesaplanan: 273218.9, tahakkuk: 201696.22, kdv: 24333.75, toplam: 1033016.92 }] });
+  const [record, ledger] = SOR.sor(d, 'Boğazköy borcu').cevaplar;
+  assert.match(record.baslik, /23.10.2026/);
+  assert.equal(record.satirlar[0][1], '1.033.016,92 TL');
+  assert.equal(ledger.tablo.s[0][2], '533.768,05 TL');
+});

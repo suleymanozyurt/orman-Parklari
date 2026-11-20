@@ -101,10 +101,11 @@
     const enc = (x) => x.map((q) => q.join(',')).join(';'), min = (x) => { let k = 0; x.forEach((q, i) => { if (q[0] < x[k][0] || (q[0] === x[k][0] && q[1] < x[k][1])) k = i; }); return enc(x.slice(k).concat(x.slice(0, k))); };
     return [min(a), min(a.slice().reverse())].sort()[0]; };
   G.geometryKey = (f) => f.g + ':' + (f.g === 'A' ? canonicalRing(f.c || []) + '|' + (f.holes || []).map(canonicalRing).sort().join('|') : JSON.stringify(f.c));
+  G.recordKey = (f) => JSON.stringify([G.geometryKey(f), f.p, f.s, f.ad, f.t, f.d, f.b || []]);
   G.inventory = (parks, data) => { const result = [], geo = new Map(), exact = new Map();
     parks.forEach((p) => { const g = (data.parklar || {})[p.kisa] || { f: [], kaynak: [] }, boundaryOK = p.harita && p.harita.sinir && p.harita.sinir.length && !G.boundaryIssues(p.harita).length;
       (g.f || []).forEach((f, i) => { const source = (g.kaynak || []).find((s) => s.k === f.s) || {}, issues = G.validate(f);
-        const key = p.kisa + ':' + G.geometryKey(f), identity = JSON.stringify([key, f.s, f.ad, f.t, f.d, f.b || []]);
+        const key = p.kisa + ':' + G.geometryKey(f), identity = p.kisa + ':' + G.recordKey(f);
         const row = { p, f, i, id: G.id(p.kisa, f), source, issues, duplicate: exact.has(identity), geometryPeer: geo.has(key), outside: false };
         if (!issues.length && boundaryOK) row.outside = G.outsideBoundary(p.harita, f, true);
         if (!row.duplicate) exact.set(identity, row.id); if (!geo.has(key)) geo.set(key, row.id); result.push(row);

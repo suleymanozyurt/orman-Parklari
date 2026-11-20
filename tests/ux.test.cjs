@@ -369,3 +369,24 @@ test('January accrual calculations ignore manually entered December rates and fo
     assert.match(a.SAYFA.tahakkuk(), /Cetveli Excel indir/);
   } finally { dom.window.close(); }
 });
+
+test('form links keep selections in the URL and on the mobile menu', () => {
+  const {dom,w,a}=preparedApp();
+  try {
+    a.AKSIYON.formAc({dataset:{e:'Ek-6',k:'Test'}});
+    assert.equal(w.location.hash,'#/form?p=Test&e=Ek-6');
+    a.AFTER.form=()=>{};a.yonlendir();
+    assert.equal(w.document.querySelector('#fEk').value,'Ek-6');
+    assert.equal(w.document.querySelector('.module-menu a[aria-current]').textContent,'Seçili Form');
+  } finally { dom.window.close(); }
+});
+
+test('map list excludes exact repeats and invalid geometry but retains separate plan records', () => {
+  const {dom,a,p,g}=app();
+  try {
+    const f={id:'A',g:'N',c:[41,28],t:'WC',d:'M',p:'P'};
+    g.f=[f,{...f,id:'B'},{...f,id:'C',p:'Q'},{...f,id:'D',g:'A',c:[[41,28],[41,28]]}];
+    a.gypHazirla(g,p.kisa);
+    assert.deepEqual(g.f.map(f=>a.hEsles({p,f,g})),[true,false,true,false]);
+  } finally { dom.window.close(); }
+});

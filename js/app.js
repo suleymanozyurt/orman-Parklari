@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '50', date: '20.11.2026' };
+  const BUILD = { version: '51', date: '20.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -39,7 +39,10 @@
     const m = anaModul(S.page), pages = m.pages.filter(([id]) => id !== 'form' || S.page === 'form');
     if (pages.length < 2) return '';
     const q = S.park ? '?p=' + encodeURIComponent(S.park) : '';
-    return '<nav class="module-tabs noprint" aria-label="' + esc(m.l) + ' alt sayfaları">' + pages.map(([id,l]) => '<a href="#/' + id + q + '"' + (id === S.page ? ' class="on" aria-current="page"' : '') + '>' + esc(l) + '</a>').join('') + '</nav>';
+    const links = pages.map(([id,l]) => '<a href="#/' + id + q + '"' + (id === S.page ? ' class="on" aria-current="page"' : '') + '>' + esc(l) + '</a>').join('');
+    const current = pages.find(([id]) => id === S.page)?.[1] || m.l;
+    return '<nav class="module-tabs noprint" aria-label="' + esc(m.l) + ' alt sayfaları">' + links + '</nav>' +
+      '<details class="module-menu noprint"><summary>' + esc(current) + '</summary><nav aria-label="' + esc(m.l) + ' alt sayfaları">' + links + '</nav></details>';
   }
 
   // ---------------- durum ----------------
@@ -442,7 +445,8 @@
   }
   function parkSec(k, go) {
     if (!S.pBy[k]) return; S.park = k; S.zPark = k;
-    const target = '#/' + (go || S.page || 'park') + '?p=' + encodeURIComponent(k);
+    const page = go || S.page || 'park';
+    const target = page === 'form' && S.form ? formBaglanti(k, S.form.ek, tfYil(S.form), 0) : '#/' + page + '?p=' + encodeURIComponent(k);
     if (location.hash !== target) { location.hash = target; return; }
     modalKapat(); sayfaCiz();
   }
@@ -527,8 +531,9 @@
     S.page = PAGES.find((p) => p.id === id) ? id : 'genel';
     const query = new URLSearchParams(location.hash.split('?')[1] || ''), park = query.get('p');
     if (park && S.pBy[park]) { S.park = park; S.zPark = park; }
-    if (id === 'form' && query.get('e') === 'TF') {
-      S.form = { ek: 'TF', yil: +query.get('y'), taksit: +query.get('n'), duzenle: false };
+    if (id === 'alacaklar') S.ap = park && S.pBy[park] ? park : 'Tüm parklar';
+    if (id === 'form' && Object.hasOwn(EKAD, query.get('e'))) {
+      S.form = { ek: query.get('e'), yil: +query.get('y'), taksit: +query.get('n'), duzenle: false };
       S.fOnizle = false;
     }
     if (id === 'tahakkuk' && query.has('y')) S.tY = +query.get('y');
@@ -659,7 +664,7 @@
       ['ekler', 'Tebliğ Ekleri', 'Resmî formlar, düzenleme ve belge çıktıları', IC.file], ['zincir', 'Kira Bedeli Geçmişi', 'Md. 31–32 kira hesabı ve muhasebe karşılaştırması', IC.chain]];
     const tilesH = '<section class="tiles">' + tiles.map((t) => '<a class="tile" href="#/' + t[0] + '"><span class="ic" style="color:#2F6B45">' + svg(t[3], 20) + '</span><span><b>' + t[1] + '</b><p>' + t[2] + '</p></span></a>').join('') + '</section>';
     const quick = '<nav class="quick-tasks noprint" aria-label="Hızlı işlemler"><a href="#/harita">' + svg(IC.map) + 'Harita ve tesisler</a><a href="#/parklar">' + svg(IC.list) + 'Park envanteri</a><a href="#/ekler">' + svg(IC.file) + 'Tebliğ ekleri</a><a href="#/tahakkuk">' + svg(IC.clock) + 'Kira ve tahakkuk</a></nav>';
-    return '<div class="pagehead overview-heading"><div><h1>Genel durum</h1><p>Parklar, mali takip ve yaklaşan işler.</p></div><span class="release-label">v' + BUILD.version + ' · ' + BUILD.date + '</span></div>' + quick + banners() + kpis + '<details class="overview-detail overview-balances"><summary>Muhasebe dökümlerine göre vadesi geçmiş alacaklar · ' + late.length + ' park</summary>' + hero + '</details><div class="split">' + todoH + tlH + '</div><details class="overview-detail overview-calendar"><summary>' + y + ' ödeme takvimi · ' + S.veri.parks.length + ' park</summary>' + cal + '</details>';
+    return '<div class="pagehead overview-heading"><div><h1>Genel durum</h1></div><span class="release-label">v' + BUILD.version + ' · ' + BUILD.date + '</span></div>' + quick + banners() + kpis + '<details class="overview-detail overview-balances"><summary>Muhasebe dökümlerine göre vadesi geçmiş alacaklar · ' + late.length + ' park</summary>' + hero + '</details>' + belgeliBorcPanel() + '<div class="split">' + todoH + tlH + '</div><details class="overview-detail overview-calendar"><summary>' + y + ' ödeme takvimi · ' + S.veri.parks.length + ' park</summary>' + cal + '</details>';
   };
   // Alacak ve tahakkuk sonuçları yüklenen dökümlerin son yevmiye tarihine kadar geçerlidir; güncel borç durumu değildir.
   function dokumNotu(kisa) {
@@ -709,7 +714,8 @@
     const kv = (a, b) => '<div class="kv"><span>' + a + '</span><span class="n">' + b + '</span></div>';
     const soz = '<section class="panel"><h3>Sözleşme</h3>' + kv('İhale usulü', esc(p.sekil || '—')) + kv('İhale tarihi', fd(p.ihale_t)) + kv('İhale bedeli (1. yıl kira)', p.ihale_b != null ? tl(p.ihale_b) : '—') +
       kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '—') + kv('Saha teslimi', fd(p.teslim)) + kv('Kira dönem tabanı', fd(p.taban)) + kv('TÜFE kuralı', esc(p.kural || '—')) + (p.yil_esas === 'Dönem başı' ? kv('Yıla düşen dönem', 'o yıl başlayan dönem') : '') +
-      (p.kok ? kv('Belgeli başlangıç', fd(p.kok.bas) + ' · ' + tl(p.kok.bedel) + '<br><span class="muted" style="font-size:12px">' + esc(p.kok.kaynak || '') + '</span>') : '') + (p.onceki_isletmeci ? kv('Önceki işletmeci', esc(p.onceki_isletmeci)) : '') +
+      (p.kok ? kv('Belgeli başlangıç', fd(p.kok.bas) + ' · ' + tl(p.kok.bedel) + '<br><span class="muted" style="font-size:12px">' + esc(p.kok.kaynak || '') + '</span>' +
+        (OPGeo.safeURL(p.kaynaklar?.kok?.url) ? '<br><a href="' + esc(OPGeo.safeURL(p.kaynaklar.kok.url)) + '" target="_blank" rel="noopener">Dayanak belge</a>' : '')) : '') + (p.onceki_isletmeci ? kv('Önceki işletmeci', esc(p.onceki_isletmeci)) : '') +
       kv('Artış esası', esc(p.artis || '—')) + kv('Ödeme', esc(p.odeme || '—')) + kv('Gelişim ve yönetim planı', esc((p.plan || '—').slice(0, 60))) + '</section>';
     const tem = '<section class="panel"><h3>Teminat ve bağlı bedeller</h3>' + kv('Yıllık kira (esas)', yk != null ? tl(yk) : '—') + kv('Kesin teminat', p.kesin != null ? tl(p.kesin) : 'Kayıt yok') +
       kv('Güvence', p.guv == null ? 'Sözleşmede yok' : E.pct(p.guv, 0) + ' · ' + tl(r2(yk * p.guv))) + kv('Depozito', p.dep == null ? 'Sözleşmede yok' : E.pct(p.dep, 0) + ' · ' + tl(r2(yk * p.dep))) +
@@ -751,7 +757,7 @@
     const T = TAKVIM(p);
     const tkK = '<section class="card"><div class="ch"><h2>Süreler ve yükümlülükler</h2><span class="muted" style="font-size:13px">' + fd(R) + ' tarihine göre</span></div><div class="scroll"><table class="rt"><thead><tr><th>Dayanak</th><th>İş</th><th>Durum</th><th>Ayrıntı</th></tr></thead><tbody>' +
       T.map((x) => '<tr>' + td(esc(x.md), '', 'lead muted') + td('<b>' + esc(x.ad) + '</b>', 'İş', 'wide', ' style="white-space:normal"') + td('<span class="badge ' + x.c + '">' + esc(x.s) + '</span>', 'Durum') + td(esc(x.d), 'Ayrıntı', 'wide n', ' style="white-space:normal;font-size:13.5px;color:var(--ink2)"') + '</tr>').join('') + '</tbody></table></div></section>';
-    return mpick() + head + parkIslemBaglari(p) + alert + inst + planK + '<div class="cols">' + soz + tem + den + '</div>' + tkK + alT;
+    return mpick() + head + parkIslemBaglari(p) + belgeliBorcPanel(p.kisa) + alert + inst + planK + '<div class="cols">' + soz + tem + den + '</div>' + tkK + alT;
   };
   AKSIYON.ek10 = (t) => {
     const d = (S.veri.denetim || []).find((x) => x.park === t.dataset.k); if (!d) return;
@@ -763,23 +769,44 @@
       '<button class="btn" data-a="teblig" data-pg="61">Tebliğdeki Ek-10 formu</button><button class="btn pri" data-a="pdf">Yazdır / PDF</button>');
   };
 
+  function belgeliBorcPanel(park) {
+    return E.belgeliBorclar(S.veri, S.rapor).filter(b => !park || b.park === park).map(b => {
+      const o = S.ozBy[b.park], fixed = r2(b.tahakkuk + b.kdv);
+      const doc = OPGeo.safeURL(b.url);
+      const same = o && o.vgec === b.anapara;
+      const working = same && S.rapor > b.hesap_tarihi ? r2(o.vgec + o.gz + fixed) : null;
+      return '<section class="panel debt-source"><div class="debt-source-head"><div><h3>' + esc(b.park) + ' · Belgeli borç</h3><p class="muted">' + fd(b.hesap_tarihi) + ' hesabı · Yazı ' + esc(b.sayi) + '</p></div><strong class="n">' + tl(b.toplam) + ' TL</strong></div>' +
+        '<details><summary>Kalemler ve güncel hesap</summary>' +
+        kv('Kira, ağaçlandırma ve KDV bakiyesi', tl(b.anapara) + ' TL') +
+        kv('2025 bakiyesine işleyen gecikme ve KDV', tl(b.hesaplanan) + ' TL') +
+        kv('Tahakkuk etmiş 2026 gecikme bedeli ve KDV', tl(fixed) + ' TL') +
+        (working != null ? kv(fd(S.rapor) + ' itibarıyla çalışma hesabı (tahsilat teyidi bekliyor)', tl(working) + ' TL') : '') +
+        '<p class="hnote">Son ödeme durumu ' + fd(b.belge_tarihi) + ' tarihli yazıyla belgelendi. Sonraki tahsilatlar teyit bekliyor. Tahakkuk etmiş gecikme bedeline yeniden gecikme işletilmez.</p>' +
+        (doc ? '<a class="btn sm" href="' + esc(doc) + '" target="_blank" rel="noopener">İmzalı yazıyı aç</a>' : '') +
+        '</details></section>';
+    }).join('');
+  }
   // ---------- ALACAKLAR ----------
   SAYFA.alacaklar = function () {
-    const R = S.rapor, al = S.al, open = al.filter((a) => a.durum === 'Ödenmedi');
+    const R = S.rapor, selected = S.ap === 'Tüm parklar' ? null : S.ap;
+    const al = S.al.filter(a => !selected || a.park === selected), open = al.filter(a => a.durum === 'Ödenmedi');
     const acik = sumOf(al, (a) => a.acik), vg = sumOf(open, (a) => a.acik), gz = sumOf(open, (a) => a.gztop), d30 = E.addDays(R, 30);
     const y30 = al.filter((a) => a.acik > 0 && a.esas && a.esas >= R && a.esas <= d30);
-    const kp = [['Açık alacak', tl(acik), al.filter((a) => a.acik > 0).length + ' kalem, 120.99 + 127', 'var(--ink)'], ['Vadesi geçmiş', tl(vg), S.oz.filter((o) => o.vgec > 0).length + ' parkta, ' + open.length + ' kalem', 'var(--red)'],
+    const kp = [['Muhasebe anaparası', tl(acik), al.filter((a) => a.acik > 0).length + ' kalem, 120.99 + 127', 'var(--ink)'], ['Vadesi geçmiş anapara', tl(vg), new Set(open.map(a => a.park)).size + ' parkta, ' + open.length + ' kalem', 'var(--red)'],
       ['Gecikme zammı ve KDV’si', tl(gz), 'Açık kalemler, ' + fd(R) + ' tarihine', 'var(--ambt)'], ['30 gün içinde vadesi gelecek', tl(sumOf(y30, (a) => a.acik)), y30.length + ' kalem · ' + fd(R) + ' – ' + fd(d30), 'var(--ink)']];
     const B = [['0–30 gün', 0, 30, '#E7B65A'], ['31–90 gün', 31, 90, '#DDA034'], ['91–180 gün', 91, 180, '#D9774A'], ['181–365 gün', 181, 365, '#C2412D'], ['365 günden fazla', 366, 1e9, '#8E2A1C']];
     const ag = B.map((b) => { const v = sumOf(open.filter((a) => a.gun >= b[1] && a.gun <= b[2]), (a) => a.tutar); return { l: b[0], c: b[3], v, w: vg ? Math.round(v / vg * 1000) / 10 : 0 }; });
-    const rows = S.esl.rows, bal = (k) => sumOf(rows.filter((x) => x.kaynak === k), (x) => x.borc - x.alacak), pd = sumOf(rows.filter((x) => x.park === 'Park dışı'), (x) => x.borc - x.alacak);
+    const rows = S.esl.rows.filter(x => x.tarih <= R && (!selected || x.park === selected));
+    const bal = (k) => sumOf(rows.filter((x) => x.kaynak === k), (x) => x.borc - x.alacak), pd = sumOf(rows.filter((x) => x.park === 'Park dışı'), (x) => x.borc - x.alacak);
     const ok = Math.abs(r2(bal('120') + bal('127') - pd) - acik) < 0.02;
     const flt = { acik: (a) => a.durum === 'Ödenmedi' || a.durum === 'Vadesi gelmedi' || a.durum === 'Vade yok', odenmedi: (a) => a.durum === 'Ödenmedi', gec: (a) => a.durum === 'Geç ödendi', tum: () => true };
-    const L = al.filter(flt[S.af]).filter((a) => S.ap === 'Tüm parklar' || a.park === S.ap);
-    const parks = ['Tüm parklar'].concat(Array.from(new Set(al.map((a) => a.park))));
+    const L = al.filter(flt[S.af]);
+    const parks = ['Tüm parklar', ...S.veri.parks.map(p => p.kisa)];
     S.csv = { name: 'alacaklar', head: ['Park', 'Esas vade', 'Muhasebe vadesi', 'Grup', 'Tür', 'Tutar', 'Ödeme', 'Durum', 'Gün', 'GZ', 'GZ KDV', 'Açık', 'Açıklama', 'Kaynak', 'Vade notu'],
       rows: L.map((a) => [a.park, fd(a.esas), fd(a.vade), a.grup, a.tur, a.tutar, a.odeme ? fd(a.odeme) : '', a.durum, a.gun, a.gz, a.gzkdv, a.acik, a.aciklama, a.kaynak, a.vnot]) };
-    return banners() + '<div class="pagehead"><div><h1>Alacaklar</h1><p>Muhasebe dökümündeki her tahakkuk ve ödemesi; gecikme zammı ' + fd(R) + ' tarihine göre (Tebliğ Md. 39/1 → 6183 s.K. m.51).</p></div></div>' +
+    return banners() + '<div class="pagehead"><div><h1>' + esc(selected ? selected + ' · Alacaklar' : 'Alacaklar') + '</h1><p>Muhasebe dökümü ve belgeli borçlar · ' + fd(R) + '</p></div>' +
+      '<label class="year-picker" for="aPark">Park <select class="fld" id="aPark">' + parks.map(k => '<option' + (k === S.ap ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select></label></div>' +
+      belgeliBorcPanel(selected) +
       '<section class="kpis">' + kp.map((k) => '<div class="kpi"><span>' + k[0] + '</span><strong class="n" style="color:' + k[3] + '">' + k[1] + '</strong><em>' + k[2] + '</em></div>').join('') + '</section>' +
       '<div class="age"><section class="card"><div class="ch"><h2>Vadesi geçmiş alacağın yaşı</h2><span class="muted" style="font-size:13px">Ödenmemiş kalemler, gün olarak</span></div><div class="aging">' +
       '<div class="stack">' + ag.map((a) => '<i style="width:' + a.w + '%;background:' + a.c + '"></i>').join('') + '</div>' +
@@ -790,7 +817,7 @@
       (ok ? '<div class="ok-note">' + svg('M5 12l4 4 10-10', 18, 2) + 'Alacak kalemleri dökümle kuruşu kuruşuna tutuyor.</div>' : '<div class="alert red" style="margin-top:12px">Döküm ile alacak kalemleri arasında fark var; Muhasebe sayfasını kontrol edin.</div>') + '</div></section></div>' +
       '<section class="card"><div class="ch" style="gap:12px"><h2>Alacak kalemleri</h2><div class="filters"><div class="seg">' +
       [['acik', 'Açık'], ['odenmedi', 'Ödenmedi'], ['gec', 'Geç ödendi'], ['tum', 'Tümü']].map((s) => '<button class="' + (S.af === s[0] ? 'on' : '') + '" data-a="af" data-v="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>' +
-      '<select id="aPark" aria-label="Park süz">' + parks.map((k) => '<option' + (k === S.ap ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select></div></div>' +
+      '</div></div>' +
       '<div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Park</th><th>Esas vade</th><th>Grup</th><th>Tür</th><th class="r">Tutar</th><th>Ödeme</th><th>Durum</th><th class="r">Gün</th><th class="r">GZ ve KDV’si</th><th class="noprint"></th></tr></thead><tbody>' +
       L.map((a) => '<tr>' + td('<a href="#/park?p=' + encodeURIComponent(a.park) + '" data-k="' + esc(a.park) + '" data-go="park" style="font-weight:600">' + esc(a.park) + '</a>', '', 'lead') +
         td('<span class="' + (a.duz ? 'duz' : '') + '" title="' + esc(a.vnot) + '">' + fd(a.esas) + '</span>', 'Esas vade', 'n') + td(esc(a.grup), 'Grup', 'muted') + td(esc(a.tur), 'Tür') + td('<b>' + tl(a.tutar) + '</b>', 'Tutar', 'n r') +
@@ -800,7 +827,10 @@
       '</tbody></table>' + (L.length ? '' : '<div class="empty">Bu süzgeçte kalem yok.</div>') +
       '<p class="muted" style="margin:10px 6px 0;font-size:13.5px"><span class="duz">Sarı zeminli vade</span> resmî yazıya göre düzeltilmiş esas vadedir; üzerine gelince kaynağı görünür.</p></div></section>';
   };
-  AFTER.alacaklar = () => { const s = $('#aPark'); if (s) s.onchange = (e) => { S.ap = e.target.value; sayfaCiz(); }; };
+  AFTER.alacaklar = () => { const s = $('#aPark'); if (s) s.onchange = (e) => {
+    const park = e.target.value;
+    location.hash = '#/alacaklar' + (park === 'Tüm parklar' ? '' : '?p=' + encodeURIComponent(park));
+  }; };
   AKSIYON.af = (t) => { S.af = t.dataset.v; sayfaCiz(); };
   AKSIYON.kalemBilgi = (t) => {
     const k = +t.dataset.kalem, it = S.esl.items.find((x) => x.id === k); if (!it) return;
@@ -1241,11 +1271,19 @@
     g.kaynak = g.kaynak || []; g.f = g.f || []; g.planlar = g.planlar || []; g.not = g.not || [];
     const PL = {}; g.planlar.forEach((x) => { PL[x.id] = x; });
     const on = k.slice(0, 3).toLocaleUpperCase('tr-TR'), ids = new Set();
+    const records = new Set();
     g.f.forEach((f, i) => {
       if (!f.p) f.p = f.s || 'U';
       if (!PL[f.p]) { const ky = g.kaynak.find((x) => x.k === f.s) || {}, yukleme = /^U/.test(ky.k || '') && /programdan yüklendi/i.test(ky.not || ''); PL[f.p] = { id: f.p, ad: ky.ad || 'Uygulamadan yüklenen katman', tarih: yukleme ? '' : ky.tarih || '', yukleme_tarihi: ky.yukleme_tarihi || (yukleme ? ky.tarih : '') || '', durum: 'belirsiz', k: f.s || '', onay: ky.onay_tarihi || '', not: 'Uygulamadan KML/KMZ ile yüklendi; onay kapsamı teyit edilmeli.' }; g.planlar.push(PL[f.p]); }
       if (!f.id) f.id = OPGeo.id(k, f); if (ids.has(f.id)) f.id += '-' + (i + 1);
-      ids.add(f.id); Object.defineProperty(f, '_geo', { value: OPGeo.validate(f), enumerable: false, configurable: true }); });
+      ids.add(f.id);
+      const issues = OPGeo.validate(f), key = issues.length ? null : OPGeo.recordKey(f);
+      Object.defineProperties(f, {
+        _geo: { value: issues, configurable: true },
+        _repeat: { value: key != null && records.has(key), configurable: true }
+      });
+      if (key != null) records.add(key);
+    });
     Object.defineProperty(g, '_pl', { value: PL, enumerable: false, configurable: true, writable: true });
   }
   const plOf = (g, f) => (g && g._pl && g._pl[f.p]) || { id: f.p || '', ad: '', durum: 'belirsiz' };
@@ -1350,10 +1388,11 @@
   }
   function hOzellik() { const out = []; Object.values(hDizin()).forEach((o) => { if (!S.hP || o.p.kisa === S.hP) out.push(o); }); return out; }
   function planGorunur(o) { const v = S.hF.pk[o.p.kisa + '#' + o.f.p]; return v != null ? v : (!arsivMi(o.g, o.f) || !!S.hF.arsiv); }
-  function hEsles(o) { const F = S.hF, f = o.f; if (!F.d[f.d]) return false; if (!planGorunur(o)) return false; if (F.tur && f.t !== F.tur) return false; if (F.g && f.g !== F.g) return false;
+  const hCizilebilir = (f) => !(f._geo || OPGeo.validate(f)).length && !f._repeat;
+  function hEsles(o) { const F = S.hF, f = o.f; if (!hCizilebilir(f) || !F.d[f.d]) return false; if (!planGorunur(o)) return false; if (F.tur && f.t !== F.tur) return false; if (F.g && f.g !== F.g) return false;
     if (F.q) { const h = OPGeo.normal((f.ad || '') + ' ' + f.t + ' ' + (f.id || '') + ' ' + (f.k || '') + ' ' + (f.b || []).map((x) => x[1]).join(' ')); if (!h.includes(OPGeo.normal(F.q))) return false; } return true; }
   function hFiltreCiz() {
-    const el = $('#hfil'); if (!el) return; const F = S.hF, liste = hOzellik().filter(planGorunur), say = {}, tur = {};
+    const el = $('#hfil'); if (!el) return; const F = S.hF, liste = hOzellik().filter(o => planGorunur(o) && hCizilebilir(o.f)), say = {}, tur = {};
     liste.forEach((o) => { say[o.f.d] = (say[o.f.d] || 0) + 1; tur[o.f.t] = 1; });
     const sp = S.veri.parks.filter((p) => p.harita && p.harita.sinir);
     el.innerHTML = '<div class="hfr"><span class="hfl">Durum</span>' + Object.keys(DUR).filter((d) => say[d]).map((d) => '<label class="hchip"><input type="checkbox" data-hd="' + d + '"' + (F.d[d] ? ' checked' : '') + '><i style="background:' + DUR[d][1] + '"></i>' + esc(DUR[d][0]) + ' <b>' + say[d] + '</b></label>').join('') + (Object.keys(say).length ? '<button class="btn sm" data-a="hDurTek" data-v="MP">Yalnız mevcut + planlanan</button><button class="btn sm" data-a="hDurTek" data-v="">Hepsi</button>' : '<span class="muted">Bu seçimde plan çizimi yok</span>') + '</div>' +
@@ -1367,9 +1406,9 @@
     const el = $('#hside'); if (!el) return; const p = S.pBy[S.hP];
     if (!p) { el.innerHTML = hTumPanel(); hEnvCiz(); return; }
     const h = p.harita || {}, g = (S.gyp && S.gyp.parklar[p.kisa]) || { f: [], kaynak: [], planlar: [], not: [] }, k = alanKontrol(p), dn = sonDenetim(p.kisa);
-    const say = {}; hOzellik().filter(planGorunur).forEach((o) => { say[o.f.d] = (say[o.f.d] || 0) + 1; });
+    const say = {}; hOzellik().filter(o => planGorunur(o) && hCizilebilir(o.f)).forEach((o) => { say[o.f.d] = (say[o.f.d] || 0) + 1; });
     el.innerHTML = '<section class="panel hps"><h3>' + esc(p.ad || p.kisa) + '</h3>' +
-      kv('Konum', esc([p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · '))) + kv('İşletmeci', esc(p.isletmeci || p.durum || '')) +
+      kv('Çizim kapsamı', esc(hKapsamMetni(g))) + kv('Konum', esc([p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · '))) + kv('İşletmeci', esc(p.isletmeci || p.durum || '')) +
       kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '') +
       (h.onay_tarihi || h.onay ? kv('Belgedeki onay', fd(h.onay_tarihi || h.onay)) : '') +
       (h.sinir_kapsam ? kv('Sınırın kapsamı', esc(h.sinir_kapsam)) : '') +
@@ -1507,15 +1546,31 @@
       bul.slice(0, N).map((x) => '<div class="hbul"><b>' + esc(x.tur) + '</b> ' + esc(x.msg) + (x.id ? ' <button class="btn sm" data-a="hGit" data-id="' + esc(x.id) + '">Göster</button>' : '') + '</div>').join('') +
       (bul.length > N ? '<p class="muted" style="font-size:12.5px">+' + (bul.length - N) + ' bulgu daha</p>' : '') + (!bul.length && !ek.length ? '<p class="muted" style="font-size:13px">Kayıtlı kontrollerde bulgu yok; bütün belge ve saha uyumunun teyidi anlamına gelmez.</p>' : '') + '<button class="btn sm" data-a="hReport">Veri kontrolünü indir</button></details></section>';
   }
+  function hKapsam(g) {
+    const features = g?.f || [];
+    const current = features.filter(f => !arsivMi(g, f));
+    const drawable = current.filter(hCizilebilir);
+    const facility = drawable.some(f => !['A','Y','K'].includes(f.d) && !/yürüyüş yolu çizgisi/i.test(f.t));
+    return { drawable, facility };
+  }
+  function hKapsamMetni(g) {
+    const k = hKapsam(g);
+    if (!k.facility) return 'Tesis geometrisi eksik';
+    return Object.entries(H_GEOMETRI).map(([type, label]) => {
+      const count = k.drawable.filter(f => f.g === type && f.d !== 'A').length;
+      return count ? count + ' ' + label.toLocaleLowerCase('tr-TR') : '';
+    }).filter(Boolean).join(' · ');
+  }
   function hTumPanel() {
-    const P = S.veri.parks; let ekN = 0;
-    const satir = P.map((p) => { const h = p.harita || {}, k = alanKontrol(p), g = S.gyp && S.gyp.parklar[p.kisa], n = g ? g.f.filter((f) => !arsivMi(g, f)).length : 0, na = g ? g.f.length - n : 0, e = g ? belgeEksikleri(p, g).length : 0; ekN += e;
-      return '<tr data-a="hParkSec" data-k="' + esc(p.kisa) + '"><td><b>' + esc(p.kisa) + '</b>' + (e ? ' <i class="amb-t" title="eksik belge">•</i>' : '') + '</td><td class="r n">' + (h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '<i class="amb-t">yok</i>') + '</td><td class="r n">' + (p.alan != null ? p.alan.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—') + (k && !k.ok ? ' <i class="red-t">≠</i>' : '') + '</td><td class="r n">' + (n || '<span class="muted">0</span>') + (na ? '<small class="muted"> +' + na + '</small>' : '') + '</td></tr>'; }).join('');
-    return '<section class="panel"><h3>Bütün orman parkları</h3><div class="sl"><table class="htes"><thead><tr><th>Park</th><th class="r">Harita ha</th><th class="r">Kayıt ha</th><th class="r">Çizim</th></tr></thead><tbody>' + satir +
-      '</tbody></table></div><p class="muted" style="font-size:12.5px;line-height:1.45">Satıra dokunarak parkı seçin. “+n”: arşiv (önceki plan) çizimleri. ≠: haritadan alan kayıttan %2’den fazla farklı. Tesisler yakın ölçekte (14+) bütün parklar için de görünür.</p></section>' +
+    const parks = S.veri.parks, missing = parks.filter(p => !hKapsam(S.gyp?.parklar[p.kisa]).facility);
+    return '<section class="panel"><h3>Parklara göre harita kapsamı</h3>' +
+      '<p class="hnote">' + parks.filter(p => p.harita?.sinir?.length).length + ' parkta kayıtlı sınır · ' + missing.length + ' parkta tesis geometrisi eksik</p>' +
+      '<div class="sl"><table class="htes"><thead><tr><th>Park</th><th>Tesis ve plan çizimleri</th></tr></thead><tbody>' +
+      parks.map(p => '<tr><td><button class="hrow-link" data-a="hParkSec" data-k="' + esc(p.kisa) + '">' + esc(p.kisa) +
+      '</button></td><td>' + esc(hKapsamMetni(S.gyp?.parklar[p.kisa])) + '</td></tr>').join('') +
+      '</tbody></table></div><p class="hnote muted">Sayılar çizim geometrisini gösterir. Plan onayı ve saha mevcudiyeti parkın kaynak bölümünde yer alır.</p></section>' +
       '<section class="panel"><h3>Tesis envanteri <small id="henvN"></small></h3><div id="henv"></div></section>' +
-      '<section class="panel"><details><summary>Eksik belge listesi (' + ekN + ')</summary>' + P.map((p) => { const g = S.gyp && S.gyp.parklar[p.kisa]; return g && belgeEksikleri(p, g).length ? '<div class="hbul"><b>' + esc(p.kisa) + '</b> ' + belgeEksikleri(p, g).map((x) => esc(x.konu) + '<br><span class="muted">Gerekli: ' + esc(x.gerekli) + '</span>').join('<br>') + '</div>' : ''; }).join('') + '</details></section>' +
-      '<section class="panel"><div class="hbtns"><button class="btn sm" data-a="kmlIndir" data-k="">Tüm parklar KML</button><button class="btn sm" data-a="kmlPaket">Park başına KML (zip)</button></div></section>';
+      '<section class="panel"><div class="hbtns"><button class="btn sm" data-a="kmlIndir" data-k="">Tüm parklar KML</button><button class="btn sm" data-a="kmlPaket">Park başına KML (zip)</button><button class="btn sm" data-a="hReport">Geometri denetimini indir</button></div></section>';
   }
   function hEnvCiz() {
     const el = $('#henv'); if (!el) return; const tumu = !S.hP, L0 = hOzellik().filter(hEsles), N = 60;
@@ -1532,6 +1587,7 @@
   }
   // ---- harita: katman kurulumu (tembel) ve görünürlük ----
   function hKatman(o) {
+    if (!hCizilebilir(o.f)) return null;
     if (o.ly) return o.ly; const f = o.f, r = DUR[f.d] || DUR.B, ar = arsivMi(o.g, f); let ly;
     if (!OPGeo.points(f).every(OPGeo.coordinate)) return null;
     if (f.g === 'A') ly = L.polygon([f.c, ...(f.holes || [])], { color: (f._geo || []).length ? '#E5534B' : ar ? '#9e9e9e' : r[1], weight: 1.2, fillColor: r[1], fillOpacity: ar ? 0.12 : (f.d === 'Y' ? 0.18 : 0.5), dashArray: (f.d === 'K' || ar || (f._geo || []).length) ? '4 3' : null });
@@ -1597,6 +1653,10 @@
     else { const all = Object.values(S._hB || {}).map((x) => x.pol); if (all.length) m.fitBounds(L.featureGroup(all).getBounds(), { padding: [20, 20] }); } }
   function hGit(id) {
     const o = hDizin()[id]; if (!o) { toast('Tesis bulunamadı: ' + id, true); return; }
+    if (!hCizilebilir(o.f)) {
+      const sorun = o.f._repeat ? 'Bu çizimin aynı katmanda tekrarı var.' : (o.f._geo || OPGeo.validate(o.f)).join(' · ');
+      toast(sorun, true); return;
+    }
     if (o.p.kisa !== S.hP) hParkSec(o.p.kisa, false);
     const F = S.hF; if (!hEsles(o)) { F.d[o.f.d] = 1; S.hF.pk[o.p.kisa + '#' + o.f.p] = true; F.tur = ''; F.q = ''; F.g = ''; if ($('#hGeom')) $('#hGeom').value = ''; const q = $('#hQ'); if (q) q.value = ''; hFiltreCiz(); hPanelCiz(); hUygula(); }
     delete F.kapali[o.p.kisa];
@@ -1643,8 +1703,8 @@
         ext({ id: f.id, park: p.kisa, tur: f.t, op_status: f.d, durum: (DUR[f.d] || DUR.B)[0], kod: f.ad, plan: pl.ad, plan_durum: (PLD[pl.durum] || PLD.belirsiz)[0], katman: f.k, alan_m2: f.m2, kaynak: ky.ad }) + geo(f.g, f.c, f.holes || []) + '</Placemark>'; };
     const govde = parklar.map((p) => { const h = p.harita || {}, g = (S.gyp && S.gyp.parklar[p.kisa]) || { f: [], kaynak: [], planlar: [] };
       const sn = OPGeo.boundaries(h).map((r,i)=>({...r,part:i})).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' sınırı' + (h.sinir.length > 1 ? ' – ' + ((h.parca || [])[r.part] || (r.part + 1)) : '')) + '</name><styleUrl>#sinir</styleUrl><description>' + tablo([['Park', p.ad || p.kisa], ['Haritadan alan', h.alan_ha != null ? h.alan_ha.toLocaleString('tr-TR') + ' ha' : ''], ['Kayıtlı alan', p.alan != null ? p.alan.toLocaleString('tr-TR') + ' ha' : '—'], ['Kaynak', h.kaynak || ''], ['Koordinat sistemi', h.crs || ''], ['Kontrol', h.kontrol || '']]) + '</description>' + ext({ park: p.kisa, alan_ha: h.alan_ha, kaynak: h.kaynak }) + geo('A', r.c, r.holes) + '</Placemark>').join('');
-      const al = (h.alt || []).map((a) => OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r.c, r.holes) + '</Placemark>').join('')).join('');
-      const plk = (g.planlar || []).map((pl) => { const fs = g.f.filter((f) => f.p === pl.id && !(f._geo || OPGeo.validate(f)).length); if (!fs.length) return ''; const ar = pl.durum === 'arsiv';
+      const al = (h.alt || []).map((a) => OPGeo.boundaries(a).filter((r) => !OPGeo.validate(r).length).map((r) => '<Placemark><name>' + xe(p.kisa + ' – ' + a.ad) + '</name><styleUrl>#alt</styleUrl><description>' + tablo([['Alan', a.alan_ha == null ? '—' : a.alan_ha.toLocaleString('tr-TR') + ' ha'], ['Kaynak', a.kaynak], ['Bağlantı', a.url]]) + '</description>' + geo('A', r.c, r.holes) + '</Placemark>').join('')).join('');
+      const plk = (g.planlar || []).map((pl) => { const fs = g.f.filter((f) => f.p === pl.id && hCizilebilir(f)); if (!fs.length) return ''; const ar = pl.durum === 'arsiv';
         const kl = Object.keys(DUR).map((d) => { const x = fs.filter((f) => f.d === d); return x.length ? '<Folder><name>' + xe(DUR[d][0]) + ' (' + x.length + ')</name>' + x.map((f) => pm(p, g, f, ar ? 'ars' : 'd' + d)).join('') + '</Folder>' : ''; }).join('');
         return '<Folder><name>' + xe((ar ? 'Arşiv – ' : '') + pl.ad) + '</name>' + (ar ? '<visibility>0</visibility>' : '') + '<description>' + xe([(PLD[pl.durum] || PLD.belirsiz)[0], planTarihMetin(pl), pl.not].filter(Boolean).join(' · ')) + '</description>' + kl + '</Folder>'; }).join('');
       return '<Folder><name>' + xe(p.ad || p.kisa) + '</name><Folder><name>Güncel sınır</name>' + sn + '</Folder>' + (al ? '<Folder><name>Önceki / diğer sınır çizimleri</name>' + al + '</Folder>' : '') + plk + '</Folder>'; }).join('');
@@ -1734,7 +1794,7 @@
     const g = S.gyp && S.gyp.parklar[park.kisa];
     let match, best;
     for (const f of g?.f || []) {
-      if (arsivMi(g, f) || (f._geo || []).length || ['Y','A','K'].includes(f.d)) continue;
+      if (arsivMi(g, f) || !hCizilebilir(f) || ['Y','A','K'].includes(f.d)) continue;
       const position = OPGeo.nearest(ll, f);
       if (position && (!best || position.distance < best.distance)) { match = f; best = position; }
     }
@@ -2667,8 +2727,8 @@
     if (S.sorDz && S.sorKeyV === sorKey()) return S.sorDz;
     await Promise.allSettled([gypAl(), ekPaket()]);
     const ctx = { parks: S.veri.parks, rapor: S.rapor, al: S.al, muhasebe: S.veri.muhasebe, teblig: S.ekB && S.ekB.teblig, gyp: S.gyp && !S.gyp.hata ? S.gyp : null, durumlar: S.gyp && S.gyp.durumlar,
-      tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD),
-      kurum: S.veri.kurum, sefler: (window.EK && EK.TF_SEF) || {}, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira,
+      tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD), belgeliBorclar: E.belgeliBorclar(S.veri, S.rapor),
+      kurum: S.veri.kurum, sefler: (window.EK && EK.TF_SEF) || {}, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira, fisKalemleri: E.tahakkukFisKalemleri,
       planAl: (Y, p) => { S.plan[Y] = S.plan[Y] || {}; if (!S.plan[Y][p.kisa]) S.plan[Y][p.kisa] = parkTahakkuk(p, Y); return S.plan[Y][p.kisa]; },
       yilbasiAl: (Y, p) => E.yilbasiKira(p, kiraOranlari(Y), Y, Y + '-01-02', { veri: S.veri, esl: S.esl }) };
     S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey();
@@ -2797,8 +2857,35 @@
   };
 
   // ---------- Sohbet kutusu (her sayfada sağda) ----------
-  const SOHBET_ORNEK = ['Borcu olan parklar', 'Tayakadın 2027 kira', 'Kayabaşı kaç kameriye var?', 'Kaç orman parkı var?', 'Toplam kira geliri', 'Md. 32 ne diyor?', 'Sözleşmesi 2 yıl içinde bitecek parklar'];
-  function sohbetYukle() { if (S.sohbet) return S.sohbet; try { S.sohbet = JSON.parse(ss.get('op_sohbet') || '[]'); } catch (e) { S.sohbet = []; } return S.sohbet; }
+  const SOHBET_ORNEK = [
+    ['Borç ve tahsilat', 'Güncel borç ve tahsilat durumu nedir?'],
+    ['Kira ve fiş', 'Bu yılın kira tahakkuk fişini aç'],
+    ['Tesisler', 'Plandaki tesislerin listesini göster'],
+    ['Tebliğ', 'Madde 32 ne diyor?']
+  ];
+  function sohbetYukle() {
+    if (S.sohbet) return S.sohbet;
+    try {
+      const rows = JSON.parse(ss.get('op_sohbet') || '[]');
+      S.sohbet = Array.isArray(rows) ? rows : [];
+      S.sohbetOnceki = S.sohbet.at(-1)?.context || null;
+    } catch (e) { S.sohbet = []; }
+    return S.sohbet;
+  }
+  function sohbetBaglam() {
+    const select = $('#sohbetPark'); if (!select) return;
+    if (S.sohbetPark == null) S.sohbetPark = S.page === 'harita' ? S.hP || '' :
+      ['park', 'form', 'denetim', 'islem'].includes(S.page) ? S.park : '';
+    select.innerHTML = '<option value="">Bütün parklar</option>' + S.veri.parks.map(p =>
+      '<option' + (S.sohbetPark === p.kisa ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('');
+    $('#sohbetOrnekler').innerHTML = SOHBET_ORNEK.filter(([label]) => S.sohbetPark || ['Borç ve tahsilat','Tebliğ'].includes(label))
+      .map(([label,q]) => '<button type="button" class="hchip" data-a="sohbetOrnek" data-v="' + esc(q) + '">' + label + '</button>').join('');
+  }
+  function sohbetDurum(pending) {
+    S.sohbetPending = pending;
+    const send = $('#sohbetForm button[type="submit"]'); if (send) send.disabled = pending;
+    const state = $('#sohbetDurum'); if (state) state.textContent = pending ? 'Kayıtlar inceleniyor…' : '';
+  }
   function sohbetSakla() { try { ss.set('op_sohbet', JSON.stringify(S.sohbet.slice(-40))); } catch (e) {} }
   function sohbetCevapHtml(r) {
     const kartlar = r.cevaplar.map((c) => sorKart(c)).join('');
@@ -2810,21 +2897,28 @@
   function sohbetCiz() {
     const k = $('#sohbetAkis'); if (!k) return;
     const L = sohbetYukle();
-    k.innerHTML = (L.length ? '' : '<div class="sohbet-hos"><b>Merhaba.</b> Parklar, sözleşmeler, kira ve tahakkuk, alacak, tesisler ve Tebliğ hakkında sorun; cevaplar sitenin kendi kayıt ve hesaplarından gelir.<div class="chiprow">' + SOHBET_ORNEK.map((x) => '<button class="hchip" data-a="sohbetOrnek" data-v="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div></div>') +
+    k.innerHTML = (L.length ? '' : '<div class="sohbet-hos">Bir soru yazın veya yukarıdaki işlemlerden birini seçin.</div>') +
       L.map((x) => '<div class="sb sb-k">' + esc(x.q) + '</div><div class="sb sb-a">' + (x.html || '') + (x.ai ? '<div class="sohbet-ai"><b class="sohbet-ai-b">Yapay zekâ</b><div class="sor-ai-m">' + x.aiHtml + '</div></div>' : '') + '</div>').join('');
     k.scrollTop = k.scrollHeight;
   }
   async function sohbetGonder(q) {
-    q = String(q || '').trim(); if (!q) return;
+    q = String(q || '').trim(); if (!q || S.sohbetPending) return;
+    const scope = S.sohbetPark, prior = S.sohbetOnceki, raw = SOR.norm(q);
+    const scoped = scope && !/\b(?:madde|md|teblig)\b/.test(raw) && !SOR.parkBul(q, S.veri.parks).length;
     const L = sohbetYukle(), k = $('#sohbetAkis'), i = $('#sohbetQ'); if (i) i.value = '';
     const hos = k.querySelector('.sohbet-hos'); if (hos) hos.remove();
     k.insertAdjacentHTML('beforeend', '<div class="sb sb-k">' + esc(q) + '</div><div class="sb sb-a"><span class="spin"></span> Bakıyorum…</div>');
     const el = k.lastElementChild; k.scrollTop = k.scrollHeight;
+    sohbetDurum(true);
     try {
       const dz = await sorDizin();
-      const r = SOR.sor(dz, q, S.sohbetOnceki); S.sohbetOnceki = r.parks.length ? r : (S.sohbetOnceki && !r.cevaplar.length ? S.sohbetOnceki : r);
-      const html = sohbetCevapHtml(r); el.innerHTML = html;
-      const kayit = { q, html }; L.push(kayit); sohbetSakla(); k.scrollTop = k.scrollHeight;
+      const r = SOR.sor(dz, scoped ? scope + ' ' + q : q, prior);
+      if (L !== S.sohbet) return;
+      const context = { parks: r.parks, yil: r.yil };
+      S.sohbetOnceki = r.parks.length ? context : (prior && !r.cevaplar.length ? prior : context);
+      const html = (scoped ? '<p class="muted sohbet-devam">Park: ' + esc(scope) + '</p>' : '') + sohbetCevapHtml(r);
+      el.innerHTML = html;
+      const kayit = { q, html, context: S.sohbetOnceki }; L.push(kayit); sohbetSakla(); k.scrollTop = k.scrollHeight;
       if (sorAnahtar() && ls.get('op_ai_oto') !== '0') {
         el.insertAdjacentHTML('beforeend', '<div class="sohbet-ai"><b class="sohbet-ai-b">Yapay zekâ</b><div class="sor-ai-m"></div></div>');
         const gecmis = L.slice(0, -1).map((x) => ({ q: x.q, a: x.aiText || '' }));
@@ -2832,27 +2926,40 @@
         if (t) { kayit.ai = true; kayit.aiText = t; kayit.aiHtml = m.innerHTML; sohbetSakla(); }
       }
     } catch (e) { el.innerHTML = '<p class="red-t">Cevap hazırlanamadı: ' + esc(e.message) + '</p>'; }
+    finally { sohbetDurum(false); }
   }
   function sohbetAcKapat(ac) {
     const p = $('#sohbet'), b = $('#sohbetAc'); if (!p) return;
     const acik = ac == null ? p.hidden : ac; p.hidden = !acik; document.body.classList.toggle('sohbet-acik', acik); if (b) b.setAttribute('aria-expanded', String(acik));
-    if (acik) { sohbetCiz(); const ai = $('#sohbetAiDurum'); if (ai) ai.textContent = sorAnahtar() ? (ls.get('op_ai_oto') === '0' ? 'Yapay zekâ kapalı' : 'Yapay zekâ açık') : 'Yerel cevap'; setTimeout(() => { const i = $('#sohbetQ'); if (i && window.innerWidth > 860) i.focus(); }, 60); }
+    if (acik) { sohbetYukle(); sohbetBaglam(); if (!S.sohbetPending) sohbetCiz(); const ai = $('#sohbetAiDurum'); if (ai) ai.textContent = sorAnahtar() ? (ls.get('op_ai_oto') === '0' ? 'Yapay zekâ kapalı' : 'Yapay zekâ açık') : 'Yerel cevap'; setTimeout(() => { const i = $('#sohbetQ'); if (i && window.innerWidth > 860) i.focus(); }, 60); }
   }
   AKSIYON.sohbetOrnek = (t) => sohbetGonder(t.dataset.v);
   AKSIYON.sohbetTemizle = () => { S.sohbet = []; S.sohbetOnceki = null; sohbetSakla(); sohbetCiz(); };
-  AKSIYON.sohbetKapat = () => sohbetAcKapat(false);
+  AKSIYON.sohbetKapat = () => { sohbetAcKapat(false); $('#sohbetAc')?.focus(); };
+  AKSIYON.sohbetKopyala = async () => {
+    const answer = $('#sohbetAkis .sb-a:last-child');
+    if (!answer || S.sohbetPending) { toast('Önce bir soru sorun.'); return; }
+    try { await navigator.clipboard.writeText(answer.innerText.trim()); toast('Son cevap kopyalandı.'); }
+    catch (e) { toast('Cevabı kopyalamak için metni seçin.', true); }
+  };
   AKSIYON.sohbetAiDegis = () => { if (!sorAnahtar()) { AKSIYON.sorAyar(); return; } ls.set('op_ai_oto', ls.get('op_ai_oto') === '0' ? '1' : '0'); sohbetAcKapat(true); };
   function sohbetKur() {
     if ($('#sohbet')) return;
     document.body.insertAdjacentHTML('beforeend',
-      '<button class="sohbet-ac noprint" id="sohbetAc" type="button" aria-controls="sohbet" aria-expanded="false" aria-label="Sor asistanını aç"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M9 10h6M9 14h4"></path></svg><span>Sor <small>Parklar ve Tebliğ</small></span></button>' +
+      '<button class="sohbet-ac noprint" id="sohbetAc" type="button" aria-controls="sohbet" aria-expanded="false" aria-label="Sor asistanını aç"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M9 10h6M9 14h4"></path></svg><span>Sor <small>Kayıt ve belge bul</small></span></button>' +
       '<aside class="sohbet noprint" id="sohbet" role="region" aria-label="Sor asistanı" hidden><header class="sohbet-bas"><div><b>Sor asistanı</b><button class="sohbet-ai-dur" id="sohbetAiDurum" data-a="sohbetAiDegis" title="Yapay zekâyı aç / kapat"></button></div>' +
       '<div class="sohbet-dug"><button class="ib" data-a="sorAyar" aria-label="Yapay zekâ ayarı" title="Yapay zekâ ayarı">' + svg(IC.gear, 17) + '</button><button class="ib" data-a="sohbetTemizle" aria-label="Sohbeti temizle" title="Sohbeti temizle">' + svg('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3', 17) + '</button><button class="ib" data-a="sohbetKapat" aria-label="Kapat" title="Kapat">' + svg(IC.x, 18) + '</button></div></header>' +
-      '<div class="sohbet-akis" id="sohbetAkis" aria-live="polite"></div>' +
+      '<div class="sohbet-scope"><label for="sohbetPark">Park <select class="fld" id="sohbetPark"></select></label><div id="sohbetOrnekler" class="chiprow"></div></div><div class="sohbet-akis" id="sohbetAkis" role="log" aria-live="polite"></div><div class="sohbet-alt"><span id="sohbetDurum" role="status"></span><button class="btn sm" type="button" data-a="sohbetKopyala">Son cevabı kopyala</button></div>' +
       '<form class="sohbet-form" id="sohbetForm"><input class="fld" id="sohbetQ" type="text" autocomplete="off" enterkeyhint="send" placeholder="Sorunuzu yazın…" aria-label="Soru"><button class="btn pri" type="submit" aria-label="Gönder">' + svg('M4 12 20 4l-6 16-3-7z', 18) + '</button></form></aside>');
     $('#sohbetAc').onclick = () => sohbetAcKapat();
+    $('#sohbetPark').onchange = (e) => {
+      S.sohbetPark = e.target.value;
+      S.sohbetOnceki = null;
+      sohbetBaglam();
+      $('#sohbetPark').focus();
+    };
     $('#sohbetForm').onsubmit = (e) => { e.preventDefault(); sohbetGonder($('#sohbetQ').value); };
-    $('#sohbet').addEventListener('click', (e) => { tikla(e); const l = e.target.closest('a[href^="#/"], [data-a="formAc"], [data-a="sorMd"]'); if (l && window.innerWidth <= 860) sohbetAcKapat(false); });
+    $('#sohbet').addEventListener('click', (e) => { tikla(e); const l = e.target.closest('a[href^="#/"], [data-a="formAc"], [data-a="sorMd"]'); if (l) sohbetAcKapat(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#sohbet').hidden && !document.querySelector('.modal.on')) sohbetAcKapat(false); });
   }
 
@@ -2959,7 +3066,8 @@
   function tfCtx(p, f) {
     const Y = tfYil(f), plan = planAl(Y)[p.kisa] || {};
     let ky = {}; try { ky = (Y >= 2027 ? E.yilbasiKira(p, kiraOranlari(Y), Y, S.rapor, { veri: S.veri, esl: S.esl }) : E.kiraYili(p, S.tufe, S.veri.ek_kira, Y)) || {}; } catch (e) { ky = {}; }
-    const taksit = Math.min(4, plan.vadeler?.length ?? 0, Math.max(0, +f.taksit || 0));
+    const n = +f.taksit, size = Math.min(4, plan.vadeler?.length || 0);
+    const taksit = size > 1 && Number.isInteger(n) && n > 0 && n <= size ? n : 0;
     return { Y, taksit, plan, ky };
   }
   function tfAnahtar() { return 'TF|' + tfYil(S.form) + '|' + tfCtx(S.pBy[S.park], S.form).taksit; }
@@ -2968,13 +3076,18 @@
     const key = tfAnahtar(), v = e[key] || (key === 'TF|2026|0' ? e.TF : null) || {};
     return Object.fromEntries(Object.entries(v).filter(([a]) => !EK.tfHesapAlani(a))); }
   function tfBaglanti(park, year, installment) {
-    return '#/form?' + new URLSearchParams({ p: park, e: 'TF', y: year, n: installment });
+    return formBaglanti(park, 'TF', year, installment);
+  }
+  function formBaglanti(park, ek, year, installment) {
+    const q = new URLSearchParams({ p: park, e: ek });
+    if (ek === 'TF') { q.set('y', year); q.set('n', installment); }
+    return '#/form?' + q;
   }
   AKSIYON.formAc = (t) => {
     const f = S.form = { ek: t.dataset.e, duzenle: false, yil: +t.dataset.y, taksit: +t.dataset.n || 0 };
     S.fOnizle = false;
     if (t.dataset.k && S.pBy[t.dataset.k]) S.park = t.dataset.k;
-    const hash = f.ek === 'TF' ? tfBaglanti(S.park, tfYil(f), f.taksit) : '#/form';
+    const hash = formBaglanti(S.park, f.ek, tfYil(f), f.taksit);
     if (location.hash === hash) sayfaCiz(); else location.hash = hash;
   };
   AKSIYON.formBilgi = (t) => { formBilgi(t.dataset.e); };
@@ -3006,12 +3119,16 @@
   }
   AFTER.form = async () => {
     S.fV = null;
-    const sel = $('#fEk'); if (sel) sel.onchange = (e) => { S.form = { ek: e.target.value, duzenle: false }; S.fOnizle = false; sayfaCiz(); };
+    const target = $('#ekAlan');
+    const sel = $('#fEk'); if (sel) sel.onchange = (e) => { location.hash = formBaglanti(S.park, e.target.value, E.year(S.rapor), 0); };
     const ty = $('#fTfY'), tn = $('#fTfN');
     if (ty) ty.onchange = (e) => { location.hash = tfBaglanti(S.park, +e.target.value, 0); };
     if (tn) tn.onchange = (e) => { location.hash = tfBaglanti(S.park, tfYil(S.form), +e.target.value); };
-    try { await ekPaket(); } catch (e) { $('#ekAlan').innerHTML = '<div class="alert red">Ek şablonları açılamadı: ' + esc(e.message) + '</div>'; return; }
-    if (S.page !== 'form') return;
+    try { await ekPaket(); } catch (e) {
+      if (target?.isConnected) target.innerHTML = '<div class="alert red">Ek şablonları açılamadı: ' + esc(e.message) + '</div>';
+      return;
+    }
+    if (!target?.isConnected || S.page !== 'form') return;
     const f = S.form, p = S.pBy[S.park];
     if (f.ek === 'R10' && !S.ekB.rapor10[p.r10 || p.kisa]) { S.form.ek = 'Ek-10'; sayfaCiz(); return; }
     if (['Ek-11', 'Ek-16', 'Ek-17'].includes(f.ek)) return wordGoster(f.ek, p);
@@ -3096,8 +3213,10 @@
   };
   AKSIYON.fExcel = async () => {
     if (!tfCiktiHazir() || !S.fV) return; toast('Excel dosyası hazırlanıyor…');
-    const tf = S.form.ek === 'TF' ? tfYil(S.form) + ' ' + (+S.form.taksit ? S.form.taksit + '. taksit' : 'Yıllık') : '';
-    try { const b = await EK.excel(S.form.ek, S.fV.m, S.fV.V, S.form.ek === 'R10' ? 'Ek-10 ' + S.park : tf || S.form.ek); EK.indir(b, (S.form.ek === 'R10' ? 'Ek-10_imzali_' : tf ? 'Tahakkuk_fisi_' : S.form.ek + '_') + dosyaAdi(S.park) + (tf ? '_' + dosyaAdi(tf) : '') + '.xlsx'); toast('Excel indirildi.'); }
+    const park = S.park, ek = S.form.ek, { m, V } = S.fV;
+    const installment = ek === 'TF' ? tfCtx(S.pBy[park], S.form).taksit : 0;
+    const tf = ek === 'TF' ? tfYil(S.form) + ' ' + (installment ? installment + '. taksit' : 'Yıllık') : '';
+    try { const b = await EK.excel(ek, m, V, ek === 'R10' ? 'Ek-10 ' + park : tf || ek); EK.indir(b, (ek === 'R10' ? 'Ek-10_imzali_' : tf ? 'Tahakkuk_fisi_' : ek + '_') + dosyaAdi(park) + (tf ? '_' + dosyaAdi(tf) : '') + '.xlsx'); toast('Excel indirildi.'); }
     catch (e) { toast('Excel üretilemedi: ' + e.message, true); }
   };
   const dosyaAdi = (s) => (s || '').replace(/[çÇğĞıİöÖşŞüÜ]/g, (c) => ({ ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' }[c])).replace(/[^\w-]+/g, '_');

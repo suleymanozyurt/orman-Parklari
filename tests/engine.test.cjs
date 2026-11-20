@@ -35,3 +35,28 @@ test('a plan source link recognizes a collected 120 proration without presenting
  assert.equal(E.revizeDurum(v,e,{...p,park:'Other'},['2026-10-30'],'2026-10-22').kayit.length,0);
  assert.equal(E.revizeDurum(v,e,{...p,muhasebe_baglari:[{anahtar:'stale'}]},['2026-10-30'],'2026-10-22').kayit.length,0);
 });
+
+test('historical report excludes not yet posted debits and treats later payments as still open', () => {
+  const rows = [
+    { olusma: '2026-01-10', vade: '2026-01-30', tutar: 100, odeme: '2026-02-10', fis: 'yev. 2' },
+    { olusma: '2026-03-01', vade: '2026-03-30', tutar: 200, odeme: null }
+  ];
+  const [a] = E.alacakHesapla(rows, '2026-02-01', [['2025-11-13', .037]], .2);
+  assert.equal(a.durum, 'Ödenmedi');
+  assert.equal(a.acik, 100);
+  assert.equal(a.fis, '');
+  assert.equal(E.alacakHesapla(rows, '2026-02-01', [], .2).length, 1);
+  assert.equal(E.alacakHesapla(rows, '2026-02-10', [['2025-11-13', .037]], .2)[0].acik, 0);
+});
+
+test('same voucher number in different years keeps each payment on its own date', () => {
+  const item = { vkn: '1', hesap: '120.99.99.02', kaynak: '120', alacak: 0, borc: 100, borc_h: '120', alacak_h: '600' };
+  const settle = { ...item, borc: 0, alacak: 100, borc_h: '102', alacak_h: '120', yev: 100 };
+  const veri = { parks: [{ kisa: 'Park', vkn_muh: '1' }], muhasebe: [
+    { ...item, tarih: '2025-01-10', vade: '2025-02-01', yev: 25 },
+    { ...settle, tarih: '2025-02-01', vade: '2025-02-01' },
+    { ...item, tarih: '2026-01-10', vade: '2026-02-01', yev: 25 },
+    { ...settle, tarih: '2026-02-01', vade: '2026-02-01' }
+  ] };
+  assert.deepEqual(E.eslestir(veri).parcalar.map(p => p.odeme), ['2025-02-01', '2026-02-01']);
+});
