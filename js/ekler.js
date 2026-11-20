@@ -107,6 +107,7 @@
   const TF_SEF = { 'Arnavutköy': 'Güven KAVRAZ', 'Fenertepe': 'Oktay KAYA' };
   const TF_YRD = { 'Arnavutköy': 'Ergün TUNCER' };
   EK.TF_SEF = TF_SEF; EK.TF_YRD = TF_YRD;
+  EK.tfHesapAlani = (address) => /^(?:B|D|G)(?:14|15|16|17|18|19|20|21|22|37|38)$|^[CDF]25$/.test(address);
   const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   EK.tfAlanlar = function (ctx) {
     const E = root.E, r2 = E.r2, tl = E.tl, fd = E.fmtDate, p = ctx.p || {}, ku = ctx.ku || {}, tf = ctx.tf || {};
@@ -118,7 +119,8 @@
     F.tf_park = (p.ad || p.kisa || '').replace(/\s+/g, ' ');
     F.tf_sef = TF_SEF[p.seflik] || ''; F.tf_yrd = TF_YRD[p.seflik] || ''; F.tf_mudur = ku.mudur || '';
     F.tf_tarih = Y ? '…/…./' + Y : '';
-    if (!Y || pl.kira == null) return F;                      // TÜFE ya da yıllık esas bekleniyor
+    const m = E.tahakkukFisKalemleri(pl, n);
+    if (!Y || !m) return F;
     const ilk = n <= 1, kira = pl.kira, vd = pl.vadeler || [], vi = n ? vd[n - 1] : null;
     if (n && !vi) return F;
     const on = ky.onceki || null, esas = on && on.bedel != null ? r2(on.bedel + (on.ek || 0)) : null;
@@ -130,21 +132,22 @@
     F.tf_artis = n === 0 && esas != null ? tl(r2(kira - esas)) : '_';
     const bas = pl.bas || (Y + '-01-01'), bit = E.addDays(E.addMonths(bas, 12), -1);
     F.tf_kira_lab = Y + ' kira bedeli ' + (n ? '(' + n + '. taksit)' : '(' + fd(bas) + '-' + fd(bit) + ')');
-    F.tf_kira = tl(n ? vi.kira : kira);
+    F.tf_kira = tl(m.kira);
     F.tf_tem_lab = 'Orman Parkı %6 Kesin Teminat (Md. 9/1: ihale bedeli)';
     F.tf_tem = n === 0 && p.ihale_b != null ? tl(r2(p.ihale_b * 0.06)) : '_';
     F.tf_dep_lab = 'Cari Yıl İçerisindeki ' + (p.dep != null ? yuzde(p.dep) : '%10') + ' Depozito Artış Bedeli';
     F.tf_guv_lab = 'Cari Yıl İçerisindeki ' + (p.guv != null ? yuzde(p.guv) : '%25') + ' Güvence Artış Bedeli';
-    const dep = ilk && pl.depFark != null ? pl.depFark : 0, guv = ilk && pl.guvFark != null ? pl.guvFark : 0;
-    const agac = ilk ? pl.agac || 0 : 0, kdv = ilk ? pl.kdv || 0 : 0;
-    F.tf_dep = ilk && pl.depFark != null ? tl(dep) : '_'; F.tf_guv = ilk && pl.guvFark != null ? tl(guv) : '_';
-    F.tf_agac = ilk ? tl(agac) : '_'; F.tf_kdv = ilk ? tl(kdv) : '_';
-    F.tf_toplam = tl(r2((n ? vi.kira : kira) + dep + guv + agac + kdv));
+    F.tf_dep = m.dep != null ? tl(m.dep) : '_'; F.tf_guv = m.guv != null ? tl(m.guv) : '_';
+    F.tf_agac = ilk ? tl(m.agac) : '_'; F.tf_kdv = ilk ? tl(m.kdv) : '_';
+    F.tf_toplam = tl(m.toplam);
     F.tf_vade = n ? fd(vi.vade) : vd.map((v) => fd(v.vade)).join('\n');
     const kalan = p.soz_bit ? Math.max(0, E.year(p.soz_bit) - Y) : null;
     F.tf_gy = kalan != null ? String(kalan) : ''; F.tf_gy_bedel = tl(kira); F.tf_gy_top = kalan != null ? tl(r2(kira * kalan)) : '';
-    F.tf_not = 'NOT: ' + Y + ' yılı kira bedeli, ' + (Y - 1) + ' yılı kira bedeli' + (on && on.ek ? ' ile aynı yıl onaylanan ek tesis kira bedelinin (' + tl(on.ek) + ' TL) toplamı (313 Sayılı Tebliğ Md. 30/1 son cümlesi)' : '') +
-      ' üzerinden ' + (ay ? ay + ' ' : '') + 'TÜFE (on iki aylık ortalamalara göre) ' + (ky.tufe != null ? yuzde(ky.tufe) : '') + ' oranında artırılarak hesaplanmıştır.';
+    const esasNotu = ky.tufe == null ? 'Kayıtlı kira esası kullanıldı.' :
+      (ay ? ay + ' ' : '') + 'TÜFE (on iki aylık ortalamalara göre) ' + yuzde(ky.tufe) + ' uygulandı' +
+      (on?.ek ? '. Belgeli ek tesis kirası: ' + tl(on.ek) + ' TL (Md. 30/1).' : '.');
+    F.tf_not = (pl.yilbasi ? 'Yılbaşı çalışma fişi. Sözleşme ve yetkili onayı ile karşılaştırılmalıdır. ' : '') +
+      esasNotu + (pl.kod === 'fark' ? ' Muhasebe kira tutarı: ' + tl(pl.muhKira) + ' TL. Hesapla fark: ' + tl(pl.fark) + ' TL.' : '');
     F.tf_tem_not = 'NOT: %6 kesin teminat, Tebliğin 9 uncu maddesinin birinci fıkrası uyarınca ihale bedeli üzerinden gösterilmiştir; ek yapı ve tesislere ait kesin teminat aynı maddenin ikinci fıkrası uyarınca ayrıca hesaplanır.';
     return F;
   };

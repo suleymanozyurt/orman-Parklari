@@ -74,6 +74,25 @@
     return false;
   };
   G.distance = (a, b) => { const x = rad(b[0] - a[0]), y = rad(b[1] - a[1]); const h = Math.sin(x / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(y / 2) ** 2; return 2 * R * Math.asin(Math.min(1, Math.sqrt(h))); };
+  // Yerel teğet düzleminde en yakın kenar noktasını bul; uzaklığı metre olarak ver.
+  G.nearest = (position, geometry) => {
+    const points = G.points(geometry), area = geometry.g === 'A', holes = geometry.holes || [];
+    if (!points.length || !points.every(G.coordinate) || holes.some(ring => !ring.length || !ring.every(G.coordinate))) return null;
+    if (area && G.inside(position, points) && !holes.some(ring => G.inside(position, ring))) return { point: position, distance: 0 };
+    let best = { point: points[0], distance: G.distance(position, points[0]) };
+    if (geometry.g === 'N') return best;
+    const scale = Math.cos(rad(position[0]));
+    for (const ring of area ? [points, ...holes].map(G.close) : [points]) {
+      for (let i = 1; i < ring.length; i++) {
+        const a = ring[i - 1], b = ring[i], dy = b[0] - a[0], dx = (b[1] - a[1]) * scale;
+        const ratio = ((position[0] - a[0]) * dy + (position[1] - a[1]) * scale * dx) / (dy * dy + dx * dx);
+        const t = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) : 0;
+        const point = [a[0] + dy * t, a[1] + (b[1] - a[1]) * t], distance = G.distance(position, point);
+        if (distance < best.distance) best = { point, distance };
+      }
+    }
+    return best;
+  };
   G.length = (a) => a.slice(1).reduce((s, q, i) => s + G.distance(a[i], q), 0);
   G.area = (r) => { const a = G.close(r); let s = 0; for (let i = 1; i < a.length; i++) s += rad(a[i][1] - a[i - 1][1]) * (2 + Math.sin(rad(a[i - 1][0])) + Math.sin(rad(a[i][0]))); return Math.abs(s * R * R / 2); };
   G.hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).padStart(8, '0'); };

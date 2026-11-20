@@ -322,12 +322,22 @@
   };
   const bol = (top, n) => { const a = []; const b = r2(top / n); for (let i = 0; i < n - 1; i++) a.push(b); a.push(r2(top - b * (n - 1))); return a; };
   E.bol = bol;
+  E.tahakkukFisKalemleri = function (plan, n = 0) {
+    const vade = n ? plan.vadeler?.[n - 1] : null;
+    if (plan.kira == null || (n && !vade)) return null;
+    const ilk = n <= 1;
+    const kira = vade ? vade.kira : plan.kira;
+    const agac = vade ? vade.agac : plan.agac, kdv = vade ? vade.kdv : plan.kdv;
+    const dep = ilk ? plan.depFark ?? null : null, guv = ilk ? plan.guvFark ?? null : null;
+    return { kira, agac, kdv, dep, guv, toplam: r2(kira + agac + kdv + (dep ?? 0) + (guv ?? 0)) };
+  };
   // Ödeme düzeni: önceki yılın muhasebe tahakkukları (vade günleri +1 yıl); yoksa Md. 31/32-3 kuralı; yönetici parkta 'taksit_vade' (AA-GG listesi) tanımlayabilir.
   E.tahakkukPlan = function (veri, esl, p, tufe, Y, rapor) {
     const out = { park: p.kisa, yil: Y, uyari: [] };
     if (!p.soz_bas || !p.taban || p.ihale_b == null) { out.durum = 'Sözleşme bilgisi eksik'; out.kod = 'eksik'; return out; }
     if (p.durum && p.durum !== 'Kirada') { out.durum = 'Park kirada değil (' + p.durum + ')'; out.kod = 'disi'; return out; }
     if (p.soz_bit && iso(Y, 1, 1) > p.soz_bit) { out.durum = 'Sözleşme süresi dışında'; out.kod = 'disi'; return out; }
+    if (E.year(p.soz_bas) > Y) { out.durum = 'Kira dönemi başlamamış'; out.kod = 'yok'; return out; }
     const ky = Y >= 2027 ? E.yilbasiKira(p, tufe, Y, rapor, {veri,esl}) : E.kiraYili(p, tufe, veri.ek_kira, Y);
     if (!ky) { out.durum = 'Kira dönemi başlamamış'; out.kod = 'yok'; return out; }
     Object.assign(out, { donem: ky.donem, bas: ky.bas, tufe: ky.tufe, tufeAy: ky.tufeAy, yilbasi: !!ky.yilbasi, kiraEsasi: ky.esasKaynak || '', esasYili: ky.esasYili, esasBedeli: ky.esasBedeli });
@@ -367,7 +377,20 @@
         kaynak = 'Md. 32/3: sözleşme ayından başlayarak üçer aylık dört eşit taksit'; }
     }
     if (!vadeler.length) vadeler = [iso(Y, 1, 31)];
-    const kTut = bol(kira, vadeler.length);
+    // Hesapla tutan güncel muhasebe vadeleri hem cetvelde hem fişte kullanılır.
+    const resmiVadeler = new Map();
+    for (const it of kiraIt) {
+      const v = it.duz || it.vade;
+      if (!v || E.year(v) !== Y || !Number.isFinite(it.tutar) || it.tutar <= 0 || KIST.test(it.aciklama || '')) continue;
+      resmiVadeler.set(v, r2((resmiVadeler.get(v) || 0) + it.tutar));
+    }
+    const resmiToplam = r2([...resmiVadeler.values()].reduce((sum, amount) => sum + amount, 0));
+    const uyumlu = resmiToplam === kira && resmiVadeler.size >= 1 && resmiVadeler.size <= 4;
+    if (uyumlu || (resmiVadeler.size === 4 && resmiToplam === out.muhKira)) {
+      vadeler = [...resmiVadeler.keys()].sort();
+      kaynak = Y + ' muhasebe dökümündeki kira tahakkuk vadeleri' + (uyumlu ? '' : ' · tutarlar çalışma hesabından');
+    }
+    const kTut = uyumlu ? vadeler.map(v => resmiVadeler.get(v)) : bol(kira, vadeler.length);
     const agac = r2(kira * 0.05), kdv = r2((kira + agac) * 0.2);
     out.vadeler = vadeler.map((v, i) => ({ vade: v, kira: kTut[i], agac: i === 0 ? agac : 0, kdv: i === 0 ? kdv : 0 }));
     out.agac = agac; out.kdv = kdv; out.toplam = r2(kira + agac + kdv); out.kaynak = kaynak;

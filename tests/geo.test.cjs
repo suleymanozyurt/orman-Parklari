@@ -5,3 +5,13 @@ test('holes outside outer polygon and crossing holes are detected',()=>{assert.o
 test('canonical geometry detects rotated and reversed rings without changing data',()=>{const a={g:'A',c:[[41,28],[41,29],[42,29],[42,28]]},b={g:'A',c:[[42,29],[41,29],[41,28],[42,28]]};assert.equal(G.geometryKey(a),G.geometryKey(b));assert.ok(G.distance([0,0],[0,1])>111000);});
 test('park boundaries exclude holes, preserve legacy parts and flag malformed inner rings',()=>{const outer=[[41,28],[41,28.1],[41.1,28.1],[41.1,28]],hole=[[41.02,28.02],[41.02,28.03],[41.03,28.03],[41.03,28.02]],h={sinir:[outer],sinir_holes:[[hole]]};assert.deepEqual(G.boundaryIssues(h),[]);assert.equal(G.boundaryContains(h,[41.025,28.025]),false);assert.equal(G.boundaryContains(h,[41.05,28.05]),true);assert.equal(G.boundaryContains({sinir:[outer]},[41.025,28.025]),true);const rows=G.inventory([{kisa:'Test',harita:h}],{parklar:{Test:{f:[{g:'N',c:[41.025,28.025]}]}}});assert.equal(rows[0].outside,true);assert.ok(G.boundaryIssues({...h,sinir_holes:[[[[42,29],[42,29.1],[42.1,29]]]]}).length);assert.ok(G.boundaryIssues({...h,sinir_holes:[[null]]}).length);});
 test('boundary control detects edges crossing a hole and polygons enclosing excluded land',()=>{const outer=[[41,28],[41,28.1],[41.1,28.1],[41.1,28]],hole=[[41.02,28.02],[41.02,28.03],[41.03,28.03],[41.03,28.02]],h={sinir:[outer],sinir_holes:[[hole]]};assert.equal(G.outsideBoundary(h,{g:'L',c:[[41.025,28.01],[41.025,28.04]]}),true);assert.equal(G.outsideBoundary(h,{g:'L',c:[[41.04,28.01],[41.04,28.04]]}),false);assert.equal(G.outsideBoundary(h,{g:'A',c:outer}),true);assert.equal(G.outsideBoundary(h,{g:'A',c:outer,holes:[hole]}),false);});
+
+test('field distance uses line segments and accounts for holes in a facility footprint', () => {
+  const geo = require('../js/geo.js');
+  const line = { g: 'L', c: [[41, 28], [41, 28.02]] };
+  assert.deepEqual(geo.nearest([41, 28.01], line), { point: [41, 28.01], distance: 0 });
+  const polygon = { g: 'A', c: [[41, 28], [41.02, 28], [41.02, 28.02], [41, 28.02]],
+    holes: [[[41.005, 28.005], [41.015, 28.005], [41.015, 28.015], [41.005, 28.015]]] };
+  assert.equal(geo.nearest([41.002, 28.002], polygon).distance, 0);
+  assert.ok(geo.nearest([41.01, 28.01], polygon).distance > 350);
+});
