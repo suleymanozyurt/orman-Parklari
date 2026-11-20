@@ -79,3 +79,11 @@
 - Tesis çizimi olmayan parklar: Kurtyolu, Ağaçlı, Işıklar, Avrupa Yakası Kent Ormanı (okunabilir çizim yok).
 - Parklar tablosunda alanlar iki ondalıkla gösteriliyor (İmrahor 54,711 → 54,71).
 - Sor asistanı: sol menü › Sor; yan menü aramasında Enter; telefonda üstteki büyüteç. Yerel dizin (park, tahakkuk, alacak, muhasebe, tesis, Tebliğ, denetim, defter, yazışma, plan revizyonu); doğrudan cevaplar sitenin kendi hesaplarından. İsteğe bağlı "Yapay zekâ ile cevapla" (Claude Opus 5.5, kaynak numaralı; anahtar yalnız cihazda saklanır).
+
+## 20.11.2026 – Hacı Bektaş-i Veli ve Mimar Sinan tesis çizimleri
+
+- Netcad NCZ (5.x) biçimi çözüldü: katman tablosu (29 baytlık kayıtlar) ve nesne kayıtları (0x15 + uzunluk; tür: 1 nokta, 2 çizgi, 3 daire, 4 yay, 5 yazı, 7 çoklu çizgi; köşeler 24 baytlık X, Y, Z).
+- Hacı Bektaş-i Veli: `GELISIM_VE_YONETIM_PLANI.NCZ` (14.10.2020) okundu; 724 çizim eklendi (19 kameriye, 7 kır lokantası/kahvesi/büfe, 6 WC/spor destek, 10 yöresel ürün, 5 otopark, 5 hayvan barınağı, 5 çocuk oyun alanı, 41 mevcut yapı, 114 patika, 20 bisiklet yolu, 466 yol çizgisi). Plan yazıları tesis adına eklendi. Paftadaki lejant kopyaları ve sınıra 60 m’den uzak çevre çizimleri (74) alınmadı.
+- Datum ED50 UTM 6° DOM 27 (sitedeki 7 parametre): yollar ve mevcut yapılar uydu görüntüsüne bu kabulle oturuyor; ITRF kabulünde 110 m kayıyor. Plan durumu “belirsiz” (onaylı I. Revizyonun sayısal çizimi olduğu [ÇIKARIM]).
+- Mimar Sinan: 1. Revize Vaziyet Planı (ODÜH 18.10.2016) tesis koordinat çizelgesinden 60 tesis (52 mevcut, 8 önerilen) eklendi; köşeler çizelgedeki ED50 değerlerinden yeniden hesaplandı. Çizelge taranmış paftadan aktarıldığı için teyit önerilir [TEYİT GEREKLİ].
+- Hâlâ eklenemeyenler: Kağıthane 2. Revize NCZ (21 MB) ve Mimar Sinan onaylı proje DWG (18 MB) Drive bağlayıcısının 10 MB sınırını aşıyor; Boğazköy 2023 DWG için okuyucu yok; Kurtyolu, Ağaçlı, Işıklar ve Avrupa Yakası Kent Ormanı için tesis çizimi bulunamadı.
