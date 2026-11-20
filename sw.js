@@ -1,6 +1,6 @@
 /* Kabuk sürümü ve şifreli veri kopyaları ayrı tutulur. */
-const V='op-v52', D='op-data-v1', T='op-karo-v1', ROOT=new URL('./',self.registration.scope);
-const SHELL=['index.html','app.css?v=46','ui.css?v=52','js/engine.js?v=52','js/kasa.js?v=6','js/ekler.js?v=50','js/geo.js?v=51','js/workflows.js?v=45','js/sync.js?v=10','js/access.js?v=45','js/sor.js?v=51','js/app.js?v=52','data/giris-public.json','icons/park-mark.svg?v=13','manifest.webmanifest','icons/icon-192.png?v=13','icons/icon-512.png?v=13','icons/icon-maskable-512.png?v=13','icons/apple-touch-icon.png?v=13','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','vendor/leaflet/images/layers.png','vendor/leaflet/images/layers-2x.png','vendor/leaflet/images/marker-icon.png','vendor/leaflet/images/marker-icon-2x.png','vendor/leaflet/images/marker-shadow.png','vendor/proj4.js','vendor/jszip.min.js','vendor/exceljs.min.js','vendor/docx-preview.min.js'];
+const V='op-v53', D='op-data-v1', T='op-karo-v1', ROOT=new URL('./',self.registration.scope);
+const SHELL=['index.html','app.css?v=46','ui.css?v=52','js/engine.js?v=52','js/kasa.js?v=6','js/ekler.js?v=50','js/geo.js?v=51','js/workflows.js?v=45','js/sync.js?v=10','js/access.js?v=45','js/sor.js?v=51','js/app.js?v=53','data/giris-public.json','icons/park-mark.svg?v=13','manifest.webmanifest','icons/icon-192.png?v=13','icons/icon-512.png?v=13','icons/icon-maskable-512.png?v=13','icons/apple-touch-icon.png?v=13','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','vendor/leaflet/images/layers.png','vendor/leaflet/images/layers-2x.png','vendor/leaflet/images/marker-icon.png','vendor/leaflet/images/marker-icon-2x.png','vendor/leaflet/images/marker-shadow.png','vendor/proj4.js','vendor/jszip.min.js','vendor/exceljs.min.js','vendor/docx-preview.min.js'];
 const DATA=['data/kaynak-kontrol.enc','data/veri.enc','data/harita.enc','data/ekler.enc','data/teblig.enc','data/oranlar.json'].map(p=>new URL(p,ROOT).href);
 const canonical=u=>{const x=new URL(u,ROOT);x.search='';return x.href;}, dataURL=u=>DATA.includes(canonical(u));
 const miss=()=>new Response('Çevrimdışı kopya bulunamadı.',{status:503,headers:{'Content-Type':'text/plain;charset=utf-8'}});
@@ -12,4 +12,13 @@ self.addEventListener('fetch',e=>{const q=e.request;if(q.method!=='GET'||q.heade
 if(u.href===new URL('data/giris-public.json',ROOT).href){e.respondWith((async()=>{const c=await caches.open(V),saved=await c.match(u.href);if(saved)return saved;try{return await fetch(q);}catch(_){return miss();}})());return;}
 if(dataURL(q.url)){e.respondWith((async()=>{const c=await caches.open(D);try{const r=await fetch(q);if(!r.ok)throw new Error('Veri alınamadı.');try{await c.put(canonical(q.url),await remember(r));}catch(_){}return r;}catch(_){const r=await c.match(canonical(q.url));if(!r)return miss();const h=new Headers(r.headers);h.set('X-OP-Offline','1');return new Response(await r.arrayBuffer(),{status:r.status,headers:h});}})());return;}
 if(['tile.openstreetmap.org','server.arcgisonline.com'].includes(u.hostname)&&(/\/tile\//.test(u.pathname)||/\.png$/.test(u.pathname))){e.respondWith((async()=>{const c=await caches.open(T),old=await c.match(q);if(old)return old;try{const r=await fetch(q);if(r.ok||r.type==='opaque'){try{await c.put(q,r.clone());const ks=await c.keys();for(const key of ks.slice(0,Math.max(0,ks.length-3000)))await c.delete(key);}catch(_){}}return r;}catch(_){return miss();}})());return;}
-if(u.origin!==ROOT.origin||!u.pathname.startsWith(ROOT.pathname)||u.pathname.includes('/data/'))return;const url=q.mode==='navigate'?new URL('index.html',ROOT).href:q.url;e.respondWith((async()=>{const c=await caches.open(V),old=await c.match(url);if(old)return old;try{return await fetch(q);}catch(_){return miss();}})());});
+if(u.origin!==ROOT.origin||!u.pathname.startsWith(ROOT.pathname)||u.pathname.includes('/data/'))return;
+if(q.mode==='navigate'){e.respondWith((async()=>{
+  try{
+    const response=await fetch(q,{cache:'no-cache',...(typeof AbortSignal.timeout==='function'?{signal:AbortSignal.timeout(5000)}:{})});
+    if(response.ok)return response;
+  }catch(_){}
+  const c=await caches.open(V);
+  return await c.match(new URL('index.html',ROOT).href)||miss();
+})());return;}
+e.respondWith((async()=>{const c=await caches.open(V),old=await c.match(q.url);if(old)return old;try{return await fetch(q);}catch(_){return miss();}})());});

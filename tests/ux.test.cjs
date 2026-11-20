@@ -487,8 +487,29 @@ test('placement checks geometry and boundary, and remains unavailable to read-on
     assert.equal(f.dis.checked, false);
     a.hParkSec(''); assert.equal(doc.querySelector('#hEditor').hidden, true);
     assert.equal(doc.querySelector('[data-a=hTesisEkle]').disabled, true);
-    a.S.rol = {}; await render(); assert.equal(doc.querySelector('[data-a=hTesisEkle]'), null);
+    a.S.rol = {}; a.S.owner = false; await render(); a.hParkSec('Test');
+    const signIn = doc.querySelector('[data-a=hTesisEkle]');
+    assert.equal(signIn.textContent, 'Tesis eklemek için giriş');
+    signIn.click();
+    assert.ok(doc.querySelector('#modal.on #ypw'));
+    assert.equal(doc.querySelector('#hEditor').hidden, true);
     assert.equal(writes.length, 0);
+  } finally { dom.window.close(); }
+});
+
+test('buttons inside map controls and popups are handled once by the application', async () => {
+  const { dom, w, a } = await fieldMap();
+  try {
+    let count = 0;
+    a.AKSIYON.hKapat = () => { count++; };
+    const button = w.document.createElement('button');
+    button.dataset.a = 'hKapat';
+    a.S._hmap.getContainer().append(button);
+    button.click();
+    assert.equal(count, 1);
+    w.document.querySelector('#hGps').append(button);
+    button.click();
+    assert.equal(count, 2);
   } finally { dom.window.close(); }
 });
 
