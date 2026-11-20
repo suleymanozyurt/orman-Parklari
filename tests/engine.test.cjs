@@ -60,3 +60,26 @@ test('same voucher number in different years keeps each payment on its own date'
   ] };
   assert.deepEqual(E.eslestir(veri).parcalar.map(p => p.odeme), ['2025-02-01', '2026-02-01']);
 });
+
+test('a signed debt stays the baseline and only subsequent interest is added', () => {
+ const report = '2026-11-20';
+ const rated = [['2025-11-13', .037]];
+ const lines = [
+  {park:'Test', kalem:1, tur:'Kira', vade:'2026-06-30', tutar:10000},
+  {park:'Test', kalem:2, tur:'Vergi/fon', vade:'2026-05-30', tutar:1000}
+ ];
+ const record = {park:'Test', hesap_tarihi:'2026-10-23', anapara:11000, hesaplanan:100, tahakkuk:200, kdv:40, toplam:11340};
+ const entries = date => E.alacakHesapla(lines,date,rated,.2);
+ const current = entries(report);
+ const forward = E.belgeliBorcHesapla(record,lines,current,report,rated,.2);
+ const sum = rows => E.r2(rows.reduce((s,row) => s + row.gztop,0));
+ assert.equal(forward.sonrakiGecikme,E.r2(sum(current)-sum(entries(record.hesap_tarihi))));
+ assert.equal(forward.calismaToplami,E.r2(record.toplam + forward.sonrakiGecikme));
+ assert.equal(forward.sabitGecikme,240);
+ assert.equal(E.belgeliBorcHesapla(record,lines,entries(record.hesap_tarihi),record.hesap_tarihi,rated,.2).calismaToplami,null);
+ assert.equal(E.belgeliBorcHesapla(record,lines,[{...current[0],kalem:9},current[1]],report,rated,.2).calismaToplami,null);
+ assert.equal(E.belgeliBorcHesapla(record,lines,[{...current[0],durum:'Ödendi'},current[1]],report,rated,.2).calismaToplami,null);
+ const [ozet] = E.parkOzet({parks:[{kisa:'Test'}]},current,report,{});
+ assert.equal(ozet.enEski,'2026-05-30');
+ assert.equal(ozet.enEskiKira,'2026-06-30');
+});

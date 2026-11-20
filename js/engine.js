@@ -216,6 +216,21 @@
       (!b.tahsil_tarihi || b.tahsil_tarihi > rapor));
   };
 
+  E.belgeliBorcHesapla = function (b, parcalar, alacak, rapor, oranlar, gzKdv) {
+    const sonuc = { ...b, sabitGecikme: r2(b.tahakkuk + b.kdv), sonrakiGecikme: null, calismaToplami: null };
+    if (rapor <= b.hesap_tarihi) return sonuc;
+    const acik = (rows) => rows.filter(a => a.park === b.park && a.durum === 'Ödenmedi');
+    const once = acik(E.alacakHesapla(parcalar.filter(a => a.park === b.park), b.hesap_tarihi, oranlar, gzKdv));
+    const sonra = acik(alacak);
+    const kimlik = (rows) => rows.map(a => JSON.stringify([a.kalem, a.tur, a.esas, a.acik])).sort().join('\n');
+    const toplam = (rows, alan) => r2(rows.reduce((s, a) => s + a[alan], 0));
+    if (!once.length || toplam(once, 'acik') !== b.anapara || kimlik(once) !== kimlik(sonra)) return sonuc;
+    // İmzalı hesap belge tarihindeki tutarı belirler. Aynı açık kalemlere yalnız o tarihten sonraki artış eklenir.
+    sonuc.sonrakiGecikme = r2(toplam(sonra, 'gztop') - toplam(once, 'gztop'));
+    sonuc.calismaToplami = r2(b.toplam + sonuc.sonrakiGecikme);
+    return sonuc;
+  };
+
   // ---------- kira zinciri (Md. 30/1, 31, 32) ----------
   // 1. dönem ihale bedeli; sonraki dönem = (önceki dönem + o dönemde eklenen ek tesis kirası) × (1 + TÜFE), kuruşa yuvarlanır.
   E.tufeAl = function (tufe, y, m) { const a = tufe[String(y)]; if (!a) return null; const v = a[m - 1]; return v == null ? null : v; };
@@ -519,7 +534,8 @@
       if (kk.durum === 'Fark var') uy.push('Kira hesabı farklı');
       const kalan = p.soz_bit ? Math.max(0, days(rapor, p.soz_bit) / 365.25) : null;
       const enEski = A.filter((a) => !a.odeme && a.esas && a.esas < rapor).map((a) => a.esas).sort()[0] || null;
-      return { kisa: p.kisa, kira_yil, tahsil, acik, vgec, gz, kk, uyari: uy, kalan, enEski,
+      const enEskiKira = A.filter(a => a.tur === 'Kira' && a.durum === 'Ödenmedi').map(a => a.esas).sort()[0] || null;
+      return { kisa: p.kisa, kira_yil, tahsil, acik, vgec, gz, kk, uyari: uy, kalan, enEski, enEskiKira,
         guv_t: p.guv != null ? r2(kira_yil * p.guv) : null, dep_t: p.dep != null ? r2(kira_yil * p.dep) : null };
     });
   };

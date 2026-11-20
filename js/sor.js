@@ -298,14 +298,15 @@
       const belgeli = (ctx.belgeliBorclar || []).filter(b => !parks.length || parks.some(p => p.kisa === b.park));
       for (const b of belgeli) cevaplar.push({ baslik: b.park + ' · Belgeli borç (' + fd(b.hesap_tarihi) + ')',
         satirlar: [['Belgeli toplam', tl(b.toplam)], ['Kira ve vergi/fon anaparası', tl(b.anapara)],
-          ['2025 bakiyesine işleyen gecikme ve KDV', tl(b.hesaplanan)], ['Tahakkuk etmiş 2026 gecikme bedeli ve KDV', tl(b.tahakkuk + b.kdv)]],
+          ['2025 bakiyesine işleyen gecikme ve KDV', tl(b.hesaplanan)], ['Tahakkuk etmiş 2026 gecikme bedeli ve KDV', tl(b.tahakkuk + b.kdv)],
+          ...(b.calismaToplami != null ? [[fd(ctx.rapor) + ' çalışma hesabı (tahsilat teyidi bekliyor)', tl(b.calismaToplami)]] : [])],
         kaynak: fd(b.belge_tarihi) + ' tarihli ' + b.sayi + ' sayılı yazı. Sonraki tahsilatlar teyit bekliyor.',
         link: '#/alacaklar?p=' + encodeURIComponent(b.park), linkAd: 'Borç kalemleri ve imzalı yazı' });
       const al = (ctx.al || []).filter((a) => (!parks.length || parks.some((p) => p.kisa === a.park)));
       const acik = al.filter((a) => a.durum === 'Ödenmedi');
       const by = {}; acik.forEach((a) => { const o = by[a.park] = by[a.park] || { n: 0, t: 0, gz: 0, en: null }; o.n++; o.t += a.tutar; o.gz += a.gztop || 0; if (!o.en || a.esas < o.en) o.en = a.esas; });
       const rows = Object.entries(by).sort((a, b) => b[1].t - a[1].t).map(([k, o]) => [k, String(o.n), tl(r2(o.t)), tl(r2(o.gz)), fd(o.en)]);
-      cevaplar.push(rows.length ? { baslik: 'Vadesi geçmiş ödenmemiş alacaklar' + (parks.length === 1 ? ' · ' + parks[0].kisa : '') + ' · ' + fd(ctx.rapor), tablo: { b: ['Park', 'Kalem', 'Anapara', 'Gecikme zammı', 'En eski vade'], s: rows }, link: '#/alacaklar' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Alacak ve Tahsilat sayfası', not: 'Muhasebe dökümüne göre; döküm tarihinden sonraki ödemeler görünmez.' }
+      cevaplar.push(rows.length ? { baslik: 'Muhasebe dökümündeki açık kalemler' + (parks.length === 1 ? ' · ' + parks[0].kisa : '') + ' · ' + fd(ctx.rapor), tablo: { b: ['Park', 'Kalem', 'Anapara', 'Bu kalemlerin GZ ve KDV’si', 'En eski vade'], s: rows }, link: '#/alacaklar' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Alacak ve Tahsilat sayfası', not: 'Muhasebe dökümündeki kalemler ve bunlara işleyen gecikme gösterilir. Yazıyla takip edilen ayrı borçlar belgeli hesap bölümünde yer alır.' }
         : { baslik: (parks.length === 1 ? parks[0].kisa + ': ' : '') + 'vadesi geçmiş ödenmemiş alacak yok', metin: 'Muhasebe dökümünde ' + fd(ctx.rapor) + ' itibarıyla açık kalem bulunmadı.', link: '#/alacaklar', linkAd: 'Alacak ve Tahsilat sayfası' });
     }
     // 4. kaç tesis
