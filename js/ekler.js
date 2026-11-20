@@ -106,6 +106,7 @@
   // Tutarlar hesap motorundan gelir; TÜFE açıklanmadıysa alanlar boş kalır ve form “bekliyor” olarak işaretlenir.
   const TF_SEF = { 'Arnavutköy': 'Güven KAVRAZ', 'Fenertepe': 'Oktay KAYA' };
   const TF_YRD = { 'Arnavutköy': 'Ergün TUNCER' };
+  EK.TF_SEF = TF_SEF; EK.TF_YRD = TF_YRD;
   const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   EK.tfAlanlar = function (ctx) {
     const E = root.E, r2 = E.r2, tl = E.tl, fd = E.fmtDate, p = ctx.p || {}, ku = ctx.ku || {}, tf = ctx.tf || {};
