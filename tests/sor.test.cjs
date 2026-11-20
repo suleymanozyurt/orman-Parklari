@@ -54,3 +54,19 @@ test('yapay zekâ bağlamı numaralı alıntı içerir ve sınırı aşmaz', () 
   const r = SOR.sor(dz, 'Tayakadın 2026 kira'); const b = SOR.baglam(dz, r, 3000);
   assert.match(b, /\[H1\]/); assert.ok(b.length < 6000);
 });
+test('kısa devam sorusu önceki parkı devralır, kavram sorusu devralmaz', () => {
+  const r1 = SOR.sor(dz, 'Tayakadın işletmecisi kim');
+  const r2 = SOR.sor(dz, 'peki sözleşmesi ne zaman bitiyor', r1);
+  assert.deepEqual(r2.parks, ['Tayakadın']); assert.equal(r2.devraldi, true);
+  const r3 = SOR.sor(dz, 'sözleşme devri şartları', r1);
+  assert.deepEqual(r3.parks, []); assert.match(r3.cevaplar[0].baslik, /Madde 35/);
+});
+test('park sayısı, en büyük park ve selamlaşma', () => {
+  assert.match(SOR.sor(dz, 'kaç orman parkı var').cevaplar[0].baslik, /^3 orman parkı/);
+  assert.match(SOR.sor(dz, 'en büyük park hangisi').cevaplar[0].baslik, /Hacı Bektaş-i Veli/);
+  assert.match(SOR.sor(dz, 'merhaba').cevaplar[0].baslik, /Merhaba/);
+});
+test('kirada mı sorusu kira hesabına değil duruma gider', () => {
+  const c = SOR.sor(dz, 'Mimar Sinan kirada mı').cevaplar[0];
+  assert.ok(c.satirlar.some(([k, v]) => /durum/.test(k) && /Sona erdi/.test(v)));
+});

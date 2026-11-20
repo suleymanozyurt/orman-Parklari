@@ -87,3 +87,11 @@
 - Datum ED50 UTM 6° DOM 27 (sitedeki 7 parametre): yollar ve mevcut yapılar uydu görüntüsüne bu kabulle oturuyor; ITRF kabulünde 110 m kayıyor. Plan durumu “belirsiz” (onaylı I. Revizyonun sayısal çizimi olduğu [ÇIKARIM]).
 - Mimar Sinan: 1. Revize Vaziyet Planı (ODÜH 18.10.2016) tesis koordinat çizelgesinden 60 tesis (52 mevcut, 8 önerilen) eklendi; köşeler çizelgedeki ED50 değerlerinden yeniden hesaplandı. Çizelge taranmış paftadan aktarıldığı için teyit önerilir [TEYİT GEREKLİ].
 - Hâlâ eklenemeyenler: Kağıthane 2. Revize NCZ (21 MB) ve Mimar Sinan onaylı proje DWG (18 MB) Drive bağlayıcısının 10 MB sınırını aşıyor; Boğazköy 2023 DWG için okuyucu yok; Kurtyolu, Ağaçlı, Işıklar ve Avrupa Yakası Kent Ormanı için tesis çizimi bulunamadı.
+
+## 20.11.2026 – Sor sohbet kutusu (v49)
+
+- Her sayfada sağ altta “Sor” düğmesi; sağdan açılan sohbet paneli (telefonda tam ekran, üstteki büyüteç de açar). Sohbet sekme kapanana kadar korunur.
+- Önceki soruyu hatırlar: “Kayabaşı işletmecisi kim” → “peki sözleşmesi ne zaman bitiyor”. Kavram sorularında (devir, fesih, nasıl hesaplanır…) önceki park devralınmaz.
+- Yeni cevaplar: park sayısı ve durumları, toplam yıllık kira, en büyük/küçük park, en yüksek/düşük kira, şefliğe göre parklar, kurum ve şef bilgisi, gecikme zammı oranı, Ek-N formu, yevmiye no, vergi no / işletmeci adıyla park, plan revizyonu ve ek tesis kirası, park durumu (kirada mı), planlanan/mevcut tesis listesi, kavramdan Tebliğ maddesine eşleme, selamlaşma.
+- 41 soruluk denemede bütün sorular doğrudan cevaplandı.
+- Yapay zekâ anahtarı girilmişse cevabın altında Claude cevabı da otomatik akar (son 3 soru-cevap bağlamıyla); başlıktan açılıp kapatılır.
