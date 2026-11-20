@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require('jsdom');
-function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={driveKaydiHazirla,drivePanel,erisimPanel,erisimGunlugu,denAktif,denAnlikAl,denYerelKaydet,ekYaz,elDeger,TOKEN_URL,anahtarYenileFormu,kurulum,yazmaAnahtariniDenetle,yoneticiGiris,yetkiKontrol,kayitBaglantisi,oturumAc,gh,kaynakSurumu,gateGoster,gypAl,gypKaydet,BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
+function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={driveKaydiHazirla,drivePanel,erisimPanel,erisimGunlugu,denAktif,denAnlikAl,denYerelKaydet,ekYaz,elDeger,TOKEN_URL,anahtarYenileFormu,kurulum,yazmaAnahtariniDenetle,yoneticiGiris,yetkiKontrol,kayitBaglantisi,oturumAc,gh,kaynakSurumu,gateGoster,gypAl,gypKaydet,BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,hTesisNoktalari,hUygula,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
 function fill(g,n){g.f=Array.from({length:n},(_,i)=>({id:'id'+String(i).padStart(4,'0'),ad:'M'+String(i).padStart(4,'0'),g:'N',c:[41,28+i/1e6],t:'Büfe',d:'M',p:'plan'}));}
 test('all 501 inventory records remain reachable including final record',()=>{const {dom,w,a,g}=app();fill(g,501);a.gypHazirla(g,'İmrahor');a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,60);a.S.hEnvPage=8;a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,21);assert.match(w.document.querySelector('#henv').textContent,/M0500/);assert.match(w.document.querySelector('#henv').textContent,/481–501 \/ 501/);dom.window.close();});
 test('changing search resets pagination and Turkish spelling folds accents',()=>{const {dom,w,a,g}=app();fill(g,501);g.f[500].ad='Yağmur Barınağı';a.hEnvCiz();a.S.hEnvPage=8;a.S.hF.q='yagmur barinagi';a.hEnvCiz();assert.equal(a.S.hEnvPage,0);assert.equal(w.document.querySelectorAll('#henv tbody tr').length,1);dom.window.close();});
@@ -388,5 +388,140 @@ test('map list excludes exact repeats and invalid geometry but retains separate 
     g.f=[f,{...f,id:'B'},{...f,id:'C',p:'Q'},{...f,id:'D',g:'A',c:[[41,28],[41,28]]}];
     a.gypHazirla(g,p.kisa);
     assert.deepEqual(g.f.map(f=>a.hEsles({p,f,g})),[true,false,true,false]);
+  } finally { dom.window.close(); }
+});
+
+async function fieldMap() {
+  const x = preparedApp(), { w, a } = x, p = a.S.pBy.Test;
+  w.eval(fs.readFileSync('vendor/leaflet/leaflet.js', 'utf8'));
+  w.matchMedia = () => ({ matches: false });
+  w.L.Browser.svg = true;
+  for (const [key, n] of [['clientWidth', 850], ['clientHeight', 470], ['offsetWidth', 850], ['offsetHeight', 470]]) {
+    Object.defineProperty(w.HTMLElement.prototype, key, { get: () => n });
+  }
+  w.HTMLElement.prototype.getBoundingClientRect = () => ({ left: 0, top: 0, width: 850, height: 470 });
+  for (const path of ['vendor/leaflet/leaflet.js', 'vendor/proj4.js']) a.BETIK[path] = Promise.resolve();
+  p.harita = { sinir: [[[41, 28], [41.01, 28], [41.01, 28.01], [41, 28.01], [41, 28]]], alan_ha: 1 };
+  a.S.gyp = { parklar: { Test: { f: [], kaynak: [], planlar: [] } } };
+  a.S.gypS = '1'; a.S.page = 'harita'; a.S.owner = true; a.S.rol = { duzenle: true };
+  a.S.gypSHA = 'a'.repeat(40); a.S.sha = 'data-1';
+  const writes = [];
+  w.K.sifrele = async data => JSON.stringify(data);
+  w.K.b64 = data => Buffer.from(data).toString('base64');
+  w.fetch = async (url, options) => {
+    const map = url.includes('/harita.enc');
+    if (options.method !== 'PUT') return { ok: true, json: async () => ({ sha: map ? a.S.gypSHA : a.S.sha }) };
+    const payload = JSON.parse(options.body);
+    writes.push({ map, sha: payload.sha, data: JSON.parse(Buffer.from(payload.content, 'base64').toString()) });
+    return { ok: true, json: async () => ({ content: { sha: map ? 'b'.repeat(40) : 'data-2' } }) };
+  };
+  const render = async () => {
+    a.sayfaCiz();
+    await new Promise(r => setImmediate(r));
+    assert.ok(a.S._hmap, 'Leaflet map was mounted');
+  };
+  w.history.replaceState(null, '', '#/harita?p=Test');
+  await render();
+  return { ...x, p, writes, render };
+}
+
+test('point, line and polygon can be placed, saved, and read back on the map and in KML', async () => {
+  const { dom, w, a, p, writes } = await fieldMap();
+  try {
+    const doc = w.document, boundary = JSON.stringify(p.harita.sinir);
+    for (const [kind, name, coords] of [
+      ['N', 'Arazi noktası', ''],
+      ['L', 'Arazi yolu', '41,001 28,001\n41.002,28.002'],
+      ['A', 'Arazi alanı', '41.001 28.004\n41.002 28.004\n41.002 28.005']
+    ]) {
+      doc.querySelector('[data-a=hTesisEkle]').click();
+      const form = doc.querySelector('#hEditor form'), f = form.elements;
+      f.ad.value = name; f.tur.value = 'Saha tesisi'; f.geometri.value = kind;
+      f.kaynak.value = 'Saha ölçü çizelgesi'; f.url.value = 'https://example.test/source';
+      f.koor.value = coords;
+      if (kind === 'N') {
+        const pt = a.S._hmap.latLngToContainerPoint([41.005, 28.005]);
+        a.S._hmap.getContainer().dispatchEvent(new w.MouseEvent('click', { clientX: pt.x, clientY: pt.y, bubbles: true }));
+        assert.match(f.koor.value, /^41\.00\d+ 28\.00\d+$/);
+      } else form.dispatchEvent(new w.Event('input'));
+      assert.match(doc.querySelector('#hDraftStatus').textContent, /park sınırı içinde/);
+      await form.onsubmit(new w.Event('submit', { cancelable: true }));
+      const saved = a.S.gyp.parklar.Test.f.at(-1);
+      assert.equal(saved.g, kind);
+      assert.equal(saved.ad, name);
+      assert.equal(a.S.gyp.parklar.Test.planlar.at(-1).durum, 'bilgi');
+      assert.equal(a.S.gyp.parklar.Test.kaynak.at(-1).url, 'https://example.test/source');
+      assert.match(doc.querySelector('#henv').textContent, new RegExp(name));
+      assert.equal(doc.querySelector('#hEditor').hidden, true);
+    }
+    assert.equal(writes.length, 6);
+    assert.equal(writes[0].sha, 'a'.repeat(40));
+    assert.deepEqual(writes[4].data.parklar.Test.f.map(f => f.g), ['N', 'L', 'A']);
+    const ring = writes[4].data.parklar.Test.f[2].c;
+    assert.deepEqual(ring[0], ring.at(-1));
+    assert.equal(JSON.stringify(p.harita.sinir), boundary);
+    const kml = a.kmlUret([p], 'Saha');
+    for (const tag of ['<Point>', '<LineString>', '<Polygon>']) assert.ok(kml.includes(tag));
+  } finally { dom.window.close(); }
+});
+
+test('placement checks geometry and boundary, and remains unavailable to read-only users', async () => {
+  const { dom, w, a, writes, render } = await fieldMap();
+  try {
+    const doc = w.document;
+    const enter = () => { doc.querySelector('[data-a=hTesisEkle]').click(); return doc.querySelector('#hEditor form'); };
+    const form = enter(), f = form.elements, status = doc.querySelector('#hDraftStatus');
+    f.geometri.value = 'A'; f.koor.value = '41 28\n41.01 28.01\n41 28.01\n41.01 28';
+    f.koor.dispatchEvent(new w.Event('input', { bubbles: true }));
+    assert.match(status.textContent, /kesiş/);
+    assert.equal(form.querySelector('[type=submit]').disabled, true);
+    f.geometri.value = 'N'; f.koor.value = '41.012 28.005';
+    f.koor.dispatchEvent(new w.Event('input', { bubbles: true }));
+    assert.match(status.textContent, /sınırının dışında/);
+    assert.equal(doc.querySelector('#hDraftOutside').hidden, false);
+    assert.equal(form.querySelector('[type=submit]').disabled, true);
+    f.dis.checked = true; f.dis.dispatchEvent(new w.Event('input', { bubbles: true }));
+    assert.equal(form.querySelector('[type=submit]').disabled, false);
+    f.koor.value = '28.005 41.012'; f.koor.dispatchEvent(new w.Event('input', { bubbles: true }));
+    assert.match(status.textContent, /Enlem ve boylam/);
+    assert.equal(f.dis.checked, false);
+    a.hParkSec(''); assert.equal(doc.querySelector('#hEditor').hidden, true);
+    assert.equal(doc.querySelector('[data-a=hTesisEkle]').disabled, true);
+    a.S.rol = {}; await render(); assert.equal(doc.querySelector('[data-a=hTesisEkle]'), null);
+    assert.equal(writes.length, 0);
+  } finally { dom.window.close(); }
+});
+
+test('map keeps viewport-crossing drawings and fits their full extents on demand', async () => {
+  const { dom, w, a } = await fieldMap();
+  try {
+    const f = { id: 'edge', ad: 'Bağlantı yolu', d: 'B', t: 'Yol', g: 'L', c: [[41.005, 27.975], [41.005, 28.2]] };
+    const g = a.S.gyp.parklar.Test; g.f.push(f); a.gypHazirla(g, 'Test'); a.S._hIdx = null;
+    a.hParkSec(''); const map = a.S._hmap; map.setView([41.005, 28.005], 16, { animate: false });
+    assert.equal(map.getBounds().pad(.3).contains([41.005, (27.975 + 28.2) / 2]), false);
+    a.hUygula(); assert.equal(a.S._hG.getLayers().length, 1);
+    a.hParkSec('Test'); assert.equal(map.getBounds().contains(f.c[1]), false);
+    w.document.querySelector('[data-a=hTesisSigdir]').click();
+    assert.ok(f.c.every(q => map.getBounds().contains(q)));
+  } finally { dom.window.close(); }
+});
+
+test('coordinate paste puts facilities in the map layer without replacing old park data', async () => {
+  const { dom, w, a, p, writes } = await fieldMap();
+  try {
+    const doc = w.document, legacy = [['Older', 41.005, 28.005]];
+    p.harita.tesis = legacy; a.S.park = p.kisa;
+    await a.AKSIYON.haritaYukle();
+    doc.querySelector('#hk_t').value = 'Tesis'; doc.querySelector('#hk_c').value = 'WGS84 enlem boylam (derece)';
+    assert.match(doc.querySelector('#hk_c').value, /WGS84/);
+    doc.querySelector('#hk_v').value = 'Sütun A\t41.003\t28.004';
+    doc.querySelector('#hk_k').value = 'Koordinat cetveli';
+    doc.querySelector('#hkDen').click(); await new Promise(r => setImmediate(r));
+    assert.equal(doc.querySelector('#hkOk').disabled, false);
+    await doc.querySelector('#hkOk').onclick();
+    const f = writes[0].data.parklar.Test.f[0];
+    assert.deepEqual([f.ad, f.g, f.c], ['Sütun A', 'N', [41.003, 28.004]]);
+    assert.deepEqual(p.harita.tesis, legacy);
+    assert.match(doc.querySelector('#henv').textContent, /Sütun A/);
   } finally { dom.window.close(); }
 });

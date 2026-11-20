@@ -237,6 +237,13 @@
 .hquick button svg{width:18px;height:18px}
 .hquick label{font-size:.85rem}
 .hquick button[aria-pressed="true"]{background:var(--pine);color:#fff}
+.heditor{margin:10px 0}
+.heditor-form,.heditor-form label:not(#hDraftOutside){display:grid;gap:6px}
+.heditor-form h3,.heditor-form .hnote{margin:0}
+.heditor-form textarea{resize:vertical;min-height:3rem;max-width:100%}
+.heditor-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px 12px}
+.heditor-form details[open]>summary{margin-bottom:8px}
+.h-drawing,.h-drawing .leaflet-interactive{cursor:crosshair}
 body.sohbet-acik .sohbet-ac,body[data-page="sor"] .sohbet-ac{display:none}
 #gate:not([style*="none"]) ~ .sohbet-ac{display:none}
 .sohbet{position:fixed;top:12px;right:12px;bottom:12px;width:min(440px,calc(100vw - 24px));z-index:70;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.25);overflow:hidden}

@@ -275,6 +275,7 @@
   };
 
   // ---------- yıllık kira ve tahakkuk planı (Md. 31–33, 10/2) ----------
+  const kistKira = (it) => /k[ıi]st|\b\d{1,3}\s+g[üu]nl[üu]k\b|\d{2}\.\d{2}\.\d{4}\s*[-–]\s*\d{2}\.\d{2}\.\d{4}/i.test(it.aciklama || '');
   // Y takvim yılının yıllık kirası: Y yılının 31 Mart'ına kadar başlamış son dönemin bedeli (muhasebe uygulaması ve kira kontrolüyle aynı esas).
   E.kiraYili = function (p, tufe, ekKira, Y) {
     const z = E.zincir(p, tufe, ekKira);
@@ -302,7 +303,7 @@
     // Yeni gerçek döküm geldiğinde yalnız tam taksit düzeni yıllık esasın yerine geçer.
     const ctx=context||{}, count=p.odeme==='4 taksit'?4:p.odeme==='Peşin'?1:null;
     if(count&&ctx.esl&&ctx.veri)for(let y=Y-1;y>=Math.max(2026,sy);y--){
-      const items=ctx.esl.items.filter(it=>it.park===p.kisa&&it.tur==='Kira'&&it.grup===y+' tahakkuku'&&!(ctx.veri.muhasebe[it.row]||{}).oto&&!/k[ıi]st|\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}/i.test(it.aciklama||''));
+      const items=ctx.esl.items.filter(it=>it.park===p.kisa&&it.tur==='Kira'&&it.grup===y+' tahakkuku'&&!(ctx.veri.muhasebe[it.row]||{}).oto&&!kistKira(it));
       const dates = items.map(it => it.vade);
       const validDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v && E.year(v) === y;
       if(items.length===count&&new Set(dates).size===count&&dates.every(validDate)&&items.every(it=>Number.isFinite(it.tutar)&&it.tutar>0)&&(y>by||!Number.isFinite(b))){by=y;b=r2(items.reduce((sum,it)=>sum+it.tutar,0));break;}
@@ -354,20 +355,19 @@
     out.kira = kira; out.ilkDonem = ky.donem === 1;
     // muhasebede bu yılın tahakkuku var mı
     // yıllık kira tahakkuku: Y tahakkuku + aynı yıla ait ek tahakkuk kira farkları; kıst / dönem arası tahakkuklar ayrı gösterilir
-    const KIST = /k[ıi]st|\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}/i;
     const muh = (it) => !(veri.muhasebe[it.row] || {}).oto;
     const items = esl.items.filter((it) => it.park === p.kisa && it.grup === Y + ' tahakkuku' && muh(it));
     const ekler = esl.items.filter((it) => it.park === p.kisa && it.grup === 'Ek tahakkuk' && it.tur === 'Kira' && muh(it) && E.year(it.duz || it.vade || it.olusma) === Y);
     const kiraIt = items.filter((x) => x.tur === 'Kira').concat(ekler);
-    out.muhasebede = kiraIt.some((x) => !KIST.test(x.aciklama || ''));
+    out.muhasebede = kiraIt.some((x) => !kistKira(x));
     if (items.length && !out.muhasebede) out.uyari.push('Yalnız vergi/fon veya kıst satırı var; yıllık kira tahakkuku bu dökümde doğrulanamadı.');
-    out.muhKira = r2(kiraIt.filter((x) => !KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
-    out.muhKist = r2(kiraIt.filter((x) => KIST.test(x.aciklama || '')).reduce((s, x) => s + x.tutar, 0));
+    out.muhKira = r2(kiraIt.filter((x) => !kistKira(x)).reduce((s, x) => s + x.tutar, 0));
+    out.muhKist = r2(kiraIt.filter(kistKira).reduce((s, x) => s + x.tutar, 0));
     out.otoVar = veri.muhasebe.some((x) => x.oto === p.kisa + '|' + Y);
     // örnek düzen
     let ornek = null;
     for (let y = Y - 1; y >= Y - 6 && !ornek; y--) {
-      const it = esl.items.filter((x) => x.park === p.kisa && x.grup === y + ' tahakkuku' && muh(x));
+      const it = esl.items.filter((x) => x.park === p.kisa && x.grup === y + ' tahakkuku' && muh(x) && !kistKira(x));
       if (it.some((x) => x.tur === 'Kira')) ornek = { yil: y, items: it };
     }
     let vadeler, kaynak;
@@ -389,7 +389,7 @@
     const resmiVadeler = new Map();
     for (const it of kiraIt) {
       const v = it.duz || it.vade;
-      if (!v || E.year(v) !== Y || !Number.isFinite(it.tutar) || it.tutar <= 0 || KIST.test(it.aciklama || '')) continue;
+      if (!v || E.year(v) !== Y || !Number.isFinite(it.tutar) || it.tutar <= 0 || kistKira(it)) continue;
       resmiVadeler.set(v, r2((resmiVadeler.get(v) || 0) + it.tutar));
     }
     const resmiToplam = r2([...resmiVadeler.values()].reduce((sum, amount) => sum + amount, 0));

@@ -43,6 +43,7 @@ Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).
 - **Araçlar:** altlık seçimi (uydu, standart, topoğrafik, yer adları), parka sığdır, tam ekran, mesafe ve alan ölçümü (alan ITRF96 TM30 düzleminde), konum, imleç koordinatı; KML, KMZ ve park başına KML (zip) indirme. KML’de her park klasöründe güncel sınır, diğer sınırlar ve plan klasörleri (her birinde durum klasörleri) bulunur; arşiv planları kapalı gelir.
 - **Veri denetimi:** mükerrer çizimler birleştirilir; hatalı geometri, park sınırının 20 m’den fazla dışında kalan çizim, kayıt–harita alan farkı, park kaydındaki plan bilgisiyle çelişki ve eksik belgeler “Veri denetimi ve eksikler” bölümünde listelenir.
 - **Güncelleme:** “Koordinat / KML yükle” penceresinde “Plan tesis katmanı (KML/KMZ)” seçilerek yeni plan ya da revizyon eklenir (veri düzenleme yetkisi); önceki çizimler silinmez, ayrı plan olarak durur.
+- **Tesis ekleme:** Parkı seçip “Tesis ekle” düğmesini açın. Nokta, çizgi veya poligon seçerek haritadan konum işaretleyin ya da WGS84 koordinatlarını girin. Saha incelemesi açıkken güncel GPS noktası da kullanılabilir. Kaydedilen çizim parkın envanterine ve KML çıktısına eklenir. “Çizimleri sığdır” görünür tesislerin ve sınırın tamamını kadraja alır.
 - Sınır seçimi: kayıtlı alanla uyumlu ve en yeni onaylı belgeye dayanan çizim esas alınır; kayıtla uyuşmayan ya da onayı belirsiz çizimler “diğer sınır çizimleri” olarak kesikli gösterilir.
 
 ## Uygulama olarak kullanım (PWA)

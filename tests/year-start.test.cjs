@@ -26,3 +26,18 @@ test('annual accrual total equals all installment forms, including first install
   assert.equal(E.tahakkukFisKalemleri({}, 0), null);
   assert.equal(E.tahakkukFisKalemleri(plan, 5), null);
 });
+
+test('a journal marked as 107 days stays outside annual rent and the next installment template', () => {
+ const q = {...p, soz_bas:'2026-01-01', taban:'2026-01-01', odeme:'4 taksit', taksit_vade:'01-30,04-30,07-30,10-30'};
+ const v = {muhasebe:[], ek_kira:[]};
+ const tufe = {...rate(2023,.1),...rate(2024,.1),...rate(2025,.1),...rate(2026,.1)};
+ const kira = E.kiraYili(q,tufe,[],2026).bedel;
+ const items = E.bol(kira,4).map((tutar,i) => ({park:q.kisa,tur:'Kira',grup:'2026 tahakkuku',tutar,vade:`2026-${['01','04','07','10'][i]}-30`,aciklama:'2026 Kira'}));
+ items.push({park:q.kisa,tur:'Kira',grup:'2026 tahakkuku',tutar:1133553.56,vade:'2026-09-28',aciklama:'Ek kira revize 107 Günlük kiranın cari yıl hesaplarına alınması'});
+ const current = E.tahakkukPlan(v,{items},q,tufe,2026,'2026-11-20');
+ assert.equal(current.muhKira,kira);
+ assert.equal(current.muhKist,1133553.56);
+ assert.equal(current.fark,0);
+ const next = E.tahakkukPlan(v,{items},q,tufe,2027,'2027-01-04');
+ assert.deepEqual(next.vadeler.map(x=>x.vade),['2027-01-30','2027-04-30','2027-07-30','2027-10-30']);
+});
