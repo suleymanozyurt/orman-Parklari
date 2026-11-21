@@ -3,8 +3,6 @@
 İstanbul Orman İşletme Müdürlüğü için orman parkları yönetim sistemi (313 sayılı Orman Parkları Tebliği).
 Telefona ve bilgisayara uygulama olarak kurulabilir (PWA).
 
-**Hazırlayan:** Süleyman Özyurt
-
 **Adres:** https://suleymanozyurt.github.io/orman-Parklari/
 
 ## Nasıl çalışır

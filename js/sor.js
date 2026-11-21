@@ -270,7 +270,7 @@
     }
     // 2f. kurum, şef ve müdür
     if (/\b(sef|sefi|mudur|muduru|mudurlugu|isletme mudur|iban|kep|kurum|isletmenin)\b/.test(ns) && !/isletmeci/.test(ns)) {
-      const k = ctx.kurum || {}, sat = [['İşletme', k.isletme], ['İşletme Müdürü', k.mudur], ['Birim', k.sube], ['İlgili', k.ilgili], ['Adres', k.adres], ['Telefon', k.tel], ['E-posta', k.eposta], ['KEP', k.kep], ['Banka', [k.banka, k.sube_banka].filter(Boolean).join(' · ')], ['IBAN', k.iban]].filter((x) => x[1]);
+      const k = ctx.kurum || {}, sat = [['İşletme', k.isletme], ['İşletme Müdürü', (ctx.yetkili && ctx.yetkili.mudur) || k.mudur], ['İşletme Müdür Yardımcısı', (ctx.yetkili && ctx.yetkili.mudur_yrd) || k.mudur_yrd], ['Döner Sermaye Muhasebe Yetkilisi', (ctx.yetkili && ctx.yetkili.muhasebe) || k.muhasebe_yetkilisi], ['Birim', k.sube], ['Adres', k.adres], ['Telefon', k.tel], ['E-posta', k.eposta], ['KEP', k.kep], ['Banka', [k.banka, k.sube_banka].filter(Boolean).join(' · ')], ['IBAN', k.iban]].filter((x) => x[1]);
       const sefler = Object.entries(ctx.sefler || {}).map(([s, ad]) => [s + ' İşletme Şefi', ad]);
       const ilgiliSef = parks.length ? parks.map((p) => [p.kisa + ' · şeflik', (p.seflik || '—') + ((ctx.sefler || {})[p.seflik] ? ' · Şef: ' + ctx.sefler[p.seflik] : ' · şef adı kayıtlı değil')]) : [];
       const sorulan = ['istanbul', 'kemerburgaz', 'arnavutkoy', 'fenertepe'].find((s) => ns.includes(s));

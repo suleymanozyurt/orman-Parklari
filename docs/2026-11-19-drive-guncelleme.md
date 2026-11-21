@@ -114,3 +114,13 @@
 - **Arayüz:** seçim kutuları, onay kutuları ve açılır başlıklar tek tasarıma getirildi. Sor düğmesi mobilde yuvarlak simgeye dönüşüyor ve park listesi açıkken gizleniyor.
 - **Not:** Tayakadın 2. kısım paftasında “1. Revize GYP 10.07.2025 tarihinde onaylanmıştır” yazıyor; park kaydında 11.07.2025 var [TEYİT GEREKLİ].
 - v59: Kağıthane GYP kod etiketi noktaları ayrı katmana (GYPK) alındı; kır lokantasının 43 m² ek bölümü “parça” olarak işaretlendi ve Sor bunu ayrı tesis saymıyor (Kağıthane kır lokantası: 1, M23). Sor konum listesi, sayımın yapıldığı katmandan geliyor.
+
+## 21.11.2026 – Yetkililer (v60)
+
+- Kurum kaydına yetkililer işlendi:
+  - İşletme Müdürü Mahmut FERHATOĞLU; Müdür Yardımcısı Eren TOPCU; Döner Sermaye Muhasebe Yetkilisi İsa GENCEL.
+  - Şefler: Fenertepe Oktay KAYA, Arnavutköy Güven KAVRAZ, İstanbul Ertuğrul Lütfü NALBANT, Kemerburgaz Aslan AKARSU.
+- Formlarda şef adı parkın şefliğinden gelir: Tahakkuk fişi, Ek-1, Ek-2 ve Ek-11 “İlgili personel” satırı.
+- Hazırlayan adı sitenin alt bilgisinden, giriş ekranından, kenar çubuğundan ve sayfa açıklamasından kaldırıldı. Kurumdaki “ilgili personel” alanı kaldırıldı.
+- İşlem kayıtlarında (kaydeden, yükleyen, geçmiş, kaynak notları) kişi adı yerine “Yönetici” yazıyor. Yönetici oturumunda yeni kayıtlar da “Yönetici” olarak işlenir.
+- Kişi adı yalnız Ek-10 denetim raporlarının imza satırlarında duruyor.
