@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '70', date: '22.11.2026' };
+  const BUILD = { version: '71', date: '22.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -716,7 +716,7 @@
       '</strong><small>' + esc(alt) + '</small></span></a>').join('') + '</nav>';
     return '<div class="pagehead overview-heading"><div><h1>Genel Durum</h1><p>İstanbul Orman İşletme Müdürlüğü · ' + fd(R) +
       '</p></div><button class="btn sm own-only" data-a="belgeEkle">Belgeyle güncelle</button></div>' + quick +
-      '<div class="split overview-work">' + todoH + tlH + '</div>' + banners() +
+      '<div class="split overview-work">' + todoH + '<details class="overview-detail overview-upcoming"><summary>Önümüzdeki 60 gün · ' + up.length + ' vade</summary>' + tlH + '</details></div>' + banners() +
       '<details class="overview-detail overview-balances"><summary>Mali özet ve belgeli alacaklar</summary>' + kpis + hero + belgeliBorcPanel() + '</details>' +
       '<details class="overview-detail overview-calendar"><summary>' + y + ' ödeme takvimi · ' + D.length + ' park</summary>' + cal + '</details>';
 
