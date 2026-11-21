@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '57', date: '21.11.2026' };
+  const BUILD = { version: '58', date: '21.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -381,7 +381,7 @@
       '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
       '<aside class="side"><div class="side-scroll"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b></div></div>' +
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
-      '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Ara ya da sor (Enter)" aria-label="Ara ya da sor"></label><div class="sres" id="sRes"></div></div>' +
+      '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Ara veya sor…" aria-label="Ara ya da sor"></label><div class="sres" id="sRes"></div></div>' +
       '<div class="sbox" id="sPark"><span class="lbl">Seçili park</span><select id="sSel" aria-label="Park seçin"></select>' +
       '<a class="sbtn" href="#/park" id="sParkOpen">Park dosyasını aç →</a>' +
       '<span class="lbl" id="sQl">Vadesi geçmiş alacağı olan</span><div class="sq" id="sQuick"></div></div>' +
@@ -2933,6 +2933,7 @@
     if (c.metin) h += '<div class="sor-metin">' + c.metin.split('\n').map((x) => '<p>' + esc(x) + '</p>').join('') + '</div>';
     if (c.satirlar && c.satirlar.length) h += '<dl class="sor-kv">' + c.satirlar.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('') + '</dl>';
     if (c.tablo) h += '<div class="sl"><table class="sor-t"><thead><tr>' + c.tablo.b.map((x) => '<th>' + esc(x) + '</th>').join('') + '</tr></thead><tbody>' + c.tablo.s.map((r) => '<tr>' + r.map((x, i) => td(esc(x), c.tablo.b[i])).join('') + '</tr>').join('') + '</tbody></table></div>';
+    if (c.yerler && c.yerler.length) h += '<ul class="sor-yer">' + c.yerler.map((y) => '<li><a href="' + esc(y.link) + '"><b>' + esc(y.ad) + '</b>' + (y.alt ? '<small>' + esc(y.alt) + '</small>' : '') + '</a></li>').join('') + '</ul>';
     if (c.not) h += '<p class="muted sor-not">' + esc(c.not) + '</p>';
     if (c.kaynak) h += '<p class="muted sor-not">Kaynak: ' + esc(c.kaynak) + '</p>';
     const btn = [];

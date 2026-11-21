@@ -192,25 +192,31 @@
     if (!hedef.length) return null;
     const durum = /mevcut|insa edil|yapilmis/.test(norm(soru)) ? 'M' : /planlanan|yapilacak|onerilen/.test(norm(soru)) ? 'P' : null;
     const P = parks.length ? parks.map((p) => p.kisa) : Object.keys(gyp);
-    const rows = []; let toplam = 0; const turler = new Set();
+    const rows = []; let toplam = 0; const turler = new Set(); let liste = [];
     P.forEach((k) => {
       const g = gyp[k]; if (!g) return; const arsiv = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id));
-      const sayP = {};
+      const sayP = {}, featP = {};
       (g.f || []).forEach((f) => {
         if (arsiv.has(f.p) || f._geo?.length || f._repeat || (durum && f.d !== durum)) return;
         const say = sayP[f.p || ''] = sayP[f.p || ''] || {};
         let ad = null;
         if (hedef.every((h) => kokler(f.t).includes(h))) ad = f.t;
-        else if (!String(f.ad || '').startsWith(f.t) && !/yol|patika|cizgi|cit/i.test(f.t)) { const a = String(f.ad || '').split(/\s[–-]\s/).pop(); if (a && a.length < 60 && hedef.every((h) => kokler(a).includes(h))) ad = a.trim(); }
-        if (ad) { say[ad] = (say[ad] || 0) + 1; turler.add(ad); }
+        else if (!String(f.ad || '').startsWith(f.t) && !/yol|patika|cizgi|cit/i.test(f.t) && /\s[–-]\s/.test(String(f.ad || ''))) { const a = String(f.ad || '').split(/\s[–-]\s/).pop(); if (a && a.length < 60 && hedef.every((h) => kokler(a).includes(h))) ad = a.trim(); }
+        if (ad) { say[ad] = (say[ad] || 0) + 1; turler.add(ad); (featP[f.p || ''] = featP[f.p || ''] || []).push(f); }
       });
+      if (P.length === 1) { const en = Object.values(featP).sort((a, b) => (b.filter((f) => f.g === 'N').length - a.filter((f) => f.g === 'N').length) || (b.length - a.length))[0] || []; liste = en.map((f) => ({ f, k })); }
       // Aynı tesis birden çok güncel katmanda (ör. koordinat cetveli noktaları ve sayısal plan poligonları) çizilmiş olabilir: her tür için en çok çizimi olan katman sayılır.
       const say = {}; Object.values(sayP).forEach((o) => Object.entries(o).forEach(([t, m]) => { say[t] = Math.max(say[t] || 0, m); }));
       const n = Object.values(say).reduce((a, b) => a + b, 0); if (n) { rows.push([k, n, Object.entries(say).map(([t, m]) => t + ' ' + m).join(', ')]); toplam += n; }
     });
     if (!turler.size) return null;
     rows.sort((a, b) => b[1] - a[1]);
-    return { baslik: [...turler].slice(0, 3).join(', ') + (durum ? (durum === 'M' ? ' (planda mevcut)' : ' (planlanan)') : '') + ' · toplam ' + toplam, tablo: { b: ['Park', 'Adet', 'Tür'], s: rows }, link: '#/harita' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Haritada aç', not: 'Sayım arşiv dışındaki plan çizimlerinden gelir. Plan onayı ve saha teyidi haritada belirtilir.' };
+    const DA = { M: 'mevcut', P: 'planlanan', K: 'kaldırılacak', O: 'önceki planda, yapılmamış', V: 'onaylı vaziyet planında', B: 'durumu belirtilmemiş', A: 'bilgi' };
+    const bv = (f, k) => ((f.b || []).find((x) => x[0] === k) || [])[1];
+    const yerler = liste.length && (liste.length <= 12 || /nerede|konum|yer(i|leri)?\b|goster|harita/.test(norm(soru))) ? liste.slice(0, 40).map(({ f, k }) => ({ ad: f.ad && f.ad !== f.t ? f.ad : f.t, alt: [DA[f.d] || '', bv(f, 'Kısım'), bv(f, 'Cetvel grubu') && f.d !== 'M' ? bv(f, 'Cetvel grubu') : ''].filter(Boolean).join(' · '), link: '#/harita?p=' + encodeURIComponent(k) + '&t=' + encodeURIComponent(f.id || '') })) : null;
+    const dsay = {}; liste.forEach(({ f }) => { dsay[DA[f.d] || 'diğer'] = (dsay[DA[f.d] || 'diğer'] || 0) + 1; });
+    const dozet = Object.keys(dsay).length > 1 ? Object.entries(dsay).map(([d, n]) => d + ' ' + n).join(' · ') : '';
+    return { yerler, baslik: [...turler].slice(0, 3).join(', ') + (durum ? (durum === 'M' ? ' (planda mevcut)' : ' (planlanan)') : '') + ' · toplam ' + toplam, tablo: { b: ['Park', 'Adet', 'Tür'], s: rows }, link: '#/harita' + (parks.length === 1 ? '?p=' + encodeURIComponent(parks[0].kisa) : ''), linkAd: 'Haritada aç', metin: dozet ? 'Durum: ' + dozet : '', not: 'Sayım arşiv dışındaki plan çizimlerinden gelir; aynı tesis hem nokta hem poligon olarak çizildiyse bir kez sayılır. Plan onayı ve saha teyidi haritada belirtilir.' };
   }
 
   // Önceki soruya bağlı kısa sorular ("peki 2026?", "sözleşmesi ne zaman bitiyor") önceki parkı ve yılı devralır.
@@ -269,7 +275,7 @@
       const ilgiliSef = parks.length ? parks.map((p) => [p.kisa + ' · şeflik', (p.seflik || '—') + ((ctx.sefler || {})[p.seflik] ? ' · Şef: ' + ctx.sefler[p.seflik] : ' · şef adı kayıtlı değil')]) : [];
       const sorulan = ['istanbul', 'kemerburgaz', 'arnavutkoy', 'fenertepe'].find((s) => ns.includes(s));
       const ekNot = sorulan && !Object.keys(ctx.sefler || {}).some((s) => norm(s) === sorulan) ? 'Sitede ' + sorulan[0].toUpperCase() + sorulan.slice(1) + ' şefliğinin şef adı kayıtlı değil [TEYİT GEREKLİ].' : '';
-      cevaplar.push({ baslik: 'Kurum ve şeflik bilgileri', satirlar: ilgiliSef.concat(sefler, sat), not: ekNot, link: '#/veriler', linkAd: 'Veriler ve Ayarlar' });
+      cevaplar.push({ baslik: 'Kurum ve şeflik bilgileri', satirlar: ilgiliSef.concat(sefler, sat), metin: ekNot, link: '#/veriler', linkAd: 'Veriler ve Ayarlar' });
     }
     // 2g. şefliğe / ilçeye göre parklar
     const sefq = ['arnavutkoy', 'fenertepe', 'kemerburgaz', 'istanbul', 'sariyer', 'eyupsultan', 'sultangazi', 'kagithane'].find((s) => ns.includes(s));
@@ -320,7 +326,7 @@
       if (var_(q, /sozlesme|bitis|bitiyor|biter|sona er|suresi|baslangic|ne zaman/)) P((p) => alan.push([p.kisa + ' · sözleşme', fd(p.soz_bas) + ' – ' + fd(p.soz_bit) + (p.soz_bit && p.soz_bit < ctx.rapor ? ' (sona erdi)' : p.soz_bit ? ' (' + Math.max(0, Math.round((Date.parse(p.soz_bit) - Date.parse(ctx.rapor)) / 864e5 / 365.25 * 10) / 10).toLocaleString('tr-TR') + ' yıl kaldı)' : '')]));
       if (var_(q, /isletmeci|kiraci|kim isletiyor|firma|yuklenici|yetkili|telefon|tel\b|e-?posta|mail|adres|iletisim|vergi|vkn/)) P((p) => { alan.push([p.kisa + ' · işletmeci', p.isletmeci || '—']); if (p.yetkili) alan.push(['Yetkili', p.yetkili]); if (p.tel) alan.push(['Telefon', p.tel]); if (p.eposta) alan.push(['E-posta', p.eposta]); if (p.adres) alan.push(['Adres', p.adres]); if (p.vkn) alan.push(['Vergi/T.C. no', p.vkn]); });
       if (var_(q, /teminat|guvence|depozito/)) P((p) => { alan.push([p.kisa + ' · kesin teminat', p.kesin != null ? tl(p.kesin) : '—']); alan.push(['Güvence oranı', yuzde(p.guv)], ['Depozito oranı', yuzde(p.dep)]); });
-      if (var_(q, /alan|hektar|\bha\b|buyukluk|konum|nerede|ilce|koy|bolme|sinir/)) P((p) => { alan.push([p.kisa + ' · kayıtlı alan', ha(p.alan)], ['Haritadan alan', ha(p.harita && p.harita.alan_ha)], ['Konum', [p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · ') || '—'], ['Bölme', p.bolme || '—']); if (p.harita && p.harita.kaynak) alan.push(['Sınır kaynağı', p.harita.kaynak]); });
+      if (var_(q, /alan|hektar|\bha\b|buyukluk|konum|nerede|ilce|koy|bolme|sinir/) && !cevaplar.some((c) => c.yerler)) P((p) => { alan.push([p.kisa + ' · kayıtlı alan', ha(p.alan)], ['Haritadan alan', ha(p.harita && p.harita.alan_ha)], ['Konum', [p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · ') || '—'], ['Bölme', p.bolme || '—']); if (p.harita && p.harita.kaynak) alan.push(['Sınır kaynağı', p.harita.kaynak]); });
       if (var_(q, /plan|gyp|revize|revizyon|vaziyet|onay/)) P((p) => { alan.push([p.kisa + ' · plan', p.plan || '—'], ['GYP onayı', fd(p.gyp_onay)]); (ctx.planRev || []).filter((r) => r.park === p.kisa).forEach((r) => alan.push([r.revize, 'onay ' + fd(r.onay) + (r.ek != null ? ' · ek kira ' + tl(r.ek) : '')])); });
       if (var_(q, /ihale/)) P((p) => alan.push([p.kisa + ' · ihale', p.ihale_t || p.ihale_b != null ? fd(p.ihale_t) + ' · ' + tl(p.ihale_b) : 'Kayıtta ihale bilgisi yok']));
       if (var_(q, /kirada mi|durumu|durum ne|bos mu|isletiliyor mu|kirali mi|aktif mi/)) P((p) => alan.push([p.kisa + ' · durum', (p.durum || '—') + (p.isletmeci ? ' · ' + p.isletmeci : '') + (p.soz_bit ? ' · sözleşme sonu ' + fd(p.soz_bit) : '')]));
@@ -366,6 +372,11 @@
     if (cevaplar.length > 1) for (let i = cevaplar.length - 1; i >= 0; i--) if (cevaplar[i].genel) cevaplar.splice(i, 1);
     const sonuclar = ara(dz, soru, parks, 40);
     if (!cevaplar.length && !parks.length) { const c = tesisSay(ctx, parks, soru); if (c) cevaplar.push(c); }
+    // haritada göster / sınır / konum: parkın haritasını aç
+    if (parks.length && /harita|goster|sinir|konum|nerede|uydu|kml/.test(q) && !cevaplar.some((c) => c.yerler || /harita/.test(c.link || ''))) parks.slice(0, 3).forEach((p) => {
+      const g = ctx.gyp && ctx.gyp.parklar && ctx.gyp.parklar[p.kisa], h = p.harita || {}, n = g ? (g.f || []).length : 0, gp = g && (g.planlar || []).find((x) => x.durum === 'guncel');
+      cevaplar.unshift({ baslik: p.kisa + ' · harita', satirlar: [['Konum', [p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · ') || '—'], ['Kayıtlı alan', p.alan != null ? ha(p.alan) : '—'], ['Haritadan alan', h.alan_ha != null ? ha(h.alan_ha) : '—'], ['Plan çizimi', n ? n + ' nesne' + (gp ? ' · güncel: ' + gp.ad : '') : 'Tesis çizimi yok']], link: '#/harita?p=' + encodeURIComponent(p.kisa), linkAd: 'Haritada aç' });
+    });
     // Kavram sorusu (park adı yok): en iyi eşleşen Tebliğ maddesini cevap olarak göster
     const tb = !cevaplar.length && !parks.length && sonuclar.slice(0, 5).find((d) => d.tur === 'Tebliğ' && d.skor >= sonuclar[0].skor * 0.6);
     if (tb) { const m = (ctx.teblig || []).find((x) => x.no === tb.madde); if (m) cevaplar.push({ baslik: tb.baslik, metin: (m.metin || []).join('\n'), link: '#/teblig', mdLink: m.no, linkAd: 'Tebliğ sayfasında aç', kaynak: '313 sayılı Orman Parkları Tebliği (resmî metin) · en yakın eşleşen madde', yakin: true }); }
