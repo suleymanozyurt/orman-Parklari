@@ -81,3 +81,16 @@ test('signed debt and its date appear separately from ledger principal', () => {
   assert.equal(record.satirlar[0][1], '1.033.016,92 TL');
   assert.equal(ledger.tablo.s[0][2], '533.768,05 TL');
 });
+test('nokta ve poligon aynı tesisi iki katmanda gösterse de bir kez sayılır; konum listesi harita bağlantısı verir', () => {
+  const g2 = { durumlar: gyp.durumlar, parklar: { 'Tayakadın': { planlar: [{ id: 'R2', durum: 'guncel' }, { id: 'R2C', durum: 'guncel' }], f: [
+    { g: 'A', t: 'Kır lokantası', ad: 'MV25 – Kır lokantası', d: 'M', p: 'R2', id: 'TAY-1', c: [[41, 28], [41, 28.001], [41.001, 28], [41, 28]] },
+    { g: 'N', t: 'Kır lokantası', ad: 'MV25 – Kır lokantası', d: 'M', p: 'R2C', id: 'TAY-C2-MV25', c: [41, 28], b: [['Kısım', '2. kısım']] },
+    { g: 'N', t: 'Kır lokantası', ad: 'M17 – Kır lokantası', d: 'P', p: 'R2C', id: 'TAY-C1-M17', c: [41, 28], b: [['Kısım', '1. kısım']] }] } } };
+  const d2 = SOR.dizin(Object.assign({}, ctx, { gyp: g2 }));
+  const c = SOR.sor(d2, 'Tayakadın kır lokantası nerede').cevaplar[0];
+  assert.match(c.baslik, /toplam 2$/);
+  assert.deepEqual(c.yerler.map((y) => y.link), ['#/harita?p=Tayakad%C4%B1n&t=TAY-C2-MV25', '#/harita?p=Tayakad%C4%B1n&t=TAY-C1-M17']);
+  assert.match(c.metin, /mevcut 1/);
+  const h = SOR.sor(d2, 'haritada Tayakadın göster').cevaplar[0];
+  assert.equal(h.link, '#/harita?p=Tayakad%C4%B1n');
+});

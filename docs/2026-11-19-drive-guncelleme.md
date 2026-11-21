@@ -95,3 +95,21 @@
 - Yeni cevaplar: park sayısı ve durumları, toplam yıllık kira, en büyük/küçük park, en yüksek/düşük kira, şefliğe göre parklar, kurum ve şef bilgisi, gecikme zammı oranı, Ek-N formu, yevmiye no, vergi no / işletmeci adıyla park, plan revizyonu ve ek tesis kirası, park durumu (kirada mı), planlanan/mevcut tesis listesi, kavramdan Tebliğ maddesine eşleme, selamlaşma.
 - 41 soruluk denemede bütün sorular doğrudan cevaplandı.
 - Yapay zekâ anahtarı girilmişse cevabın altında Claude cevabı da otomatik akar (son 3 soru-cevap bağlamıyla); başlıktan açılıp kapatılır.
+
+## 21.11.2026 – Pafta cetvelleriyle tesis adları ve menü düzeni (v58)
+
+- **Tayakadın:** 2. Revize paftalarındaki koordinat cetvelleri (1. kısım K1, M1–M20, MV1–MV18, T1–T20; 2. kısım K1–K3, MV1–MV30, M1–M72, T1–T9) görüntüden okundu. 173 nokta “2. Revize tesis koordinat cetveli” katmanına eklendi; noktaların hepsi park sınırı içinde.
+  - Her nokta hangi yapı poligonunun içindeyse o poligona ad ve durum verildi: 53 poligon adlandı, 83 çizimin durumu cetvele göre düzeltildi.
+  - Kır lokantası: MV25 mevcut (2. kısım); M17 planlanan (1. kısım; önceki onaylı planda olup inşa edilmemiş, yeri değişmiş).
+  - Taralı yapılar için katman adından tahmin edilen mevcut/planlanan ayrımı bırakıldı.
+- **Taşoluk:** 3. Revize paftasındaki M1–M22, T1–T16 ve K1–K49 cetvelleriyle kodlu yapılar adlandırıldı. Çizim katmanıyla cetvel adı uyuşmayan 8 kayıtta “Uyuşmazlık” notu var (yerinde teyit).
+- **Kağıthane:** 2. Revize paftasındaki M1–M51 ve T1–T19 cetvelleri onayı belirsiz katman olarak eklendi; paftanın onay bölümü boş.
+  - 2021 GYP’deki 41 adsız kodlu nokta, aynı koddaki cetvel noktasına 2–10 m uzaklıkta olduğu için adlandırıldı [ÇIKARIM].
+- **Hacı Bektaş:** NCZ’deki 41 mevcut yapının yanında yalnız “Mevcut” ve alan yazıyor; işlev adı kaynakta olmadığından ad verilmedi.
+- Tür adları parklar arasında tek yazıma bağlandı (ör. Pergole/Pergola, Foseptik/Fosseptik, Kamelya/Kameriye).
+- **Sor:**
+  - Tek parkta tesis sorulunca kod, durum ve kısım listesi veriyor; her satır haritada o tesisi açıyor.
+  - “haritada X göster” sorusu park haritasını açıyor.
+  - Aynı tesisin nokta ve poligon kaydı bir kez sayılıyor.
+- **Arayüz:** seçim kutuları, onay kutuları ve açılır başlıklar tek tasarıma getirildi. Sor düğmesi mobilde yuvarlak simgeye dönüşüyor ve park listesi açıkken gizleniyor.
+- **Not:** Tayakadın 2. kısım paftasında “1. Revize GYP 10.07.2025 tarihinde onaylanmıştır” yazıyor; park kaydında 11.07.2025 var [TEYİT GEREKLİ].
