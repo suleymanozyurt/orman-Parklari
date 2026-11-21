@@ -197,14 +197,14 @@
       const g = gyp[k]; if (!g) return; const arsiv = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id));
       const sayP = {}, featP = {};
       (g.f || []).forEach((f) => {
-        if (arsiv.has(f.p) || f._geo?.length || f._repeat || (durum && f.d !== durum)) return;
+        if (arsiv.has(f.p) || f._geo?.length || f._repeat || (durum && f.d !== durum) || (f.b || []).some((x) => x[0] === 'Parça')) return;
         const say = sayP[f.p || ''] = sayP[f.p || ''] || {};
         let ad = null;
         if (hedef.every((h) => kokler(f.t).includes(h))) ad = f.t;
         else if (!String(f.ad || '').startsWith(f.t) && !/yol|patika|cizgi|cit/i.test(f.t) && /\s[–-]\s/.test(String(f.ad || ''))) { const a = String(f.ad || '').split(/\s[–-]\s/).pop(); if (a && a.length < 60 && hedef.every((h) => kokler(a).includes(h))) ad = a.trim(); }
         if (ad) { say[ad] = (say[ad] || 0) + 1; turler.add(ad); (featP[f.p || ''] = featP[f.p || ''] || []).push(f); }
       });
-      if (P.length === 1) { const en = Object.values(featP).sort((a, b) => (b.filter((f) => f.g === 'N').length - a.filter((f) => f.g === 'N').length) || (b.length - a.length))[0] || []; liste = en.map((f) => ({ f, k })); }
+      if (P.length === 1) { const en = Object.values(featP).sort((a, b) => (b.length - a.length) || (b.filter((f) => f.g === 'N').length - a.filter((f) => f.g === 'N').length))[0] || []; liste = en.map((f) => ({ f, k })); }
       // Aynı tesis birden çok güncel katmanda (ör. koordinat cetveli noktaları ve sayısal plan poligonları) çizilmiş olabilir: her tür için en çok çizimi olan katman sayılır.
       const say = {}; Object.values(sayP).forEach((o) => Object.entries(o).forEach(([t, m]) => { say[t] = Math.max(say[t] || 0, m); }));
       const n = Object.values(say).reduce((a, b) => a + b, 0); if (n) { rows.push([k, n, Object.entries(say).map(([t, m]) => t + ' ' + m).join(', ')]); toplam += n; }
