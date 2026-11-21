@@ -13,6 +13,13 @@ const ctx = { parks, rapor: '2026-11-20', al, teblig, gyp, durumlar: gyp.durumla
   planAl: (Y, p) => ({ donem: 2, kira: 3032169.84, tufe: 0.3488, tufeAy: [Y - 1, 12], agac: 151608.49, kdv: 636755.67, toplam: 3820534, vadeler: [{ vade: Y + '-01-30', kira: 3032169.84, agac: 151608.49, kdv: 636755.67 }] }),
   yilbasiAl: () => ({ zincir: [{ bedel: 3032169.84, ek: 879329.25 }, { bedel: 5084948.82, ek: 0 }] }) };
 const dz = SOR.dizin(ctx);
+test('bilgi notu, harita ve veri geçmişi bağlama göre doğrudan açılır', () => {
+  const prior = { parks:['Tayakadın'] };
+  assert.match(SOR.sor(dz,'Bilgi notunu aç',prior).cevaplar[0].link,/^#\/bilgi\?p=Tayakad%C4%B1n/);
+  assert.match(SOR.sor(dz,'Tayakadın haritayı aç').cevaplar[0].link,/^#\/harita\?p=Tayakad%C4%B1n/);
+  assert.match(SOR.sor(dz,'Önceki değerleri göster',prior).cevaplar[0].link,/gecmis=1/);
+  assert.match(SOR.sor(dz,'Bilgi notunu aç').cevaplar[0].baslik,/Hangi park/);
+});
 test('park, yıl ve madde Türkçe ekleriyle tanınır', () => {
   assert.deepEqual(SOR.parkBul('Tayakadın’ın kirası', parks).map((p) => p.kisa), ['Tayakadın']);
   assert.deepEqual(SOR.parkBul('hacı bektaş parkı', parks).map((p) => p.kisa), ['Hacı Bektaş-i Veli']);

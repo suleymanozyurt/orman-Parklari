@@ -322,12 +322,13 @@ body:has(.park-options:not([hidden])) .sohbet-ac{display:none}
 .hpop .hkisa dt{color:var(--mute)}.hpop .hkisa dd{margin:0;color:var(--ink);font-weight:500}
 .hpop .hdet{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
 .hpop .hdet>summary{font-size:12.5px;color:var(--pine)}
-.hsheet{position:fixed;left:0;right:0;bottom:0;z-index:1200;max-height:46dvh;overflow:auto;background:var(--paper);border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
+.hsheet{position:fixed;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:1200;box-sizing:border-box;max-height:34dvh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.2);padding:0 13px 10px;overscroll-behavior:contain}
 .hsheet[hidden]{display:none}
 .hsheet .hpop{max-height:none;max-width:none;overflow:visible}
-.hsheet-bas{position:sticky;top:-8px;z-index:1;display:flex;align-items:center;justify-content:flex-end;min-height:44px;background:var(--paper);margin-bottom:6px}
-.hsheet-tut{position:absolute;width:38px;height:4px;left:50%;transform:translateX(-50%);border-radius:4px;background:var(--line)}
-.hsheet-x{min-height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.hsheet-bas{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;background:var(--paper);border-bottom:1px solid var(--line);padding:4px 0;margin-bottom:8px}
+.hsheet-bas .hpt{overflow-wrap:anywhere;margin:0}
+.hsheet-x{flex:none;min-height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+@media(max-height:490px){.hsheet{max-height:44dvh}}
 body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;line-height:28px;color:var(--ink2)}
 .akt td{vertical-align:top;font-size:13px}.akt small{line-height:1.4}
@@ -338,8 +339,18 @@ body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .bn-b{border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px;background:var(--paper)}
 .bn-bh{display:flex;gap:8px;align-items:center;margin-bottom:6px}.bn-bh .fld{font-weight:600}
 .bn textarea.fld{width:100%;line-height:1.55;font-size:14.5px}
+.pafta-list{display:grid;gap:10px;margin-top:10px}
+.pafta-list figure{margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.pafta-list img{display:block;width:100%;height:auto}
+.pafta-list figcaption{padding:8px 10px;font-size:12px}
 @media print{
+  @page bilgi-notu-dikey{size:A4 portrait;margin:0}
+  @page bilgi-notu-yatay{size:A4 landscape;margin:0}
   body.pr-bn .wrap>*:not(#bnOnizle){display:none !important}
-  body.pr-bn .ekalan{background:none;padding:0;overflow:visible;border-radius:0}
+  body.pr-bn .ekalan,body.pr-bn .dx-wrapper{background:white;padding:0;overflow:visible;border-radius:0;margin:0 !important}
   body.pr-bn .side,body.pr-bn .mbar,body.pr-bn .tabbar,body.pr-bn .sohbet-ac,body.pr-bn .app-credit{display:none !important}
+  body.pr-bn section.dx{page:bilgi-notu-dikey;box-shadow:none;margin:0 !important}
+  body.pr-bn section.dx.bn-yatay{page:bilgi-notu-yatay}
+  body.pr-bn section.dx+section.dx{break-before:page}
+  body.pr-bn .dx td{font-size:inherit;padding:0}
 }
