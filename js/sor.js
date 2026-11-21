@@ -195,14 +195,17 @@
     const rows = []; let toplam = 0; const turler = new Set();
     P.forEach((k) => {
       const g = gyp[k]; if (!g) return; const arsiv = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id));
-      const say = {};
+      const sayP = {};
       (g.f || []).forEach((f) => {
         if (arsiv.has(f.p) || f._geo?.length || f._repeat || (durum && f.d !== durum)) return;
+        const say = sayP[f.p || ''] = sayP[f.p || ''] || {};
         let ad = null;
         if (hedef.every((h) => kokler(f.t).includes(h))) ad = f.t;
         else if (!String(f.ad || '').startsWith(f.t) && !/yol|patika|cizgi|cit/i.test(f.t)) { const a = String(f.ad || '').split(/\s[–-]\s/).pop(); if (a && a.length < 60 && hedef.every((h) => kokler(a).includes(h))) ad = a.trim(); }
         if (ad) { say[ad] = (say[ad] || 0) + 1; turler.add(ad); }
       });
+      // Aynı tesis birden çok güncel katmanda (ör. koordinat cetveli noktaları ve sayısal plan poligonları) çizilmiş olabilir: her tür için en çok çizimi olan katman sayılır.
+      const say = {}; Object.values(sayP).forEach((o) => Object.entries(o).forEach(([t, m]) => { say[t] = Math.max(say[t] || 0, m); }));
       const n = Object.values(say).reduce((a, b) => a + b, 0); if (n) { rows.push([k, n, Object.entries(say).map(([t, m]) => t + ' ' + m).join(', ')]); toplam += n; }
     });
     if (!turler.size) return null;
@@ -336,7 +339,8 @@
     // 5b. planlanan / mevcut tesis listesi (tür belirtilmeden)
     if (parks.length === 1 && /(planlanan|onerilen|yapilacak|mevcut|var olan|hangi) tesis|tesisler(i)?\b|tesis listesi|neler var/.test(q) && ctx.gyp && ctx.gyp.parklar[parks[0].kisa] && !cevaplar.some((c) => c.tablo && c.tablo.b[1] === 'Adet')) {
       const g = ctx.gyp.parklar[parks[0].kisa], ars = new Set((g.planlar || []).filter((x) => x.durum === 'arsiv').map((x) => x.id)), du = /planlanan|onerilen|yapilacak/.test(q) ? 'P' : /mevcut|var olan/.test(q) ? 'M' : null;
-      const say = {}; (g.f || []).forEach((f) => { if (ars.has(f.p) || f._geo?.length || f._repeat || ['A','Y','K'].includes(f.d) || (du && f.d !== du) || /yol|patika|cizgi|cit|ihata|etiket|nokta/i.test(norm(f.t))) return; say[f.t] = (say[f.t] || 0) + 1; });
+      const sayP = {}; (g.f || []).forEach((f) => { if (ars.has(f.p) || f._geo?.length || f._repeat || ['A','Y','K'].includes(f.d) || (du && f.d !== du) || /yol|patika|cizgi|cit|ihata|etiket|nokta/i.test(norm(f.t))) return; const o = sayP[f.p || ''] = sayP[f.p || ''] || {}; o[f.t] = (o[f.t] || 0) + 1; });
+      const say = {}; Object.values(sayP).forEach((o) => Object.entries(o).forEach(([t, m]) => { say[t] = Math.max(say[t] || 0, m); }));
       const L = Object.entries(say).sort((a, b) => b[1] - a[1]);
       const link = '#/harita?p=' + encodeURIComponent(parks[0].kisa);
       if (L.length) cevaplar.unshift({ baslik: parks[0].kisa + ' · ' + (du === 'P' ? 'planlanan' : du === 'M' ? 'planda mevcut' : 'arşiv dışındaki') + ' tesisler (' + L.reduce((s, x) => s + x[1], 0) + ')', tablo: { b: ['Tesis türü', 'Adet'], s: L.map(([t, n]) => [t, String(n)]) }, not: 'Sayım plan çizimlerinden gelir. Yol, patika, çit ve arşiv çizimleri hariç.', link, linkAd: 'Haritada aç' });
