@@ -375,3 +375,34 @@ body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
   .hmode{flex:1 1 auto}
   .hmode .btn{flex:1;min-height:42px}
 }
+.overview-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.overview-links a{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;min-height:66px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);text-decoration:none}
+.overview-links a:hover,.overview-links a:focus-visible{border-color:var(--pine)}
+.overview-links svg{color:var(--pine);flex:none;margin-top:2px}
+.overview-links strong,.overview-links small{display:block}
+.overview-links small{margin-top:3px;color:var(--mute);font-size:12px;line-height:1.3}
+.overview-work .card{margin:0}
+.overview-balances .kpis{padding:12px}
+.hpark-native{display:none}
+@media(max-width:860px){
+  .overview-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .overview-links a{padding:11px;gap:8px;min-height:63px}
+  .overview-links strong{font-size:14px}
+  .overview-links small{font-size:11.5px}
+  .hselr .park-picker{display:none}
+  .hselr .hpark-native{display:block;flex:1;min-width:0;height:44px;font-size:16px}
+  .hsel:has(.hpark-native)>label{font-size:13px}
+  .hselr [data-a="hTum"]{display:none}
+}
+.muh-filter{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr);gap:10px}
+.muh-filter label{display:grid;gap:4px;color:var(--mute);font-size:13px;min-width:0}
+.muh-filter .fld{width:100%;min-width:0;min-height:44px}
+.muh-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+.muh-page{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;border-block:1px solid var(--line);color:var(--mute);font-size:13px}
+.akt-plan{display:grid;gap:8px;margin:12px 0}.akt-plan .btn{white-space:normal;text-align:left;justify-self:start}
+@media(max-width:600px){
+  .muh-filter{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .muh-filter label:last-child{grid-column:1/-1}
+  .muh-filter .fld{font-size:16px}
+  .muh-kpis .kpi strong{font-size:clamp(16px,5vw,24px)}
+}

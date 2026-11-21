@@ -9,7 +9,7 @@
     spreadsheet:['.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
     presentation:['.pdf','application/pdf']
   };
-  const nativeUpload = /\.(pdf|docx|xlsx|jpe?g|png|gif|webp|txt|csv|tsv|md|json|kml|xml|html?)$/i;
+  const nativeUpload = /\.(pdf|docx|xlsx|jpe?g|png|gif|webp|txt|csv|tsv|md|json|kml|kmz|ncz|xml|html?)$/i;
 
   function link(value) {
     let url;
@@ -47,7 +47,7 @@
       if (!r.ok) throw Error(r.status === 401 || r.status === 403 ? 'Google Drive erişimi reddetti.' : 'Google Drive dosyayı açamadı.');
       return r;
     };
-    const read = async (r, name, type) => {
+    const read = async (r, name, type, sourceUrl) => {
       const size = Number(r.headers.get('content-length')) || 0;
       if (size && size + total > limit) { skipped.push(name + ' (boyut sınırı)'); return; }
       const reader = r.body?.getReader();
@@ -68,6 +68,7 @@
       }
       if (!sizeRead) { skipped.push(name + ' (dosya boş)'); return; }
       const file = new File(parts,name,{ type });
+      Object.defineProperty(file, 'sourceUrl', { value: sourceUrl });
       files.push(file); total += sizeRead;
     };
     const meta = async (id,key) => (await req('/' + id,{ fields:FIELDS,supportsAllDrives:'true' },id,key)).json();
@@ -97,10 +98,11 @@
           return;
         }
         if (total + (Number(item.size) || 0) > limit) { skipped.push(name + ' (boyut sınırı)'); return; }
+        const sourceLink = 'https://drive.google.com/open?id=' + encodeURIComponent(item.id) + (key ? '&resourcekey=' + encodeURIComponent(key) : '');
         const fmt = item.mimeType.startsWith(GOOGLE) && EXPORT[item.mimeType.slice(GOOGLE.length)];
-        if (fmt) return await read(await req('/' + item.id + '/export',{ mimeType:fmt[1] },item.id,key),name + fmt[0],fmt[1]);
+        if (fmt) return await read(await req('/' + item.id + '/export',{ mimeType:fmt[1] },item.id,key),name + fmt[0],fmt[1],sourceLink);
         if (!nativeUpload.test(name)) { skipped.push(name + ' (desteklenmeyen biçim)'); return; }
-        await read(await req('/' + item.id,{ alt:'media',supportsAllDrives:'true' },item.id,key),name,item.mimeType);
+        await read(await req('/' + item.id,{ alt:'media',supportsAllDrives:'true' },item.id,key),name,item.mimeType,sourceLink);
       } catch (error) { skipped.push(name + ' (' + error.message + ')'); }
     }
     for (const item of links) {
@@ -114,7 +116,7 @@
           if (!r.ok) throw Error('Bağlantı açılamadı.');
           const type = r.headers.get('content-type') || '';
           if (type.startsWith('text/html') && !/\.html?$/i.test(name)) throw Error('Dosya yerine giriş veya önizleme sayfası açıldı.');
-          await read(r,name,type);
+          await read(r,name,type,item.url.href);
         }
       } catch (error) { skipped.push((item.id || item.url.hostname) + ' (' + error.message + ')'); }
     }
