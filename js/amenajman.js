@@ -16,10 +16,10 @@
     if (!row) return group;
     const office = dataset.kaynak.seflik;
     const bolmecik = type === 'bolmecik';
-    const key = (bolme, index) => JSON.stringify(bolmecik ? [String(bolme), String(index)] : [String(bolme)]);
+    const key = (bolme, index, tip) => JSON.stringify(bolmecik ? [String(bolme), String(index), String(tip)] : [String(bolme)]);
     const names = new Set((bolmecik ? row.bolmecikler : row.bolmeler).filter(([name]) => name === office)
-      .map(([, bolme, part]) => key(bolme, part)));
-    return group.filter(({ properties }) => names.has(key(properties.bolme, properties.bolmecik)));
+      .map(([, bolme, part, tip]) => key(bolme, part, tip)));
+    return group.filter(({ properties }) => names.has(key(properties.bolme, properties.bolmecik, properties.tip)));
   }
 
   const pct = (area, total) => (100 * area / total).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + '%';

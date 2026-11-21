@@ -468,8 +468,8 @@ test('amenajman loads on demand, preserves park geometry, and withholds stale in
     const office = {dosya:'istanbul',seflik:'İstanbul',sayilar:{bolme:1,bolmecik:1},plan:'https://drive.google.com/example'};
     const index = {donem:'2024–2043',seflikler:{İstanbul:office},parklar:{Test:{sinir:JSON.parse(boundary),sinir_holes:[],alan_m2:100,kapsam_m2:100,cakisma_m2:0,bolmecik_cakisma_m2:0,bolmeler:[['İstanbul','38',100]],bolmecikler:[['İstanbul','38','1','Çfbc2',100]]}}};
     const shape = {type:'Polygon',coordinates:[[[28,41],[28,41.01],[28.01,41.01],[28.01,41],[28,41]]]};
-    const feature = (katman, bolme) => ({type:'Feature',geometry:shape,properties:{katman,bolme,bolmecik:'1',tip:'Çfbc2',nesne:'7'}});
-    const dataset = {type:'FeatureCollection',kaynak:office,features:[feature('bolme','38'),feature('bolmecik','38'),feature('bolmecik','39')]};
+    const feature = (katman, bolme, tip = 'Çfbc2') => ({type:'Feature',geometry:shape,properties:{katman,bolme,bolmecik:'1',tip,nesne:'7'}});
+    const dataset = {type:'FeatureCollection',kaynak:office,features:[feature('bolme','38'),feature('bolmecik','38'),feature('bolmecik','38','Z'),feature('bolmecik','39')]};
     const zip = new w.JSZip(); zip.file('harita.json',JSON.stringify(dataset));
     const payload = await zip.generateAsync({type:'arraybuffer'});
     w.K.cozBin = async () => payload;
@@ -497,7 +497,7 @@ test('amenajman loads on demand, preserves park geometry, and withholds stale in
     assert.equal(doc.querySelector('[data-a=hKatmanSec][data-v=bolmecik]').getAttribute('aria-pressed'),'true');
     const select = doc.querySelector('#hAmenajmanSef');
     select.value = ''; select.dispatchEvent(new w.Event('change'));
-    await settle(()=>doc.querySelector('#hAmenajmanDurum').textContent.includes('2 bölmecik'));
+    await settle(()=>doc.querySelector('#hAmenajmanDurum').textContent.includes('3 bölmecik'));
     doc.querySelector('[data-a=hKatmanSec][data-v=""]').click();
     await settle(()=>!a.S._hAmenajmanLayer);
     const changed = {...p,harita:{...p.harita,sinir:[[[41,28],[41.02,28],[41,28.02],[41,28]]]}};

@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '67', date: '22.11.2026' };
+  const BUILD = { version: '68', date: '22.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
