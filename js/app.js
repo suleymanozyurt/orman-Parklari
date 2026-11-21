@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '59', date: '21.11.2026' };
+  const BUILD = { version: '60', date: '21.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -227,7 +227,7 @@
   async function basla() {
     if ('serviceWorker' in navigator && location.protocol === 'https:') swKur();
     agDurum(); window.addEventListener('online', agDurum); window.addEventListener('offline', agDurum);
-    S.token = ls.get('op_gh') || ss.get('op_gh') || null; S.kim = ls.get('op_kim') || ss.get('op_kim') || 'Yönetici';
+    S.token = ls.get('op_gh') || ss.get('op_gh') || null; S.kim = kimAd(ls.get('op_kim') || ss.get('op_kim'));
     S.kullanici = ls.get('op_kul') || ss.get('op_kul') || null;
     try { S.rol = JSON.parse(ls.get('op_rol') || ss.get('op_rol') || 'null') || (S.token ? TUM_ROL : {}); } catch (e) { S.rol = S.token ? TUM_ROL : {}; }
     gateGoster('yukleniyor');
@@ -262,7 +262,7 @@
       '<input class="fld" id="gpw" type="password" autocomplete="current-password" placeholder="Erişim parolası" aria-label="Erişim parolası" required>' +
       '<label class="chk"><input type="checkbox" id="gkeep" checked> Bu cihazda hatırla</label>' +
       '<button class="btn pri" type="submit">Aç</button><div class="err" id="gerr" role="alert"></div>' +
-      '<p class="muted" style="margin:6px 0 0;font-size:13px"><a href="#" id="gkul" style="text-decoration:underline">Kişisel hesabımla gir (kullanıcı adı ve parola)</a></p><div class="gate-credit">Hazırlayan <strong>Süleyman Özyurt</strong></div></form>';
+      '<p class="muted" style="margin:6px 0 0;font-size:13px"><a href="#" id="gkul" style="text-decoration:underline">Kişisel hesabımla gir (kullanıcı adı ve parola)</a></p></form>';
     $('#gpw').focus();
     $('#gkul').onclick = (e) => { e.preventDefault(); kulGirisFormu($('#gate .box'), true); };
     $('#gform').onsubmit = async (ev) => {
@@ -391,8 +391,8 @@
       '</details><button class="sbtn" data-a="yenile">Verileri yenile</button>' +
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
-      '<div id="adminTools"></div><div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div><div class="side-credit"><span>Hazırlayan</span><strong>Süleyman Özyurt</strong></div></aside>' +
-      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span class="prepared">Hazırlayan <strong>Süleyman Özyurt</strong></span><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
+      '<div id="adminTools"></div><div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div></aside>' +
+      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
     A.addEventListener('click', tikla);
@@ -2353,8 +2353,10 @@
     try { const r = await fetch(CFG.yonetici + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) return await r.text(); if (r.status === 404) return null; } catch (e) {}
     throw new Error('Yönetici kaydı okunamadı; internet bağlantısını kontrol edin.');
   }
+  // Yönetici oturumunda kayıtlara kişi adı değil görev adı yazılır (kişisel hesapların adı korunur).
+  function kimAd(k) { k = String(k || '').trim(); return !k || /s[üu]leyman|[öo]zyurt/i.test(k) ? 'Yönetici' : k; }
   function oturumAc(tok, kim, kalici) {
-    S.token = tok; S.kim = kim || 'Yönetici';
+    S.token = tok; S.kim = kimAd(kim);
     for (const k of ['op_gh', 'op_kim', 'op_rol', 'op_kul']) { ls.del(k); ss.del(k); }
     const D = kalici ? ls : ss;
     if (S.writeStatus?.ok === false) tok = null;
@@ -2815,7 +2817,7 @@
     $('#kuOk').onclick = () => { const ib = (gv('ku_iban') || '').replace(/\s+/g, ''); if (ib && !/^TR\d{24}$/i.test(ib)) { toast('IBAN TR ile başlayan 26 karakter olmalı.', true); return; }
       F.forEach((f) => { k[f[0]] = gv('ku_' + f[0]) || ''; }); modalKapat(); degisti('Kurum bilgileri güncellendi'); };
   };
-  const KURUMF = [['bolge', 'Bölge müdürlüğü'], ['isletme', 'İşletme müdürlüğü'], ['mudur', 'İşletme müdürü'], ['sube', 'Birim'], ['ilgili', 'İlgili personel (ad, unvan)'], ['il', 'İl'], ['adres', 'Adres'],
+  const KURUMF = [['bolge', 'Bölge müdürlüğü'], ['isletme', 'İşletme müdürlüğü'], ['mudur', 'İşletme müdürü'], ['mudur_yrd', 'İşletme müdür yardımcısı'], ['muhasebe_yetkilisi', 'Döner sermaye muhasebe yetkilisi'], ['sube', 'Birim'], ['il', 'İl'], ['adres', 'Adres'],
     ['tel', 'Telefon'], ['faks', 'Faks'], ['eposta', 'E-posta'], ['kep', 'KEP'], ['banka', 'Banka'], ['sube_banka', 'Banka şubesi'], ['iban', 'IBAN']];
   AKSIYON.sifreDegis = () => {
     modal('Erişim parolasını değiştir', '<p style="margin:0;line-height:1.5">Yeni parola kaydedildikten sonra linki açanlar yeni parolayı girmelidir. Eski parolayı bilenler artık açamaz. En az 10 karakter.</p>' + fi('pw1', 'Yeni parola', '', 'password') + fi('pw2', 'Yeni parola (tekrar)', '', 'password'),
@@ -2920,7 +2922,7 @@
     if (tam) await Promise.allSettled([gypAl(), ekPaket()]);
     const ctx = { parks: S.veri.parks, rapor: S.rapor, al: S.al, muhasebe: S.veri.muhasebe, teblig: S.ekB && S.ekB.teblig, gyp: S.gyp && !S.gyp.hata ? S.gyp : null, durumlar: S.gyp && S.gyp.durumlar,
       tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD), belgeliBorclar: S.belgeliBorclar,
-      kurum: S.veri.kurum, sefler: (window.EK && EK.TF_SEF) || {}, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira, fisKalemleri: E.tahakkukFisKalemleri,
+      kurum: S.veri.kurum, sefler: (window.EK && EK.yetkili) ? EK.yetkili(S.veri.kurum).sefler : {}, yetkili: (window.EK && EK.yetkili) ? EK.yetkili(S.veri.kurum) : null, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira, fisKalemleri: E.tahakkukFisKalemleri,
       planAl: (Y, p) => { S.plan[Y] = S.plan[Y] || {}; if (!S.plan[Y][p.kisa]) S.plan[Y][p.kisa] = parkTahakkuk(p, Y); return S.plan[Y][p.kisa]; },
       yilbasiAl: (Y, p) => E.yilbasiKira(p, kiraOranlari(Y), Y, Y + '-01-02', { veri: S.veri, esl: S.esl }) };
     S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey(); S.sorTam = tam;
@@ -3651,7 +3653,7 @@
       L.map(([p, t]) => t.vadeler.map((v, i) => '<tr><td>' + (i ? '' : '<b>' + esc(p.kisa) + '</b><br><span style="font-size:12px">' + esc(p.isletmeci || '') + '</span>') + '</td><td class="n">' + (i ? '' : esc(p.vkn || '')) + '</td><td class="n">' + fd(v.vade) + '</td><td class="r n">' + tl(v.kira) + '</td><td class="r n">' + (v.agac ? tl(v.agac) : '') + '</td><td class="r n">' + (v.kdv ? tl(v.kdv) : '') + '</td></tr>').join('') +
         '<tr><td colspan="3" style="font-size:12.5px;color:var(--mute)">' + t.donem + '. dönem (' + fd(t.bas) + ')' + (t.tufe != null ? ', TÜFE ' + E.pct(t.tufe) : ', ihale bedeli') + ' · ' + esc(t.durum) + '</td><td class="r n"><b>' + tl(t.kira) + '</b></td><td class="r n">' + tl(t.agac) + '</td><td class="r n">' + tl(t.kdv) + '</td></tr>').join('') +
       '<tr style="font-weight:700"><td colspan="3">Toplam</td><td class="r n">' + tl(sumOf(L, ([, t]) => t.kira)) + '</td><td class="r n">' + tl(sumOf(L, ([, t]) => t.agac)) + '</td><td class="r n">' + tl(sumOf(L, ([, t]) => t.kdv)) + '</td></tr></tbody></table></div>' +
-      '<p style="margin:12px 0 0;font-size:13px">' + esc(ku.ilgili || '') + '</p></div>', '<button class="btn pri" data-a="pdf">Yazdır / PDF</button>');
+      '</div>', '<button class="btn pri" data-a="pdf">Yazdır / PDF</button>');
   };
 
   // ---------- TEBLİĞ VE HESAPLAR ----------

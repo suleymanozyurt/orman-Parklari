@@ -58,7 +58,7 @@
       kira_yil_tl: tlY(kiraY), kira_yil: kiraY != null ? tl(kiraY) : '',
       odeme_donem: ctx.odemeDonem || '', plan: p.plan || '',
       k_adres: ku.adres || '', k_tel: ku.tel || '', k_faks: ku.faks || '', k_tel_faks: [ku.tel, ku.faks].filter(Boolean).join(' / '), k_eposta: ku.eposta || '',
-      k_ilgili: ku.ilgili || '', k_iban: iban, k_iban_nr: iban.replace(/^TR\s*/i, ''), k_banka: (ku.banka || '').replace(/\s*Bankası\s*$/i, ''), k_sube: ku.sube_banka || '', k_mudur: ku.mudur || '',
+      k_ilgili: (() => { const y = yetkili(ku, p.seflik); return y.sef ? y.sef + ' – ' + y.sef_unvan : ''; })(), k_sef: yetkili(ku, p.seflik).sef, k_sef_unvan: yetkili(ku, p.seflik).sef_unvan, k_mudur_yrd: yetkili(ku, p.seflik).mudur_yrd, k_muhasebe: yetkili(ku, p.seflik).muhasebe, k_iban: iban, k_iban_nr: iban.replace(/^TR\s*/i, ''), k_banka: (ku.banka || '').replace(/\s*Bankası\s*$/i, ''), k_sube: ku.sube_banka || '', k_mudur: yetkili(ku, p.seflik).mudur,
       tarih: fd(ctx.rapor), yil: String(E.year(ctx.rapor)), sabit313: '313'
     });
     // son imzalı Ek-10 raporundaki tespitler (yeni dönem raporu için başlangıç değeri)
@@ -98,15 +98,23 @@
     'TF': { B6: 'tf_isletmeci', D6: 'tf_vkn', F6: 'tf_adres', B8: 'tf_seflik', C8: 'tf_il_ilce', D8: 'tf_mahalle', G8: 'tf_alan', F10: 'tf_sure', G10: '', C11: 'tf_park',
       B14: 'tf_esas_lab', D14: 'tf_esas', G14: 'tf_vade', B15: 'tf_artis_lab', D15: 'tf_artis', B16: 'tf_kira_lab', D16: 'tf_kira', B17: 'tf_tem_lab', D17: 'tf_tem',
       B18: 'tf_dep_lab', D18: 'tf_dep', B19: 'tf_guv_lab', D19: 'tf_guv', D20: 'tf_agac', D21: 'tf_kdv', D22: 'tf_toplam', C25: 'tf_gy', D25: 'tf_gy_bedel', F25: 'tf_gy_top',
-      B29: 'tf_sef', D29: 'tf_yrd', F29: 'tf_mudur', B32: 'tf_tarih', D32: 'tf_tarih', F32: 'tf_tarih', G32: 'tf_tarih', B37: 'tf_not', B38: 'tf_tem_not' },
+      B29: 'tf_sef', D29: 'tf_yrd', F29: 'tf_mudur', G29: 'tf_muh', B32: 'tf_tarih', D32: 'tf_tarih', F32: 'tf_tarih', G32: 'tf_tarih', B37: 'tf_not', B38: 'tf_tem_not' },
     'Ek-14': { C7: '', C8: '' }, 'Ek-15': { C8: '', C9: '' }, 'Ek-1': { C4: '' }, 'Ek-3': { D4: '' }
   };
   // ---------------------------------------------------------------- tahakkuk fişi (İşletme şablonu: peşin ve taksit fişleri)
   // ctx.tf = { Y, taksit (0 = yıllık/peşin, 1–4), plan (E.tahakkukPlan), ky (kira zinciri: onceki, tufe, tufeAy, bas) }.
   // Tutarlar hesap motorundan gelir; TÜFE açıklanmadıysa alanlar boş kalır ve form “bekliyor” olarak işaretlenir.
-  const TF_SEF = { 'Arnavutköy': 'Güven KAVRAZ', 'Fenertepe': 'Oktay KAYA' };
-  const TF_YRD = { 'Arnavutköy': 'Ergün TUNCER' };
-  EK.TF_SEF = TF_SEF; EK.TF_YRD = TF_YRD;
+  // Yetkililer: kurum kaydındaki (Veriler ve Ayarlar › Kurum) değerler önceliklidir; boşsa aşağıdaki varsayılanlar kullanılır.
+  const YETKILI = { mudur: 'Mahmut FERHATOĞLU', mudur_yrd: 'Eren TOPCU', muhasebe: 'İsa GENCEL',
+    sefler: { 'Fenertepe': 'Oktay KAYA', 'Arnavutköy': 'Güven KAVRAZ', 'İstanbul': 'Ertuğrul Lütfü NALBANT', 'Kemerburgaz': 'Aslan AKARSU' } };
+  const yetkili = (ku, seflik) => {
+    ku = ku || {}; const sefler = Object.assign({}, YETKILI.sefler, ku.sefler || {});
+    const sef = (seflik && sefler[seflik]) || '';
+    return { mudur: ku.mudur || YETKILI.mudur, mudur_yrd: ku.mudur_yrd || YETKILI.mudur_yrd, muhasebe: ku.muhasebe_yetkilisi || YETKILI.muhasebe, sef, sefler,
+      sef_unvan: seflik ? seflik + ' Orman İşletme Şefi' : 'Orman İşletme Şefi' };
+  };
+  const TF_SEF = YETKILI.sefler;
+  EK.YETKILI = YETKILI; EK.yetkili = yetkili; EK.TF_SEF = TF_SEF;
   EK.tfHesapAlani = (address) => /^(?:B|D|G)(?:14|15|16|17|18|19|20|21|22|37|38)$|^[CDF]25$/.test(address);
   const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   EK.tfAlanlar = function (ctx) {
@@ -117,7 +125,7 @@
     F.tf_alan = p.alan != null ? Number(p.alan).toLocaleString('tr-TR') : '';
     F.tf_sure = p.soz_bas && p.soz_bit ? String(Math.max(1, Math.round(E.days(p.soz_bas, p.soz_bit) / 365.25))) : '';
     F.tf_park = (p.ad || p.kisa || '').replace(/\s+/g, ' ');
-    F.tf_sef = TF_SEF[p.seflik] || ''; F.tf_yrd = TF_YRD[p.seflik] || ''; F.tf_mudur = ku.mudur || '';
+    const Y0 = yetkili(ku, p.seflik); F.tf_sef = Y0.sef; F.tf_yrd = Y0.mudur_yrd; F.tf_mudur = Y0.mudur; F.tf_muh = Y0.muhasebe;
     F.tf_tarih = Y ? '…/…./' + Y : '';
     const m = E.tahakkukFisKalemleri(pl, n);
     if (!Y || !m) return F;
@@ -187,8 +195,8 @@
     return { t: oto ? EK.temizle(t) : t, oto };
   };
   const HUCRE = {
-    'Ek-1': { A106: { b: ['il', 'ilce', 'mevki', 'alan'] } },
-    'Ek-2': { H19: { tpl: '{park_ad_buyuk}' } },
+    'Ek-1': { A106: { b: ['il', 'ilce', 'mevki', 'alan'] }, A98: { tpl: '{k_mudur_yrd}' }, D98: { tpl: '{k_sef}' }, A103: { tpl: '{k_mudur}' } },
+    'Ek-2': { H19: { tpl: '{park_ad_buyuk}' }, B33: { tpl: '{k_mudur}' }, F33: { tpl: '{k_mudur_yrd}' }, J33: { tpl: '{k_sef}' } },
     'Ek-3': { A36: { b: ['park_onek'] } },
     'Ek-4': { F43: { tpl: '{park_ad_buyuk} GELİŞİM VE YÖNETİM PLANI' }, B115: { tpl: '{park_ad_buyuk}' }, B130: { tpl: '{park_ad_buyuk}' },
       B118: { tpl: '{park_ad_buyuk}\nGELİŞİM VE YÖNETİM PLANI' }, B133: { tpl: '{park_ad_buyuk}\nGELİŞİM VE YÖNETİM PLANI' } },
