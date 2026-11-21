@@ -3955,7 +3955,7 @@
   }
   function sohbetDurum(pending) {
     S.sohbetPending = pending;
-    const send = $('#sohbetForm button[type="submit"]'); if (send) send.disabled = pending;
+    const send = $('#sohbetForm button[type="submit"]'); if (send) { send.disabled = false; send.setAttribute('aria-label', pending ? 'Soruyu sıraya ekle' : 'Gönder'); }
     const state = $('#sohbetDurum'); if (state) state.textContent = pending ? 'Kayıtlar inceleniyor…' : '';
   }
   function sohbetSakla() { if (!S.yerelPaket) { try { ss.set('op_sohbet', JSON.stringify(S.sohbet.slice(-40))); } catch (e) {} } }
@@ -3974,7 +3974,17 @@
     k.scrollTop = k.scrollHeight;
   }
   async function sohbetGonder(q) {
-    q = String(q || '').trim(); if (!q || S.sohbetPending) return;
+    q = String(q || '').trim();
+    if (!q) return;
+    if (S.sohbetPending) {
+      const queue = (S.sohbetKuyruk ||= []);
+      if (queue.length >= 5) { toast('En fazla 5 soru sıraya eklenebilir.'); return; }
+      queue.push(q);
+      const input = $('#sohbetQ'); if (input) input.value = '';
+      const state = $('#sohbetDurum');
+      if (state) state.textContent = queue.length + ' soru sırada. Sormaya devam edebilirsiniz.';
+      return;
+    }
     const scope = S.sohbetPark, prior = S.sohbetOnceki, raw = SOR.norm(q);
     const scoped = scope && !/\b(?:madde|md|teblig)\b/.test(raw) && !SOR.parkBul(q, S.veri.parks).length;
     const L = sohbetYukle(), k = $('#sohbetAkis'), i = $('#sohbetQ'); if (i) i.value = '';
@@ -4014,7 +4024,11 @@
         }).finally(() => { S.sohbetAiPending = false; });
       }
     } catch (e) { el.innerHTML = '<p class="red-t">Cevap hazırlanamadı: ' + esc(e.message) + '</p>'; }
-    finally { sohbetDurum(false); }
+    finally {
+      sohbetDurum(false);
+      const next = S.sohbetKuyruk?.shift();
+      if (next && $('#sohbetAkis')) void sohbetGonder(next);
+    }
   }
   function sohbetGorunum(p) {
     const view = window.visualViewport;
