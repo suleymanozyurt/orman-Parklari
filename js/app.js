@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '66', date: '22.11.2026' };
+  const BUILD = { version: '67', date: '22.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -1314,6 +1314,8 @@
     if (!panel || !map || !window.OPAmenajman) return;
     hAmenajmanKaldir();
     type.value = S.hAmenajmanTur || '';
+    const tuslar = () => $$('[data-a="hKatmanSec"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === (panel.open ? type.value : ''))));
+    tuslar();
     let request = 0;
     const render = async () => {
       const id = ++request, selectedType = type.value;
@@ -1325,8 +1327,8 @@
         const index = await amenajmanAc('ozet');
         if (!active()) return;
         const offices = Object.keys(index.seflikler);
-        const row = index.parklar[p?.kisa];
-        const parkOffices = row && OPAmenajman.ayniSinir(row, p.harita) ? [...new Set(row.bolmeler.map(([name]) => name))] : [];
+        const row = OPAmenajman.kesismeler(index, p);
+        const parkOffices = row ? [...new Set([...row.bolmeler, ...row.bolmecikler].map(([name]) => name))] : [];
         if (office.disabled) {
           office.innerHTML = (parkOffices.length ? '<option value="park">Parkla kesişen şeflikler</option>' : '') + '<option value="">Tümü</option>' + offices.map(name => '<option>' + esc(name) + '</option>').join('');
           office.value = S.hAmenajmanSef === '' || offices.includes(S.hAmenajmanSef) ? S.hAmenajmanSef : parkOffices.length ? 'park' : offices.includes(p?.seflik) ? p.seflik : '';
@@ -1341,9 +1343,12 @@
         // Tesisler ve park sınırı üstte kalır; sınır içinden amenajman bilgisi açılabilir.
         pane.style.zIndex = 390;
         const renderer = S._hAmenajmanRenderer ||= L.svg({ pane: 'amenajman' });
-        const layer = L.layerGroup(datasets.map(dataset => L.geoJSON(dataset, {
+        let count = 0;
+        const layer = L.layerGroup(datasets.map(dataset => {
+          const features = OPAmenajman.katmanSec(dataset, selectedType, office.value === 'park' ? row : null);
+          count += features.length;
+          return L.geoJSON({ type:'FeatureCollection', features }, {
           renderer, pane: 'amenajman', bubblingMouseEvents: false,
-          filter: (f) => f.properties.katman === selectedType,
           style: selectedType === 'bolme' ? { color: '#74D8FF', weight: 2, fillOpacity: .07, dashArray: '7 4' } : { color: '#B19CF6', weight: 1.2, fillOpacity: .18 },
           onEachFeature: (f, polygon) => {
             polygon.on('click', (e) => {
@@ -1352,8 +1357,8 @@
               L.popup({ maxWidth: Math.min(310, window.innerWidth - 48) }).setLatLng(e.latlng).setContent(OPAmenajman.popup(f, dataset.kaynak, esc)).openOn(map);
             });
           }
-        })));
-        const count = datasets.reduce((n, data) => n + data.kaynak.sayilar[selectedType], 0);
+          });
+        }));
         hAmenajmanKaldir();
         S._hAmenajmanLayer = layer.addTo(map);
         Object.values(S._hB || {}).forEach(({ pol }) => {
@@ -1363,15 +1368,25 @@
       } catch (e) {
         if (!active()) return;
         type.value = S.hAmenajmanTur = '';
+        tuslar();
         hAmenajmanKaldir();
         status.textContent = 'Amenajman verisi açılamadı. Bağlantıyı kontrol edip katmanı yeniden seçin.';
       }
     };
-    panel.ontoggle = () => { S.hAmenajmanAcik = panel.open; render(); };
-    type.onchange = () => { S.hAmenajmanTur = type.value; render(); };
+    panel.ontoggle = () => { S.hAmenajmanAcik = panel.open; tuslar(); render(); };
+    type.onchange = () => { S.hAmenajmanTur = type.value; tuslar(); render(); };
     office.onchange = () => { S.hAmenajmanSef = office.value; render(); };
     if (panel.open) render();
   }
+  AKSIYON.hKatmanSec = (button) => {
+    const panel = $('#hAmenajman'), type = $('#hAmenajmanTur');
+    if (!panel || !type) return;
+    const mode = button.dataset.v;
+    if (!['', 'bolme', 'bolmecik'].includes(mode)) return;
+    panel.open = !!mode;
+    type.value = mode;
+    type.onchange();
+  };
   const DUR = { M: ['Mevcut', '#3CCB7F'], P: ['Planlanan', '#FFD34E'], O: ['Önceki onaylı planda – inşa edilmemiş', '#F29A4A'], V: ['Onaylı vaziyet planında (inşa durumu belirtilmemiş)', '#7FC8F8'],
     S: ['Sahada tespit – planla doğrulanmamış', '#FF8FB1'], K: ['Kaldırılan / eski konum', '#E5534B'], Y: ['Yol, otopark ve diğer plan çizimleri', '#B8C2CC'], A: ['Bilgi alanı (izinli alan, taşkın, parça, nokta listesi)', '#C792EA'], B: ['Durumu belirtilmemiş', '#5AA9E6'] };
   const PLD = { guncel: ['Güncel onaylı plan', 'b-ok'], arsiv: ['Arşiv – önceki plan', 'b-gray'], belirsiz: ['Onay ve güncel sürüm teyidi gerekli', 'b-amb'], bilgi: ['Bilgi katmanı', 'b-gray'] };
@@ -1501,22 +1516,27 @@
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
     if (q.has('p')) { const k = q.get('p'); S.hP = S.pBy[k] ? k : ''; if (S.hP) S.park = S.hP; S.hT = q.get('t') || null; }
     else if (S.hP === undefined) S.hP = S.park || '';
-    S.hAmenajmanBaglanti = q.has('amenajman');
-    if (S.hAmenajmanBaglanti) S.hAmenajmanAcik = true;
-    if (['bolme','bolmecik'].includes(q.get('amenajman'))) S.hAmenajmanTur = q.get('amenajman');
+    if (q.has('amenajman') && S.hAmenajmanBaglanti !== location.hash) {
+      S.hAmenajmanBaglanti = location.hash;
+      S.hAmenajmanAcik = true;
+      S.hAmenajmanTur = q.get('amenajman') === 'bolme' ? 'bolme' : 'bolmecik';
+    } else if (!q.has('amenajman')) S.hAmenajmanBaglanti = null;
     if (!S.hF) S.hF = { q: '', tur: '', d: { M: 1, P: 1, O: 1, V: 1, S: 1, K: 1, Y: 1, A: 1, B: 1 }, arsiv: 0, alt: 0, kapali: {}, pk: {}, acik: false };
     const F = S.hF;
-    return '<div class="pagehead"><div><h1>Harita ve Tesis Envanteri</h1><p>Parkı seçin, çizime dokunarak tesisin plan ve kaynak bilgilerini açın.</p></div></div>' +
+    return '<div class="pagehead"><div><h1>Orman parkları haritası</h1></div></div>' +
       '<div id="hwrap" class="hwrap"><div class="htool">' +
       '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><div class="park-picker" id="hPicker"><div class="park-picker-field"><input id="hPark" class="fld" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hParkL" placeholder="Park arayın veya listeden seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><button type="button" class="park-picker-toggle" id="hParkOpen" aria-label="Bütün orman parklarını göster" aria-expanded="false" aria-controls="hParkL">⌄</button></div><div id="hParkL" class="park-options" role="listbox" aria-label="Orman parkları" hidden></div></div>' +
       '<button class="btn sm" data-a="hTum">Tüm parklar</button></div></div>' +
       '<div class="hsel hq"><label for="hQ">Tesis ara</label><input id="hQ" class="fld" type="search" placeholder="Ad, plan kodu ya da tür" value="' + esc(F.q) + '"></div>' +
+      '<button class="btn sm hfbtn" data-a="hFiltre" aria-expanded="' + (F.acik ? 'true' : 'false') + '" aria-controls="hfil">Filtreler</button></div>' +
+      '<div class="hmap-preferences"><div class="hmode" role="group" aria-label="Harita katmanı">' +
+      [['','Tesisler'],['bolme','Bölme'],['bolmecik','Meşcere']].map(([id,label]) => '<button type="button" class="btn sm" data-a="hKatmanSec" data-v="' + id + '" aria-pressed="' + String(id === (S.hAmenajmanAcik ? S.hAmenajmanTur || '' : '')) + '">' + label + '</button>').join('') +
+      '</div><button type="button" class="btn sm" data-a="hSaha" aria-pressed="false">' + SVG.kon + '<span>Saha incelemesi</span></button></div>' +
+      '<details class="hmap-tools"><summary>Harita araçları</summary><div class="hquick"><label for="hGeom">Geometri <select class="fld" id="hGeom"><option value="">Tümü</option>' + Object.entries(H_GEOMETRI).map(([k, label]) => '<option value="' + k + '"' + (F.g === k ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label>' +
       '<button class="btn sm hfclr" data-a="hFiltreSifirla">Filtreleri temizle</button>' +
-      '<button class="btn sm hfbtn" data-a="hFiltre" aria-expanded="' + (F.acik ? 'true' : 'false') + '" aria-controls="hfil">Filtre ve katmanlar</button></div>' +
-      '<div class="hquick"><button type="button" class="btn sm" data-a="hSaha" aria-pressed="false">' + SVG.kon + '<span>Saha incelemesi</span></button><label for="hGeom">Geometri <select class="fld" id="hGeom"><option value="">Tümü</option>' + Object.entries(H_GEOMETRI).map(([k, label]) => '<option value="' + k + '"' + (F.g === k ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label>' +
       '<button type="button" class="btn sm" data-a="hTesisSigdir" disabled>Çizimleri sığdır</button>' +
       '<button type="button" class="btn sm ' + (yetki('duzenle') ? 'pri' : '') + '" data-a="hTesisEkle" aria-expanded="false" aria-controls="hEditor" disabled>' +
-      (yetki('duzenle') ? 'Tesis ekle' : 'Tesis eklemek için giriş') + '</button></div>' +
+      (yetki('duzenle') ? 'Tesis ekle' : 'Tesis eklemek için giriş') + '</button></div></details>' +
       '<div id="hEditor" class="heditor panel" hidden></div>' +
       '<p id="hSonuc" class="hresult" role="status" aria-live="polite"></p><div id="hfil" class="hfil"' + (F.acik ? '' : ' hidden') + '></div>' +
       '<div class="hgrid"><div class="hmapw"><div id="hmap" class="hmap"><div class="empty"><span class="spin"></span> Harita yükleniyor…</div></div></div><div class="hside" id="hside"></div></div></div>';
@@ -1564,7 +1584,10 @@
     const h = p.harita || {}, g = (S.gyp && S.gyp.parklar[p.kisa]) || { f: [], kaynak: [], planlar: [], not: [] }, k = alanKontrol(p), dn = sonDenetim(p.kisa);
     const say = {}; hOzellik().filter(o => planGorunur(o) && hCizilebilir(o.f)).forEach((o) => { say[o.f.d] = (say[o.f.d] || 0) + 1; });
     el.innerHTML = '<section class="panel hps"><h3>' + esc(p.ad || p.kisa) + '</h3>' +
-      kv('Çizim kapsamı', esc(hKapsamMetni(g))) + kv('Konum', esc([p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · '))) + kv('İşletmeci', esc(p.isletmeci || p.durum || '')) +
+      '<p class="hnote">' + esc(hKapsamMetni(g)) + '</p>' +
+      '<div class="hbtns"><a class="btn sm" href="#/bilgi?p=' + encodeURIComponent(p.kisa) + '">Bilgi notu</a><a class="btn sm" href="#/park?p=' + encodeURIComponent(p.kisa) + '">Park dosyası</a></div>' +
+      '<details class="hmeta"><summary>Sınır ve kaynak bilgisi</summary>' +
+      kv('Konum', esc([p.ilce, p.mahalle, p.mevki].filter(Boolean).join(' · '))) + kv('İşletmeci', esc(p.isletmeci || p.durum || '')) +
       kv('Sözleşme', p.soz_bas ? fd(p.soz_bas) + ' – ' + fd(p.soz_bit) : '') +
       (h.onay_tarihi || h.onay ? kv('Belgedeki onay', fd(h.onay_tarihi || h.onay)) : '') +
       (h.sinir_kapsam ? kv('Sınırın kapsamı', esc(h.sinir_kapsam)) : '') +
@@ -1575,10 +1598,10 @@
       (h.kontrol ? '<p class="hnote">' + esc(h.kontrol) + '</p>' : '') + (h.koordinat_url ? '<a href="' + esc(OPGeo.safeURL(h.koordinat_url)) + '" target="_blank" rel="noopener">Koordinat cetvelini aç</a>' : '') + '</details>' +
       (p.plan ? '<details class="hmeta"><summary>Planın kapsamı</summary><p class="hnote">' + esc(p.plan) + '</p></details>' : '') +
       (h.alt && h.alt.length ? '<details class="hmeta"><summary>Önceki sınır çizimleri (' + h.alt.length + ')</summary>' + h.alt.map((a) => { const url = OPGeo.safeURL(a.url || a.kaynak_url); return kv(esc(a.ad), haMetin(a.alan_ha)) + '<p class="hnote">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(a.kaynak || 'Kaynak belge') + '</a>' : esc(a.kaynak || BYOK)) + '</p>'; }).join('') + '</details>' : '') +
-      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/park?p=' + encodeURIComponent(p.kisa) + '" data-k="' + esc(p.kisa) + '" data-go="park">Park Bilgileri ve Sözleşme</a><a class="btn sm" href="#/islem">İşlem dosyası</a></div></section>' +
+      '<div class="hbtns">' + (OPGeo.safeURL(h.kaynak_url) ? '<a class="btn sm" href="' + esc(OPGeo.safeURL(h.kaynak_url)) + '" target="_blank" rel="noopener">Kaynak belge</a>' : '') + '<button class="btn sm" data-a="hSigdir">Sınıra sığdır</button><button class="btn sm" data-a="kmlIndir" data-k="' + esc(p.kisa) + '">KML indir</button><button class="btn sm" data-a="kmzIndir" data-k="' + esc(p.kisa) + '">KMZ indir</button><button class="btn sm" data-a="hPaylas" data-id="">Bağlantıyı paylaş</button><a class="btn sm" href="#/islem?p=' + encodeURIComponent(p.kisa) + '">İşlem dosyası</a></div></details></section>' +
       hAmenajmanPanel() + hPaftaPanel(p) + '<section class="panel"><h3>Tesis envanteri <small id="henvN"></small></h3>' + (Object.keys(say).length ? '<div class="hleg2">' + Object.keys(DUR).filter((d) => say[d]).map((d) => '<span><i style="background:' + DUR[d][1] + '"></i>' + esc(DUR[d][0]) + ' <b>' + say[d] + '</b></span>').join('') + '</div>' : '') +
-      '<div id="henv"></div></section>' + hPlanPanel(p, g) + kaynakPanel(p) +
-      hDenetimPanel(p, g, dn) + hDogrulamaPanel(p, g) +
+      '<div id="henv"></div></section><details class="panel hmap-more"><summary>Plan sürümleri, denetim ve eksikler</summary>' + hPlanPanel(p, g) + kaynakPanel(p) +
+      hDenetimPanel(p, g, dn) + hDogrulamaPanel(p, g) + '</details>' +
       '<section class="panel duz-only"><details><summary>Veri güncelleme</summary><p class="muted" style="font-size:13px;line-height:1.45">Yeni onaylı plan ya da revizyon geldiğinde Netcad’den KML/KMZ çıktısını yükleyin. Önceki çizimler silinmez; “Plan ve revizyonlar” listesinde ayrı katman olarak durur, istenirse kaldırılır.</p>' +
       '<div class="hbtns"><button class="btn sm pri" data-a="haritaYukle">Koordinat / KML yükle</button>' + (p.harita ? '<button class="btn sm red" data-a="haritaSil">Sınırı sil</button>' : '') + '</div></details></section>';
     hAmenajmanKur(p); hEnvCiz();
@@ -3159,16 +3182,23 @@
   // Yerel dizin: park, sözleşme, tahakkuk, alacak, muhasebe, harita tesisleri, Tebliğ, denetim, defter, yazışma.
   // Veri cihazda kalır. Yapay zekâ (Claude) isteğe bağlıdır; yalnız seçilen alıntılar gönderilir.
   const AI_MODEL = 'claude-opus-5-5';
-  const sorKey = () => [S.sha, S.gypS, !!S.ekB, S.rapor, S.veri.parks.length].join('|');
+  const sorKey = () => [S.sha, S.gypS, !!(S.gyp && !S.gyp.hata), !!S.ekB, !!S._amOzet, S.rapor, S.veri.parks.length].join('|');
   async function sorDizin(tam = true) {
-    if (S.sorDz && S.sorKeyV === sorKey() && (!tam || S.sorTam)) return S.sorDz;
-    if (tam) await Promise.allSettled([gypAl(), ekPaket()]);
+    const kaynaklar = Array.isArray(tam) ? tam : tam ? ['harita', 'teblig', 'amenajman'] : [];
+    await Promise.allSettled(kaynaklar.map((ad) => {
+      if (ad === 'harita') return gypAl();
+      if (ad === 'teblig') return ekPaket();
+      return amenajmanAc('ozet').then((index) => { S._amOzet = index; });
+    }));
+    if (S.sorDz && S.sorKeyV === sorKey()) return S.sorDz;
     const ctx = { parks: S.veri.parks, rapor: S.rapor, al: S.al, muhasebe: S.veri.muhasebe, teblig: S.ekB && S.ekB.teblig, gyp: S.gyp && !S.gyp.hata ? S.gyp : null, durumlar: S.gyp && S.gyp.durumlar,
+      amenajman: S._amOzet && { donem: S._amOzet.donem, seflikler: S._amOzet.seflikler, parklar: Object.fromEntries(
+        S.veri.parks.map(p => [p.kisa, window.OPAmenajman?.kesismeler(S._amOzet, p)])) },
       tufe: S.tufe, denetim: S.veri.denetim, defter: S.veri.defter, takip: S.veri.takip, planRev: S.veri.plan, ekler: Object.entries(EKAD), belgeliBorclar: S.belgeliBorclar,
       kurum: S.veri.kurum, sefler: (window.EK && EK.yetkili) ? EK.yetkili(S.veri.kurum).sefler : {}, yetkili: (window.EK && EK.yetkili) ? EK.yetkili(S.veri.kurum) : null, gzOran: (S.oran.gz && S.oran.gz.oranlar) || [], ekKira: S.veri.ek_kira, fisKalemleri: E.tahakkukFisKalemleri,
       planAl: (Y, p) => { S.plan[Y] = S.plan[Y] || {}; if (!S.plan[Y][p.kisa]) S.plan[Y][p.kisa] = parkTahakkuk(p, Y); return S.plan[Y][p.kisa]; },
       yilbasiAl: (Y, p) => E.yilbasiKira(p, kiraOranlari(Y), Y, Y + '-01-02', { veri: S.veri, esl: S.esl }) };
-    S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey(); S.sorTam = tam;
+    S.sorDz = SOR.dizin(ctx); S.sorKeyV = sorKey();
     return S.sorDz;
   }
   const SOR_ORNEK = ['Tayakadın 2027 kira ne kadar olacak?', 'Borcu olan parklar', 'Kayabaşı’nda kaç kameriye var?', 'Hangi parklarda WC var?', 'Md. 32 ne diyor?', 'Kesin teminat oranı nedir?', 'Boğazköy işletmecisi ve telefonu', 'Sözleşmesi 2 yıl içinde bitecek parklar', 'Aralık 2025 TÜFE', 'Sözleşme devri şartları'];
@@ -3257,7 +3287,7 @@
     const parca = Object.entries(g).map(([sef, l]) => sef + ' Şefliğinin ' + l.sort((x, y) => y[1] - x[1]).slice(0, 10).map(([no, a]) => no + ' (%' + (100 * a / row.alan_m2).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ')').join(', ') + (l.length > 10 ? ' ve ' + (l.length - 10) + ' bölme daha' : '') + ' numaralı bölmeleri');
     return (o.donem || '2024–2043') + ' dönemi amenajman planı sayısal haritasına göre park sınırı ' + parca.join('; ') + ' ile kesişmektedir.';
   }
-  function bnAmSatir(p) { const o = S._amOzet, row = o && o.parklar && Object.hasOwn(o.parklar, p.kisa) ? o.parklar[p.kisa] : null; return row && row.alan_m2 && window.OPAmenajman && OPAmenajman.ayniSinir(row, p.harita) ? row : null; }
+  const bnAmSatir = (p) => window.OPAmenajman?.kesismeler(S._amOzet, p);
   function bnAmBolme(p) { const r = bnAmSatir(p); return r ? [...new Set(r.bolmeler.slice().sort((a, b) => b[2] - a[2]).map((x) => x[1]))].join(', ') + ' (2024–2043 planı)' : ''; }
   function bnAmMescere(p) { const r = bnAmSatir(p); if (!r) return ''; const t = {}; r.bolmecikler.forEach((x) => { const k = x[3] && x[3] !== 'None' ? x[3] : null; if (k) t[k] = (t[k] || 0) + x[4]; }); const l = Object.entries(t).sort((a, b) => b[1] - a[1]); return l.length ? l.slice(0, 6).map((x) => x[0]).join(', ') + (l.length > 6 ? ' …' : '') + ' (2024–2043 planı)' : ''; }
   function bnDegerlendirme(p) {
@@ -3311,37 +3341,58 @@
   const bnSakla = (k) => { if (!S.yerelPaket) { try { ls.set(bnAnahtar(k), JSON.stringify(S.bn[k])); } catch (e) {} } };
   SAYFA.bilgi = function () {
     const p = S.pBy[S.park], d = bnDurum(p.kisa), gecmis = p.bilgi_notlari || [];
-    return mpick() + '<div class="pagehead"><div><h1>Bilgi Notu · ' + esc(p.kisa) + '</h1><p>Makam için orman parkı bilgi notu. Şablon biçimi korunur; Saha Bilgileri ve bölümler park kayıtlarından doldurulur. Metni düzenleyip Word veya PDF olarak alın.</p></div></div>' +
-      '<section class="panel bn"><div class="f"><label for="bnKonu">Konu</label><input class="fld" id="bnKonu" value="' + esc(d.konu || '') + '" placeholder="Örn: Sınır genişletme talebi ve 2. Revize Gelişim ve Yönetim Planı"></div>' +
+    return mpick() + '<div class="pagehead"><div><h1>Bilgi notu · ' + esc(p.kisa) + '</h1></div></div>' +
+      '<section class="panel bn"><div class="chiprow"><button class="btn pri" data-a="bnWord">Word indir</button><button class="btn" data-a="bnPdf">Yazdır / PDF</button><button class="btn" data-a="bnOnizle">Belgeyi önizle</button><button class="btn" data-a="bnHaritaOnizle">Haritaları oluştur</button></div>' +
+      '<div id="bnHaritaGrid" aria-live="polite"></div><div class="f"><label for="bnKonu">Konu</label><input class="fld" id="bnKonu" value="' + esc(d.konu || '') + '" placeholder="Konu"></div><details open><summary>Bilgi notu metni</summary>' +
       '<div class="chiprow" style="margin:6px 0 12px"><button class="btn sm" data-a="bnYenile">Kayıtlardan yeniden doldur</button><button class="btn sm" data-a="bnAi">Yapay zekâ ile yaz</button><button class="btn sm" data-a="bnBolumEkle">Bölüm ekle</button>' + (gecmis.length ? '<button class="btn sm" data-a="bnGecmis">Önceki bilgi notları (' + gecmis.length + ')</button>' : '') + '</div><div id="bnAiD"></div>' +
       d.bolumler.map((b, i) => '<div class="bn-b"><div class="bn-bh"><input class="fld" data-bn="b" data-i="' + i + '" value="' + esc(b.baslik) + '" aria-label="Bölüm başlığı"><button class="btn sm" data-a="bnBolumSil" data-i="' + i + '" aria-label="Bölümü sil">Sil</button></div><textarea class="fld" data-bn="m" data-i="' + i + '" rows="' + Math.max(3, Math.min(12, Math.ceil((b.metin || '').length / 95) + (b.metin || '').split('\n').length)) + '" placeholder="Paragrafları boş satırla ayırın.">' + esc(b.metin || '') + '</textarea></div>').join('') +
-      '<p class="muted" style="font-size:12.5px">Meşcere ve uydu görselleri seçili parkın sayısal sınırıyla hazırlanır. Belgeli kadastro ve memleket paftaları kaynak bilgisiyle eklenir.</p>' +
-      '<div class="chiprow"><button class="btn" data-a="bnOnizle">Önizle</button><button class="btn" data-a="bnWord">Word indir</button><button class="btn pri" data-a="bnPdf">Yazdır / PDF</button></div></section>' +
+      '</details></section>' +
       '<div id="bnOnizle" class="ekalan" style="margin-top:14px"></div>';
   };
   AFTER.bilgi = () => {
     const k = S.park, d = bnDurum(k);
     const kon = $('#bnKonu'); if (kon) kon.oninput = () => { d.konu = kon.value; bnSakla(k); };
-    if (!S._amOzet && typeof amenajmanAc === 'function') amenajmanAc('ozet').then((o) => { S._amOzet = o; if (d.oto && !d.am && S.page === 'bilgi' && S.park === k) { d.am = true; d.bolumler = bnTaslak(S.pBy[k]); sayfaCiz(); } }).catch(() => {});
+    if (!S._amOzet && typeof amenajmanAc === 'function') amenajmanAc('ozet').then((o) => { S._amOzet = o; if (d.oto && !d.am && S.page === 'bilgi' && S.park === k) { d.am = true; d.bolumler = bnTaslak(S.pBy[k]); if (!$('#bnHaritaGrid')?.hasChildNodes()) sayfaCiz(); } }).catch(() => {});
     document.querySelectorAll('[data-bn]').forEach((el) => { el.oninput = () => { const b = d.bolumler[+el.dataset.i]; if (!b) return; d.oto = false; if (el.dataset.bn === 'b') b.baslik = el.value; else b.metin = el.value; bnSakla(k); }; });
   };
   AKSIYON.bnYenile = () => { if (!confirm('Bölümler park kayıtlarından yeniden doldurulacak; elle yazdıklarınız silinir. Devam edilsin mi?')) return; const d = bnDurum(S.park); d.bolumler = bnTaslak(S.pBy[S.park]); bnSakla(S.park); sayfaCiz(); };
   AKSIYON.bnBolumEkle = () => { const d = bnDurum(S.park); d.bolumler.splice(Math.max(0, d.bolumler.length - 1), 0, { baslik: 'Yeni bölüm', metin: '' }); bnSakla(S.park); sayfaCiz(); };
   AKSIYON.bnBolumSil = (t) => { const d = bnDurum(S.park); d.bolumler.splice(+t.dataset.i, 1); bnSakla(S.park); sayfaCiz(); };
-  async function bnGorseller(p) {
-    const model = OPBilgiNotu.haritaModel(), row = bnAmSatir(p), stand = { donem:S._amOzet?.donem, features:[] };
+  async function bnHaritaModel(p) {
+    const [index, harita] = await Promise.all([amenajmanAc('ozet').catch(() => null), gypAl()]);
+    const model = OPBilgiNotu.haritaModel(), row = window.OPAmenajman?.kesismeler(index, p), stand = { donem:index?.donem, features:[] };
     if (row?.bolmecikler.length) {
-      const key = (office, bolme, part) => JSON.stringify([office, bolme, part]);
-      const secili = new Set(row.bolmecikler.map(([office, bolme, part]) => key(office, bolme, part)));
       const ofisler = [...new Set(row.bolmecikler.map(([office]) => office))];
-      const dosyalar = await Promise.allSettled(ofisler.map((office) => amenajmanAc(S._amOzet.seflikler[office].dosya)));
-      stand.features = dosyalar.flatMap((x) => x.status === 'fulfilled' ? x.value.features.filter((f) => f.properties.katman === 'bolmecik' &&
-        secili.has(key(x.value.kaynak.seflik, f.properties.bolme, f.properties.bolmecik))) : []);
+      const dosyalar = await Promise.allSettled(ofisler.map((office) => amenajmanAc(index.seflikler[office].dosya)));
+      stand.features = dosyalar.flatMap(x => x.status === 'fulfilled' ? OPAmenajman.katmanSec(x.value, 'bolmecik', row) : []);
     }
+    const plan = harita.parklar[p.kisa];
+    const facilities = plan?.f.filter(f => hCizilebilir(f) && !['A','K'].includes(f.d) &&
+      plOf(plan,f).durum !== 'arsiv' && plOf(plan,f).durum !== 'bilgi') || [];
     const boundary = OPGeo.boundaries(p.harita).filter((ring) => !OPGeo.validate(ring).length);
-    await OPBilgiNotu.haritalar(window, model, { park:p, boundary, stand });
-    const keys = ['mescere_map','kadastro_map','uydu_map','topo_map'];
-    const gorseller = await Promise.all(keys.map((key) => OPBilgiNotu.jpeg(window, model, key)));
+    await OPBilgiNotu.haritalar(window, model, { park:p, boundary, stand, facilities });
+    return model;
+  }
+  const BN_HARITA_KARTLARI = ['mescere_map','kadastro_map','uydu_map','topo_map'];
+  AKSIYON.bnHaritaOnizle = async (button) => {
+    const grid = $('#bnHaritaGrid'), p = S.pBy[S.park];
+    if (!grid || !p) return;
+    button.disabled = true; grid.textContent = 'Haritalar hazırlanıyor…';
+    try {
+      const model = await bnHaritaModel(p);
+      if (!grid.isConnected) return;
+      grid.innerHTML = '<div class="bn-map-grid">' + BN_HARITA_KARTLARI.map(key => {
+        const title = esc(model.values[key + '_header']), image = model.images[key], url = model.links[key];
+        return '<figure>' + (image ? '<img alt="' + title + '" src="data:image/png;base64,' + image + '">' : '') +
+          '<figcaption><strong>' + title + '</strong><br>' + esc(model.values[key + '_note']) +
+          (url ? '<br><a href="' + esc(url) + '" target="_blank" rel="noopener">Kaynak pafta</a>' : '') + '</figcaption></figure>';
+      }).join('') + '</div>';
+    } catch (e) { if (grid.isConnected) grid.textContent = 'Haritalar hazırlanamadı. Yeniden deneyin.'; }
+    finally { button.disabled = false; }
+  };
+  async function bnGorseller(p) {
+    const model = await bnHaritaModel(p);
+    const gorseller = await Promise.all(BN_HARITA_KARTLARI.map(key => OPBilgiNotu.jpeg(window, model, key)));
     return { model, gorseller:Object.fromEntries(gorseller.map((b,i) => ['word/media/image' + (i+3) + '.jpeg', b])) };
   }
   async function bnUret(p, d) {
@@ -3355,6 +3406,7 @@
     const bolumler = d.bolumler.map((b) => ({ baslik: OPBilgiNotu.adTemizle(b.baslik).replace(/:\s*$/, ''), paragraflar: OPBilgiNotu.adTemizle(b.metin).split(/\n\s*\n|\r\n\s*\r\n/).map((x) => x.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean) }));
     const { model, gorseller } = await bnGorseller(p);
     F.TOPO_BASLIK = model.values.topo_map_header;
+    F.KADASTRO_BASLIK = model.values.kadastro_map_header;
     return EK.bilgiNotu(ek.docx.BN, formAdlariniTemizle('BN', F), bolumler, gorseller);
   }
   function bnKaydet(p, d) {
@@ -3652,7 +3704,7 @@
     return out.join('');
   }
   // Ortak yapay zekâ akışı (Sor sayfası ve sohbet kutusu). gecmis: önceki soru-cevap metinleri.
-  async function aiAkis(r, m, gecmis) {
+  async function aiAkis(r, m, gecmis, dizin = S.sorDz) {
     const key = sorAnahtar(); if (!key) return false;
     if (S._aiStream) { try { S._aiStream.abort(); } catch (e) {} S._aiStream = null; }
     m.innerHTML = '<span class="spin"></span> Kayıtlar okunuyor…';
@@ -3662,7 +3714,7 @@
       const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
       const msgs = [];
       (gecmis || []).slice(-3).forEach((x) => { msgs.push({ role: 'user', content: x.q }); msgs.push({ role: 'assistant', content: x.a || '(Sitenin doğrudan cevabı gösterildi.)' }); });
-      msgs.push({ role: 'user', content: '<alintilar>\n' + SOR.baglam(S.sorDz, r) + '\n</alintilar>\n\nSoru: ' + r.soru + (r.devraldi ? '\n(Not: soru önceki konuşmadaki ' + r.parks.join(', ') + ' parkıyla ilgili kabul edildi.)' : '') });
+      msgs.push({ role: 'user', content: '<alintilar>\n' + SOR.baglam(dizin, r) + '\n</alintilar>\n\nSoru: ' + r.soru + (r.devraldi ? '\n(Not: soru önceki konuşmadaki ' + r.parks.join(', ') + ' parkıyla ilgili kabul edildi.)' : '') });
       let metin = '', son = null, durum = '';
       const ciz = () => {
         frame = null; if (!m.isConnected) return;
@@ -3685,7 +3737,7 @@
           const girdi = b.input && typeof b.input === 'object' ? b.input : {};
           durum = b.name === 'site_hesabi' ? 'Site hesabına bakılıyor: ' + (girdi.soru || '') : 'Kayıtlarda aranıyor: ' + (girdi.sorgu || '');
           if (!metin && m.isConnected) m.innerHTML = '<span class="spin"></span> ' + esc(durum);
-          let cikti; try { cikti = SOR.aracCalistir(S.sorDz, b.name, girdi); } catch (er) { cikti = 'Araç hatası: ' + er.message; }
+          let cikti; try { cikti = SOR.aracCalistir(dizin, b.name, girdi); } catch (er) { cikti = 'Araç hatası: ' + er.message; }
           sonuclar.push({ type: 'tool_result', tool_use_id: b.id, content: String(cikti).slice(0, 24000) });
         }
         msgs.push({ role: 'user', content: sonuclar });
@@ -3721,6 +3773,7 @@
     ['Borç ve tahsilat', 'Güncel borç ve tahsilat durumu nedir?'],
     ['Kira ve fiş', 'Bu yılın kira tahakkuk fişini aç'],
     ['Tesisler', 'Plandaki tesislerin listesini göster'],
+    ['Meşcere', 'Meşcere ve bölme kayıtlarını göster'],
     ['Bilgi notu', 'Bilgi notunu aç'],
     ['Harita', 'Haritayı aç'],
     ['Tebliğ', 'Madde 32 ne diyor?']
@@ -3753,7 +3806,7 @@
     const kartlar = r.cevaplar.map((c) => sorKart(c)).join('');
     const ilgili = r.sonuclar.slice(0, r.cevaplar.length ? 3 : 6);
     return (r.devraldi ? '<p class="muted sohbet-devam">' + esc(r.parks.join(', ')) + ' için cevaplıyorum (önceki sorudan).</p>' : '') +
-      (kartlar || '<p>Bunu doğrudan hesaplayamadım. En yakın kayıtlar aşağıda' + (sorAnahtar() ? '; yapay zekâ cevabı da geliyor.' : '. Daha ayrıntılı cevap için dişli düğmesinden yapay zekâyı açabilirsiniz.') + '</p>') +
+      (kartlar || '<p>Doğrudan cevap bulunamadı. Park adını, tesis kodunu veya belge tarihini ekleyerek yeniden sorun.</p>') +
       (ilgili.length ? '<details class="sohbet-ilgili"' + (r.cevaplar.length ? '' : ' open') + '><summary>İlgili kayıtlar (' + r.sonuclar.length + ')</summary><ol class="sor-l">' + ilgili.map((d) => '<li>' + (d.mdLink ? '<a href="#/teblig" data-a="sorMd" data-v="' + esc(d.mdLink) + '">' : '<a href="' + esc(d.link) + '">') + '<span class="badge b-gray">' + esc(d.tur) + '</span><b>' + esc(d.baslik) + '</b><small>' + esc(String(d.ozet || '').slice(0, 160)) + '</small></a></li>').join('') + '</ol><a class="btn sm" href="#/sor?q=' + encodeURIComponent(r.soru) + '">Tümünü Sor sayfasında aç</a></details>' : '');
   }
   function sohbetCiz() {
@@ -3774,10 +3827,16 @@
     sohbetDurum(true);
     try {
       const soru = scoped ? scope + ' ' + q : q;
+      const kaynaklar = [];
       const dogrudan = /\b(?:bilgi notunu|haritayi ac|haritada goster|onceki degerleri)\b/.test(raw);
-      const hizli = dogrudan || /borc|tahsil|tahakkuk|kira|isletmeci|sozlesme/.test(raw) && !/tesis|plan|harita|madde|teblig|md\b|saha|sinir|nasil|nedir|fesih/.test(raw);
-      let r = SOR.sor(await sorDizin(!hizli), soru, prior);
-      if (hizli && !r.cevaplar.length) r = SOR.sor(await sorDizin(), soru, prior);
+      if (/amenajman|mescere|bolmecik|\bbolme/.test(raw)) kaynaklar.push('amenajman');
+      if (/tesis|kameriye|kamelya|bufe|\bwc\b|otopark|cocuk oyun|saha|piknik|patika|\b[a-z]{1,4}-?\d{1,3}\b/.test(raw)) kaynaklar.push('harita');
+      if (/madde|teblig|\bmd\b|\bek\b|teminat|nasil|nedir|devir|fesih|tahliye|kural|kosul|sart/.test(raw)) kaynaklar.push('teblig');
+      let dz = await sorDizin(kaynaklar), r = SOR.sor(dz, soru, prior);
+      if (!r.cevaplar.some(c => !c.genel) && !dogrudan) {
+        dz = await sorDizin(true);
+        r = SOR.sor(dz, soru, prior);
+      }
       if (L !== S.sohbet) return;
       const context = { parks: r.parks, yil: r.yil };
       S.sohbetOnceki = r.parks.length ? context : (prior && !r.cevaplar.length ? prior : context);
@@ -3786,11 +3845,16 @@
       const kayit = { q, html, context: S.sohbetOnceki }; L.push(kayit);
       if (L.length > 40) { L.shift(); k.firstElementChild?.remove(); k.firstElementChild?.remove(); }
       sohbetSakla(); k.scrollTop = k.scrollHeight;
-      if (!dogrudan && sorAnahtar() && ls.get('op_ai_oto') !== '0') {
+      if (!dogrudan && sorAnahtar() && ls.get('op_ai_oto') !== '0' && !S.sohbetAiPending) {
         el.insertAdjacentHTML('beforeend', '<div class="sohbet-ai"><b class="sohbet-ai-b">Yapay zekâ</b><div class="sor-ai-m"></div></div>');
         const gecmis = L.slice(0, -1).map((x) => ({ q: x.q, a: x.aiText || '' }));
-        const m = el.querySelector('.sohbet-ai .sor-ai-m'); const t = await aiAkis(r, m, gecmis);
-        if (t) { kayit.ai = true; kayit.aiText = t; kayit.aiHtml = m.innerHTML; sohbetSakla(); }
+        const m = el.querySelector('.sohbet-ai .sor-ai-m');
+        S.sohbetAiPending = true;
+        void aiAkis(r, m, gecmis, dz).then((t) => {
+          if (t && L === S.sohbet && L.includes(kayit)) {
+            kayit.ai = true; kayit.aiText = t; kayit.aiHtml = m.innerHTML; sohbetSakla();
+          }
+        }).finally(() => { S.sohbetAiPending = false; });
       }
     } catch (e) { el.innerHTML = '<p class="red-t">Cevap hazırlanamadı: ' + esc(e.message) + '</p>'; }
     finally { sohbetDurum(false); }

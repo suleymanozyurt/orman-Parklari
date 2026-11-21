@@ -225,7 +225,7 @@
     const ctx = dz.ctx, ns = norm(soru);
     let parks = parkBul(soru, ctx.parks || []), devraldi = false;
     const devamUygun = !/(nasil|nedir|ne demek|madde|devri|devir|sart|kosul|kural|fesih|feshi|tahliye|alt kira|hesaplanir|yapilabilir|mevzuat|\bmd\b|teblig|tufe|gecikme zammi orani|yevmiye|\bek\s*-?\d|merhaba|selam|tesekkur|hangi|\btum\b|butun|parklar|\ben |\bsef|mudur)/.test(ns) &&
-      (DEVAM.test(ns) || /^(?:bilgi notu(?:nu)?|haritayi|onceki degerleri)\b/.test(ns) || (kelimeler(soru).length <= 3 && /kira|sozlesme|teminat|guvence|depozito|isletmeci|alan|borc|tahakkuk|taksit|vade|plan|tesis|denetim|yazi|ihale|durum|20\d\d|telefon|adres|odeme/.test(ns)));
+      (DEVAM.test(ns) || /^(?:bilgi notu(?:nu)?|haritayi|onceki degerleri)\b/.test(ns) || (kelimeler(soru).length <= 3 && /kira|sozlesme|teminat|guvence|depozito|isletmeci|alan|borc|tahakkuk|taksit|vade|plan|mescere|amenajman|bolme|tesis|denetim|yazi|ihale|durum|20\d\d|telefon|adres|odeme/.test(ns)));
     if (!parks.length && onceki && onceki.parks && onceki.parks.length && devamUygun) { parks = (ctx.parks || []).filter((p) => onceki.parks.includes(p.kisa)); devraldi = parks.length > 0; }
     const q = parks.reduce((s, p) => s.split(norm(p.kisa)).join(' '), ns), md = maddeBul(soru);
     let Y = yilBul(soru, ctx.rapor); if (!Y && devraldi && onceki.yil) Y = onceki.yil;
@@ -239,6 +239,37 @@
     if (/\b(?:haritayi ac|haritada goster|haritada incele)\b/.test(q)) {
       if (parks.length) cevaplar.push(...P((p) => ({ baslik: p.kisa + ' · Harita', metin: 'Park sınırını ve belgeli tesis katmanlarını açar.', link: '#/harita?p=' + encodeURIComponent(p.kisa), linkAd: 'Parkı haritada aç' })));
       else cevaplar.push({ baslik: 'Orman parkları haritası', link: '#/harita', linkAd: 'Haritayı aç' });
+    }
+    if (/amenajman|mescere|bolmecik|\bbolme/.test(q)) {
+      const data = ctx.amenajman, type = /\bbolme\b/.test(q) && !/mescere|bolmecik/.test(q) ? 'bolme' : 'bolmecik';
+      const url = '#/harita?amenajman=' + type;
+      if (parks.length) cevaplar.push(...P((p) => {
+        const row = data?.parklar?.[p.kisa], link = url + '&p=' + encodeURIComponent(p.kisa);
+        if (!row) return { baslik: p.kisa + ' · Amenajman', metin: 'Güncel park sınırı için doğrulanmış sayısal kesişim bulunamadı.', link, linkAd: 'Haritada aç' };
+        const bolmeler = [...new Set(row.bolmeler.map(([, b]) => b))];
+        const tipler = [...new Set(row.bolmecikler.map(([, , , tip]) => tip).filter(tip => tip && tip !== 'None'))];
+        return { baslik: p.kisa + ' · Amenajman', satirlar: [['Dönem', data.donem], ['Bölmeler', bolmeler.join(', ') || '—'],
+          ['Bölmecik', String(row.bolmecikler.length)], ['Meşcere tipleri', tipler.join(', ') || '—']],
+          link, linkAd: 'Katmanı haritada aç', kaynak: 'Sayısal amenajman planı · park sınırı kesişimi' };
+      }));
+      else cevaplar.push({ baslik: 'Amenajman haritası', metin: 'Park adıyla birlikte sorun veya haritada bir park seçin.', link: url, linkAd: 'Katmanı haritada aç' });
+    }
+    const codes = new Set((q.match(/\b[a-z]{1,4}-?\d{1,3}\b/g) || []).map(code => code.replace('-', '')));
+    if (codes.size && ctx.gyp?.parklar) {
+      const yerler = [];
+      (parks.length ? parks : ctx.parks).forEach((p) => {
+        const g = ctx.gyp.parklar[p.kisa], planlar = new Map((g?.planlar || []).map(plan => [plan.id, plan]));
+        (g?.f || []).forEach((f) => {
+          const plan = planlar.get(f.p);
+          if (!f.id || f._geo?.length || f._repeat || ['A', 'K', 'Y'].includes(f.d) || ['arsiv', 'bilgi'].includes(plan?.durum)) return;
+          const adKodu = norm(f.ad || '').match(/^[a-z]{1,4}-?\d{1,3}\b/)?.[0];
+          const kod = [f.k, adKodu].find(value => codes.has(norm(value || '').replace(/[- ]/g, '')));
+          if (kod) yerler.push({ ad: [p.kisa, f.ad || kod + ' · ' + f.t].join(' · '),
+            alt: [plan?.ad, (ctx.durumlar || {})[f.d]].filter(Boolean).join(' · '),
+            link: '#/harita?p=' + encodeURIComponent(p.kisa) + '&t=' + encodeURIComponent(f.id) });
+        });
+      });
+      if (yerler.length) cevaplar.unshift({ baslik: 'Tesis kodu eşleşmeleri', yerler, kaynak: 'Tesis çizimleri ve plan kayıtları' });
     }
     if (/\b(?:onceki degerler|eski degerler|degisiklik gecmisi)/.test(q)) {
       if (parks.length) cevaplar.push(...P((p) => ({ baslik: p.kisa + ' · Önceki değerler', link: '#/park?p=' + encodeURIComponent(p.kisa) + '&gecmis=1', linkAd: 'Önceki değerleri aç' })));

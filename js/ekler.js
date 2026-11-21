@@ -552,6 +552,7 @@
       (k.baslik ? bas.replace('{{BASLIK}}', xmlEsc(k.baslik)) : '') + (k.paragraflar || []).filter((t) => String(t).trim()).map((t) => par.replace('{{PARAGRAF}}', xmlEsc(String(t).trim()))).join('')).join('');
     x = x.slice(0, a) + govde + x.slice(b + 10);
     if (F.TOPO_BASLIK === 'TOPOĞRAFİK GÖRÜNÜM') x = x.replace(/>MEMLEKET HARİTASI</g, '>' + F.TOPO_BASLIK + '<');
+    if (['PARK SINIRI', 'PARK SINIRI VE TESİSLER'].includes(F.KADASTRO_BASLIK)) x = x.replace(/>ORMAN KADASTRO HARİTASI</g, '>' + F.KADASTRO_BASLIK + '<');
     x = x.replace(/\{\{(\w+)\}\}/g, (m, k) => xmlEsc(F[k] != null ? F[k] : ''));
     zip.file('word/document.xml', x);
     const r = await zip.file('word/_rels/document.xml.rels').async('string');

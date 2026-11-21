@@ -68,7 +68,8 @@
     if (!ctx) throw Error('Harita yüzeyi oluşturulamadı.');
     const xy = (point) => { const [x,y] = mercator(point); return [(x - west) * W / (east - west), (north - y) * H / (north - south)]; };
     ctx.fillStyle = '#F1F4EB'; ctx.fillRect(0,0,W,H);
-    const ring = (points) => { points.forEach((point, i) => { const [x,y] = xy(point); if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.closePath(); };
+    const path = (points) => points.forEach((point, i) => { const [x,y] = xy(point); if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    const ring = (points) => { path(points); ctx.closePath(); };
     function polygon(rings, stroke, fill, width) {
       ctx.beginPath(); rings.forEach(ring);
       if (fill) { ctx.fillStyle = fill; ctx.fill('evenodd'); }
@@ -78,6 +79,18 @@
       ctx.font = '600 18px sans-serif'; ctx.textAlign = anchor; ctx.lineWidth = 4; ctx.strokeStyle = '#FFF';
       ctx.strokeText(value,x,y); ctx.fillStyle = '#162E27'; ctx.fillText(value,x,y);
     }
+    function facilities(features) {
+      for (const f of features) {
+        const c = f.d === 'P' || f.d === 'O' ? '#A66011' : '#24546B';
+        if (f.g === 'A') polygon([f.c, ...(f.holes || [])], c, c + '45', 2);
+        else if (f.g === 'L') {
+          ctx.beginPath(); path(f.c); ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke();
+        } else if (f.g === 'N') {
+          const [x,y] = xy(f.c);
+          ctx.beginPath(); ctx.arc(x,y,3.5,0,2*Math.PI); ctx.fillStyle = c; ctx.fill();
+        }
+      }
+    }
     function finish(boundary, attribution) {
       for (const b of boundary) {
         polygon([b.c, ...b.holes], '#FFF', '', 7);
@@ -85,10 +98,18 @@
       }
       label(adTemizle(park), 12, 24);
       label('K ↑', W - 12, 24, 'right');
+      const groundPerPixel = (east - west) * Math.cos(boundary[0].c[0][0] * Math.PI / 180) / W;
+      const target = 130 * groundPerPixel, order = 10 ** Math.floor(Math.log10(target));
+      const meters = ([5, 2, 1].find(n => n * order <= target) || 1) * order;
+      const x = W - 14 - meters / groundPerPixel;
+      ctx.beginPath(); ctx.moveTo(x,H-35); ctx.lineTo(W-14,H-35);
+      ctx.strokeStyle = '#FFF'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.strokeStyle = '#162E27'; ctx.lineWidth = 3; ctx.stroke();
+      label(quant(meters) + ' m', W - 14, H - 12, 'right');
       label(attribution, 12, H - 12);
       return canvas.toDataURL('image/png').split(',')[1];
     }
-    return { ctx, xy, polygon, label, finish };
+    return { ctx, xy, polygon, label, facilities, finish };
   }
   function raster(window, service, bbox) {
     const query = new URLSearchParams({ bbox:bbox.join(','), bboxSR:'3857', imageSR:'3857', size:W + ',' + H, format:'png', f:'image' });
@@ -101,7 +122,7 @@
       img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/' + service + '/MapServer/export?' + query;
     });
   }
-  async function haritalar(window, model, { park, boundary, stand, maps = park.bilgi_notu_haritalar || {} }) {
+  async function haritalar(window, model, { park, boundary, stand, facilities = [], maps = park.bilgi_notu_haritalar || {} }) {
     for (const [slot, image] of Object.entries(maps)) {
       if (!Object.hasOwn(model.values, slot + '_header') || !/^iVBORw0KGgo[A-Za-z0-9+/=]+$/.test(image.png || '')) continue;
       model.images[slot] = image.png;
@@ -110,6 +131,13 @@
     }
     const bbox = extent(boundary);
     if (!bbox) return;
+    if (!model.images.kadastro_map) {
+      const s = sheet(window, bbox, park.kisa);
+      s.facilities(facilities);
+      model.images.kadastro_map = s.finish(boundary, 'Parkın sayısal planı · kırmızı: sınır');
+      model.values.kadastro_map_header = facilities.length ? 'PARK SINIRI VE TESİSLER' : 'PARK SINIRI';
+      model.values.kadastro_map_note = facilities.length ? 'Mavi: kayıtlı çizim · turuncu: planlanan. Resmî kadastro paftası teyit gerekli.' : 'Tesis çizimi ve kadastro paftası teyit gerekli.';
+    }
     if (!model.images.mescere_map && stand?.features?.length) {
       const s = sheet(window, bbox, park.kisa);
       const renkler = ['#CADCAD','#C5DFF6','#D5E7C4','#E9D5AF','#D5D5EC','#EEE3BD','#BDDDCF','#DFCBDF'];
@@ -161,11 +189,13 @@
       ctx.drawImage(image,0,0,W,H);
     }
     const msg = model.values[slot + '_note'];
-    if (!data || model.links[slot]) {
+    if (!data || model.links[slot] || (slot === 'kadastro_map' && model.values.kadastro_map_header !== 'ORMAN KADASTRO HARİTASI')) {
       ctx.fillStyle = data ? 'rgba(255,255,255,.91)' : '#F0F4F1';
-      ctx.fillRect(0,data ? H-32 : H/2-24,W,data ? 32 : 48);
+      const fallback = data && !model.links[slot] && slot === 'kadastro_map';
+      const top = fallback ? 42 : data ? H-32 : H/2-24;
+      ctx.fillRect(0,top,W,data ? 32 : 48);
       ctx.textAlign = 'center'; ctx.font = '600 16px sans-serif'; ctx.fillStyle = '#253D34';
-      ctx.fillText(msg,W/2,data ? H-10 : H/2+6,W-32);
+      ctx.fillText(msg,W/2,top + (data ? 22 : 30),W-32);
     }
     return new Promise((resolve,reject) => c.toBlob((blob) => blob ? resolve(blob) : reject(Error('Harita resmi kaydedilemedi.')), 'image/jpeg', .94));
   }

@@ -343,6 +343,22 @@ body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .pafta-list figure{margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .pafta-list img{display:block;width:100%;height:auto}
 .pafta-list figcaption{padding:8px 10px;font-size:12px}
+.hmap-preferences{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:8px 0}
+.hmode{display:flex;gap:3px;background:var(--soft);padding:3px;border-radius:12px}
+.hmode .btn{min-height:38px;background:transparent;border-color:transparent}
+.hmode [aria-pressed="true"]{background:var(--paper);color:var(--pine);border-color:var(--line);font-weight:700}
+.hmap-tools>summary,.hmap-more>summary{cursor:pointer}
+.hmap-tools{font-size:13px;color:var(--mute)}
+.hmap-more>section{margin:10px 0 0;box-shadow:none}
+.bn-map-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}
+.bn-map-grid figure{margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.bn-map-grid img{display:block;width:100%;height:auto}
+.bn-map-grid figcaption{padding:8px 10px;font-size:13px}
+@media(max-width:600px){
+  .hmap-preferences{justify-content:flex-start}
+  .bn-map-grid{grid-template-columns:1fr}
+  body[data-page="harita"] #page>.module-menu{display:none}
+}
 @media print{
   @page bilgi-notu-dikey{size:A4 portrait;margin:0}
   @page bilgi-notu-yatay{size:A4 landscape;margin:0}
@@ -353,4 +369,9 @@ body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
   body.pr-bn section.dx.bn-yatay{page:bilgi-notu-yatay}
   body.pr-bn section.dx+section.dx{break-before:page}
   body.pr-bn .dx td{font-size:inherit;padding:0}
+}
+.hwrap.hfull .hmap-preferences,.hwrap.hfull .hmap-tools,.hwrap.hfull .hresult{display:none}
+@media(max-width:600px){
+  .hmode{flex:1 1 auto}
+  .hmode .btn{flex:1;min-height:42px}
 }

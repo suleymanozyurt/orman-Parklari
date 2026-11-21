@@ -6,6 +6,22 @@
       && JSON.stringify(ozet.sinir_holes) === JSON.stringify(harita.sinir_holes || []);
   }
 
+  function kesismeler(index, park) {
+    const row = park && index?.parklar?.[park.kisa];
+    return row?.alan_m2 && ayniSinir(row, park.harita) ? row : null;
+  }
+
+  function katmanSec(dataset, type, row) {
+    const group = dataset.features.filter(f => f.properties.katman === type);
+    if (!row) return group;
+    const office = dataset.kaynak.seflik;
+    const bolmecik = type === 'bolmecik';
+    const key = (bolme, index) => JSON.stringify(bolmecik ? [String(bolme), String(index)] : [String(bolme)]);
+    const names = new Set((bolmecik ? row.bolmecikler : row.bolmeler).filter(([name]) => name === office)
+      .map(([, bolme, part]) => key(bolme, part)));
+    return group.filter(({ properties }) => names.has(key(properties.bolme, properties.bolmecik)));
+  }
+
   const pct = (area, total) => (100 * area / total).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + '%';
   const hektar = (area) => (area / 10000).toLocaleString('tr-TR', { maximumFractionDigits: 3 }) + ' ha';
   const metin = (value) => value && value !== 'None' ? value : '—';
@@ -47,7 +63,7 @@
       '<small>2024–2043 meşcere haritası · Kaynak nesne ' + esc(p.nesne) + '</small></div>';
   }
 
-  const api = { ayniSinir, panel, popup };
+  const api = { ayniSinir, kesismeler, katmanSec, panel, popup };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.OPAmenajman = api;
 })(typeof window !== 'undefined' ? window : globalThis);

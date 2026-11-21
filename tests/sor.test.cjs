@@ -109,3 +109,26 @@ test('yapay zekâ araçları sitenin hesap motorunu ve kayıt aramasını çalı
   assert.match(SOR.aracCalistir(dz, 'kayit_ara', { sorgu: 'Tayakadın' }), /Tayakadın/);
   assert.equal(SOR.aracCalistir(dz, 'yok', {}), 'Bilinmeyen araç.');
 });
+
+
+test('amenajman answers use the park intersection and link to the requested layer', () => {
+  const dizin = SOR.dizin({ ...ctx, amenajman:{ donem:'2024–2043', parklar:{
+    'Tayakadın':{ bolmeler:[['Arnavutköy','38',100]], bolmecikler:[['Arnavutköy','38','1','Çfbc2',100]] }
+  }}});
+  const r = SOR.sor(dizin, 'Peki meşcere?', { parks:['Tayakadın'] }).cevaplar[0];
+  assert.deepEqual(r.satirlar, [['Dönem','2024–2043'],['Bölmeler','38'],['Bölmecik','1'],['Meşcere tipleri','Çfbc2']]);
+  assert.match(r.link,/amenajman=bolmecik/);
+  assert.match(SOR.sor(dizin,'Tayakadın bölme').cevaplar[0].link,/amenajman=bolme&/);
+  assert.match(SOR.sor(dizin,'Mimar Sinan meşcere').cevaplar[0].metin,/kesişim bulunamadı/);
+});
+
+test('exact plan codes open the matching geometry and omit archived copies', () => {
+  const modern = { id:'current-M65', p:'R2', k:'M', ad:'M65 – Personel binası', t:'Personel binası', d:'P' };
+  const former = { ...modern, id:'old-M65', p:'R1' };
+  const dizin = SOR.dizin({ ...ctx, gyp:{ parklar:{ 'Tayakadın':{
+    ...gyp.parklar.Tayakadın, f:[modern,former]
+  }}} });
+  const result = SOR.sor(dizin, 'Tayakadın M65 nerede?').cevaplar[0];
+  assert.match(result.yerler[0].link,/&t=current-M65$/);
+  assert.equal(result.yerler.length,1);
+});
