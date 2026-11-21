@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '61', date: '21.11.2026' };
+  const BUILD = { version: '62', date: '21.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -553,7 +553,7 @@
     const sel = $('#sSel'); if (sel) sel.value = S.park;
   }
   function sayfaCiz() {
-    if (S._hmap) { hTesisEditorKapat(); hKonumDurdur(); S._hmap.remove(); S._hmap = null; S._hIdx = null; }
+    if (S._hmap) { hSheetKapat(); hTesisEditorKapat(); hKonumDurdur(); S._hmap.remove(); S._hmap = null; S._hIdx = null; }
     baglamBaglantilari();
     const showPark = !['genel', 'harita', 'sor'].includes(S.page);
 
@@ -1620,16 +1620,23 @@
   function hSheetAc(o, ly) {
     let sh = $('#hsheet');
     if (!sh) { sh = document.createElement('section'); sh.id = 'hsheet'; sh.className = 'hsheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Tesis bilgisi'); ($('#app') || document.body).appendChild(sh); }
-    sh.innerHTML = '<div class="hsheet-tut" aria-hidden="true"></div><button type="button" class="hsheet-x" data-a="hSheetKapat" aria-label="Kapat">' + svg(IC.x || 'M18 6 6 18M6 6l12 12', 18, 2.2) + '</button>' + gypPopup(o.p, o.f);
-    sh.hidden = false; document.body.classList.add('hsheet-acik'); S._hSheetT = Date.now();
-    if (S._hSecili && S._hSecili !== ly && S._hSecili.setStyle) S._hSecili.setStyle({ weight: S._hSecili instanceof L.CircleMarker ? 1.4 : 1.2 });
-    if (ly && ly.setStyle) { ly.setStyle({ weight: 4 }); S._hSecili = ly; }
+    sh.innerHTML = '<div class="hsheet-bas"><span class="hsheet-tut" aria-hidden="true"></span><button type="button" class="hsheet-x" data-a="hSheetKapat" aria-label="Tesis bilgisini kapat">' + svg(IC.x, 18, 2.2) + '<span>Kapat</span></button></div>' + gypPopup(o.p, o.f);
+    sh.hidden = false; sh.scrollTop = 0; document.body.classList.add('hsheet-acik');
+    if (S._hSecili?.layer !== ly) {
+      hSecimCizgisiGeriAl();
+      if (ly?.setStyle) { S._hSecili = { layer: ly, weight: ly.options.weight }; ly.setStyle({ weight: 4 }); }
+    }
     S._hAcik = o.f.id;
     const m = S._hmap; if (m && ly) { const c = ly.getBounds ? ly.getBounds().getCenter() : ly.getLatLng(); const pt = m.latLngToContainerPoint(c), h = m.getSize().y; if (pt.y > h * 0.45) m.panBy([0, pt.y - h * 0.3], { animate: true }); }
   }
+  function hSecimCizgisiGeriAl() {
+    if (S._hSecili) S._hSecili.layer.setStyle({ weight: S._hSecili.weight });
+    S._hSecili = null;
+  }
   function hSheetKapat() {
+    clearTimeout(S._hGitTimer);
     const sh = $('#hsheet'); if (sh) sh.hidden = true; document.body.classList.remove('hsheet-acik');
-    if (S._hSecili && S._hSecili.setStyle) S._hSecili.setStyle({ weight: S._hSecili instanceof L.CircleMarker ? 1.4 : 1.2 }); S._hSecili = null; S._hAcik = null;
+    hSecimCizgisiGeriAl(); S._hAcik = null;
   }
   AKSIYON.hSheetKapat = hSheetKapat;
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('hsheet-acik')) hSheetKapat(); });
@@ -1642,7 +1649,7 @@
     if (f.g === 'A') ly = L.polygon([f.c, ...(f.holes || [])], { color: (f._geo || []).length ? '#E5534B' : ar ? '#9e9e9e' : r[1], weight: 1.2, fillColor: r[1], fillOpacity: ar ? 0.12 : (f.d === 'Y' ? 0.18 : 0.5), dashArray: (f.d === 'K' || ar || (f._geo || []).length) ? '4 3' : null });
     else if (f.g === 'L') ly = L.polyline(f.c, { color: ar ? '#9e9e9e' : r[1], weight: 2.2, dashArray: (f.d === 'K' || ar) ? '4 3' : null });
     else ly = L.circleMarker(f.c, { radius: 5, color: ar ? '#9e9e9e' : '#0F3527', weight: 1.4, fillColor: r[1], fillOpacity: ar ? 0.5 : 0.95 });
-    if (hMobil()) ly.on('click', (e) => { L.DomEvent.stopPropagation(e); hSheetAc(o, ly); }); else ly.bindPopup(() => gypPopup(o.p, f), { maxWidth: Math.min(380, window.innerWidth - 60), minWidth: Math.min(260, window.innerWidth - 80), autoPanPaddingTopLeft: [12, 12], autoPanPaddingBottomRight: [12, 12], className: 'hpopw' });
+    if (hMobil()) ly.on('click', (e) => { if (S._hOl) return; L.DomEvent.stopPropagation(e); clearTimeout(S._hGitTimer); hSheetAc(o, ly); }); else ly.bindPopup(() => gypPopup(o.p, f), { maxWidth: Math.min(380, window.innerWidth - 60), minWidth: Math.min(260, window.innerWidth - 80), autoPanPaddingTopLeft: [12, 12], autoPanPaddingBottomRight: [12, 12], className: 'hpopw' });
     if (!hMobil()) ly.bindTooltip(esc(f.ad ? (String(f.ad).includes(f.t) ? f.ad : f.ad + ' · ' + f.t) : f.t), { sticky: true, direction: 'top' });
     ly.on('popupopen', () => { S._hAcik = f.id; const hm0 = $('#hmap'); if (hm0) hm0.classList.add('popacik'); const tr = document.querySelector('#henv tr[data-id="' + (window.CSS && CSS.escape ? CSS.escape(f.id) : f.id) + '"]'); document.querySelectorAll('#henv tr.on').forEach((x) => x.classList.remove('on')); if (tr) { tr.classList.add('on'); const sc = tr.closest('.sl'); if (sc) sc.scrollTop = tr.offsetTop - sc.clientHeight / 2; } });
     ly.on('popupclose', () => { const hm0 = $('#hmap'); if (hm0) hm0.classList.remove('popacik'); if (S._hAcik === f.id) S._hAcik = null; const tr = document.querySelector('#henv tr.on'); if (tr) tr.classList.remove('on'); });
@@ -1654,6 +1661,7 @@
     Object.keys(I).forEach((id) => { const o = I[id]; let gor = !F.kapali[o.p.kisa] && (S.hP ? o.p.kisa === S.hP : z >= 14) && hEsles(o);
       if (gor && !S.hP && !bb.intersects(hCizimSiniri(o))) gor = false;
       if (gor) { const ly = hKatman(o); if (ly && !S._hG.hasLayer(ly)) ly.addTo(S._hG); } else if (o.ly && S._hG.hasLayer(o.ly)) S._hG.removeLayer(o.ly); });
+    if (S._hSecili && !S._hG.hasLayer(S._hSecili.layer)) hSheetKapat();
     Object.keys(S._hB || {}).forEach((k) => { const b = S._hB[k], gor = !F.kapali[k]; b.pol.setStyle(k === S.hP ? { color: '#FFD34E', weight: 3, fillOpacity: 0.04 } : { color: b.renk, weight: 2, fillOpacity: S.hP ? 0.02 : 0.06 });
       if (gor && !m.hasLayer(b.pol)) { b.pol.addTo(m); b.pol.bringToBack(); } else if (!gor && m.hasLayer(b.pol)) m.removeLayer(b.pol);
       b.alt.forEach((a) => { const g2 = gor && F.alt; if (g2 && !m.hasLayer(a)) { a.addTo(m); a.bringToBack(); } else if (!g2 && m.hasLayer(a)) m.removeLayer(a); }); });
@@ -1689,7 +1697,7 @@
   function hParkSec(k, sigdir) {
     const changed = (S.pBy[k] ? k : '') !== S.hP;
     S.hP = S.pBy[k] ? k : ''; if (S.hP) S.park = S.hP;
-    if (changed) { hTesisEditorKapat(); hFiltreTemizle(); }
+    if (changed) { hSheetKapat(); hTesisEditorKapat(); hFiltreTemizle(); }
     if (S.hP) delete S.hF.kapali[S.hP];
     try { history.replaceState(null, '', '#/harita' + (S.hP ? '?p=' + encodeURIComponent(S.hP) : '')); } catch (e) { /* yok */ }
     baglamBaglantilari();
@@ -1709,6 +1717,7 @@
     if (bounds.isValid()) m.fitBounds(bounds, { maxZoom: 18, padding: [24, 24] });
   }
   function hGit(id) {
+    clearTimeout(S._hGitTimer);
     const o = hDizin()[id]; if (!o) { toast('Tesis bulunamadı: ' + id, true); return; }
     if (!hCizilebilir(o.f)) {
       const sorun = o.f._repeat ? 'Bu çizimin aynı katmanda tekrarı var.' : (o.f._geo || OPGeo.validate(o.f)).join(' · ');
@@ -1721,7 +1730,7 @@
     if (ly.getBounds) m.fitBounds(ly.getBounds(), { maxZoom: 19, padding: [48, 48] }); else m.setView(ly.getLatLng(), 19);
     const anchor = ly.getBounds && ly.getBounds().getCenter();
     const point = anchor && OPGeo.nearest([anchor.lat, anchor.lng], o.f)?.point;
-    setTimeout(() => { if (S._hmap === m && m.hasLayer(ly)) { if (hMobil()) hSheetAc(o, ly); else ly.openPopup(point); } }, 260);
+    S._hGitTimer = setTimeout(() => { if (S._hmap === m && S.hP === o.p.kisa && S._hG.hasLayer(ly)) { if (hMobil()) hSheetAc(o, ly); else ly.openPopup(point); } }, 260);
     const hm = $('#hmap'); if (hm && window.innerWidth < 900) { const ust = (document.querySelector('.mbar') || { offsetHeight: 0 }).offsetHeight || 0; window.scrollTo({ top: hm.getBoundingClientRect().top + window.scrollY - ust - 8, behavior: 'smooth' }); }
   }
   AKSIYON.hGit = (t) => hGit(t.dataset.id);
@@ -2048,6 +2057,7 @@
   AKSIYON.hGpsCenter=()=>{const run=S._hGpsRun;if(run&&run.ll){run.follow=true;run.map.setView(run.ll,Math.max(run.map.getZoom(),17));}};
   function hOlcum(tur, btn) {
     if (S._hDraft) { toast('Ölçüm için önce tesis çizimini kapatın.', true); return; }
+    hSheetKapat();
     const m = S._hmap; if (S._hOl) { const ayni = S._hOl.tur === tur; hOlcumBitir(); if (ayni) return; }
     const o = S._hOl = { tur, pts: [], ly: null, et: null, btn }; btn.classList.add('on'); m.getContainer().style.cursor = 'crosshair'; m.doubleClickZoom.disable();
     toast(tur === 'ol' ? 'Mesafe: haritaya dokunarak noktaları ekleyin; bitirmek için düğmeye yeniden basın.' : 'Alan: köşeleri sırayla işaretleyin; bitirmek için düğmeye yeniden basın.');
@@ -2068,7 +2078,7 @@
     if (S.page !== 'harita' || target !== $('#hmap')) return;
     const gyp = await gypAl(); if (S.page !== 'harita' || target !== $('#hmap')) return;
     const el = $('#hmap'); el.innerHTML = ''; S._hOl = null; S._hIdx = null; S._hAcik = null;
-    const m = L.map(el); S._hmap = m; m.setView([41.15, 28.85], 10); m.on('click', () => { if (document.body.classList.contains('hsheet-acik') && Date.now() - (S._hSheetT || 0) > 350) hSheetKapat(); });
+    const m = L.map(el); S._hmap = m; m.setView([41.15, 28.85], 10); m.on('click', () => { if (document.body.classList.contains('hsheet-acik')) hSheetKapat(); });
     const tl = (u, a, o) => L.tileLayer(u, Object.assign({ maxZoom: 20, maxNativeZoom: 19, attribution: a, crossOrigin: true }, o || {}));
     const ALT = { 'Uydu': tl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 'Esri World Imagery'),
       'Standart harita': tl('https://tile.openstreetmap.org/{z}/{x}/{y}.png', '© OpenStreetMap katkıcıları'),

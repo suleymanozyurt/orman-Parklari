@@ -324,9 +324,10 @@ body:has(.park-options:not([hidden])) .sohbet-ac{display:none}
 .hpop .hdet>summary{font-size:12.5px;color:var(--pine)}
 .hsheet{position:fixed;left:0;right:0;bottom:0;z-index:1200;max-height:46dvh;overflow:auto;background:var(--paper);border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
 .hsheet[hidden]{display:none}
-.hsheet .hpop{max-height:none;max-width:none;overflow:visible;padding-right:34px}
-.hsheet-tut{width:38px;height:4px;border-radius:4px;background:var(--line);margin:2px auto 8px}
-.hsheet-x{position:absolute;top:8px;right:10px;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--soft);color:var(--ink);cursor:pointer}
+.hsheet .hpop{max-height:none;max-width:none;overflow:visible}
+.hsheet-bas{position:sticky;top:-8px;z-index:1;display:flex;align-items:center;justify-content:flex-end;min-height:44px;background:var(--paper);margin-bottom:6px}
+.hsheet-tut{position:absolute;width:38px;height:4px;left:50%;transform:translateX(-50%);border-radius:4px;background:var(--line)}
+.hsheet-x{min-height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
 body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;line-height:28px;color:var(--ink2)}
 .akt td{vertical-align:top;font-size:13px}.akt small{line-height:1.4}

@@ -391,10 +391,10 @@ test('map list excludes exact repeats and invalid geometry but retains separate 
   } finally { dom.window.close(); }
 });
 
-async function fieldMap() {
+async function fieldMap(mobile = false) {
   const x = preparedApp(), { w, a } = x, p = a.S.pBy.Test;
   w.eval(fs.readFileSync('vendor/leaflet/leaflet.js', 'utf8'));
-  w.matchMedia = () => ({ matches: false });
+  w.matchMedia = () => ({ matches: mobile });
   w.L.Browser.svg = true;
   for (const [key, n] of [['clientWidth', 850], ['clientHeight', 470], ['offsetWidth', 850], ['offsetHeight', 470]]) {
     Object.defineProperty(w.HTMLElement.prototype, key, { get: () => n });
@@ -424,6 +424,33 @@ async function fieldMap() {
   await render();
   return { ...x, p, writes, render };
 }
+
+test('mobile facility panel closes on map tap, park switch, and rerender without altering line style', async () => {
+  const { dom, w, a, p, render } = await fieldMap(true);
+  try {
+    const g = a.S.gyp.parklar[p.kisa];
+    g.f.push({id:'facility-line',g:'L',c:[[41.001,28.001],[41.004,28.004]],d:'M',t:'Patika',p:'current'});
+    a.gypHazirla(g,p.kisa);
+    await render();
+    const line = a.S._hG.getLayers()[0], sheet = () => w.document.querySelector('#hsheet');
+    line.fire('click');
+    assert.equal(sheet().hidden,false);
+    assert.match(sheet().querySelector('.hsheet-x').textContent,/Kapat/);
+    assert.equal(line.options.weight,4);
+    a.S._hmap.fire('click');
+    assert.equal(sheet().hidden,true);
+    assert.equal(line.options.weight,2.2);
+    line.fire('click');
+    w.document.querySelector('[data-a=hTum]').click();
+    assert.equal(sheet().hidden,true);
+    a.hParkSec(p.kisa);
+    line.fire('click');
+    assert.equal(sheet().hidden,false);
+    await render();
+    assert.equal(sheet().hidden,true);
+    assert.equal(w.document.body.classList.contains('hsheet-acik'),false);
+  } finally { dom.window.close(); }
+});
 
 test('point, line and polygon can be placed, saved, and read back on the map and in KML', async () => {
   const { dom, w, a, p, writes } = await fieldMap();
