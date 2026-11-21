@@ -397,11 +397,36 @@
     const ozet = (dz.ctx.parks || []).map((p) => p.kisa + ': ' + [p.durum, p.isletmeci, 'sözleşme ' + fd(p.soz_bas) + '–' + fd(p.soz_bit), 'alan ' + ha(p.alan)].filter(Boolean).join(', ')).join('\n');
     return 'Rapor tarihi: ' + fd(dz.ctx.rapor) + '\nPark listesi:\n' + ozet + '\n\nAlıntılar:\n' + parca.join('\n\n');
   };
+  // Yapay zekânın çağırabildiği araçlar: sitenin kendi hesap motoru ve kayıt araması.
+  const kartMetin = (c) => [c.baslik, c.metin || '', (c.satirlar || []).map((x) => x[0] + ': ' + x[1]).join('\n'),
+    c.tablo ? [c.tablo.b.join(' | '), ...c.tablo.s.slice(0, 60).map((r) => r.join(' | '))].join('\n') + (c.tablo.s.length > 60 ? '\n(+' + (c.tablo.s.length - 60) + ' satır daha)' : '') : '',
+    (c.yerler || []).slice(0, 40).map((y) => '- ' + y.ad + (y.alt ? ' (' + y.alt + ')' : '')).join('\n'), c.not || ''].filter(Boolean).join('\n');
+  SOR.kartMetin = kartMetin;
+  SOR.ARACLAR = [
+    { name: 'site_hesabi', description: 'Sitenin kendi hesap motoruna kısa bir soru sorar ve kayıtlardan hesaplanmış kesin cevabı döndürür. Park bilgisi, işletmeci, sözleşme tarihleri, yıllık kira ve tahakkuk (TÜFE artışı, ek tesis kirası), borç ve gecikme zammı, tesis sayıları ve yerleri, şeflik ve yetkililer, Tebliğ maddeleri için kullan. Her tutar, tarih ve sayı bu araçtan gelmeli. Bir soruda tek konu sor; gerekirse birkaç kez çağır.', strict: true,
+      input_schema: { type: 'object', properties: { soru: { type: 'string', description: 'Tek konulu, park adını içeren Türkçe soru. Örn: "Tayakadın 2027 kirası", "Kayabaşı kaç kameriye var", "Md. 32".' } }, required: ['soru'], additionalProperties: false } },
+    { name: 'kayit_ara', description: 'Sitedeki bütün kayıtlarda (park dosyaları, muhasebe dökümü, denetim raporları, yazışmalar, plan revizyonları, Tebliğ, harita tesisleri) serbest metin araması yapar ve en ilgili kayıtların içeriğini döndürür. site_hesabi doğrudan cevap vermediğinde kullan.', strict: true,
+      input_schema: { type: 'object', properties: { sorgu: { type: 'string', description: 'Aranacak kelimeler' } }, required: ['sorgu'], additionalProperties: false } }
+  ];
+  SOR.aracCalistir = function (dz, ad, girdi) {
+    if (ad === 'site_hesabi') {
+      const r = SOR.sor(dz, String(girdi.soru || ''));
+      if (!r.cevaplar.length) return 'Hesap motoru bu soru için doğrudan cevap üretmedi. En ilgili kayıtlar:\n' + r.sonuclar.slice(0, 5).map((d) => '- ' + d.tur + ' · ' + d.baslik + ': ' + String(d.ozet || '').slice(0, 300)).join('\n');
+      return r.cevaplar.slice(0, 4).map((c) => kartMetin(c)).join('\n\n---\n\n');
+    }
+    if (ad === 'kayit_ara') {
+      const r = SOR.sor(dz, String(girdi.sorgu || ''));
+      return r.sonuclar.slice(0, 8).map((d, i) => '(' + (i + 1) + ') ' + d.tur + ' · ' + d.baslik + '\n' + (d.satirlar ? d.satirlar.map((x) => x[0] + ': ' + x[1]).join('\n') : String(d.metin).slice(0, 2000))).join('\n\n') || 'Kayıt bulunamadı.';
+    }
+    return 'Bilinmeyen araç.';
+  };
   SOR.SISTEM = 'Sen İstanbul Orman İşletme Müdürlüğü Emlak Şefliğinin orman parkları yönetim sitesindeki "Sor" asistanısın. ' +
     'Yalnız sana verilen alıntılara dayanarak Türkçe, kısa ve doğrudan cevap ver; önce sonucu yaz. ' +
     'Her bilginin yanına kaynağını [1], [H1] gibi alıntı numarasıyla yaz. Alıntılarda olmayan bilgiyi uydurma: doğrulanamayanı [TEYİT GEREKLİ], alıntıda doğrudan yazmayan sonucu [ÇIKARIM] ile işaretle. ' +
     'Tutarları alıntıdaki gibi aynen yaz, yuvarlama veya yeniden hesaplama yapma; hesap gerekiyorsa adımlarını göster. Mevzuat için 313 sayılı Orman Parkları Tebliğinin alıntılanan maddesine dayan. ' +
-    'Cevabın bulunmuyorsa bunu açıkça söyle ve hangi sayfaya bakılması gerektiğini belirt.';
+    'Cevabın bulunmuyorsa bunu açıkça söyle ve hangi sayfaya bakılması gerektiğini belirt. ' +
+    'Alıntılar cevabı tam vermiyorsa, ya da soruda bir tutar, tarih, sayı, hesap veya karşılaştırma varsa, önce site_hesabi aracıyla sitenin kendi hesabını al; gerekirse kayit_ara ile kayıtları ara. Tutarı kendin hesaplama; araçtan geleni aynen yaz ve yanına (site hesabı) yaz. ' +
+    'Araç çağırmadan önce kullanıcıya bir şey yazma; cevabı araç sonuçları geldikten sonra tek seferde yaz.';
 
   if (typeof module !== 'undefined' && module.exports) module.exports = SOR; else root.SOR = SOR;
 })(typeof window !== 'undefined' ? window : globalThis);

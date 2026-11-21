@@ -124,3 +124,19 @@
 - Hazırlayan adı sitenin alt bilgisinden, giriş ekranından, kenar çubuğundan ve sayfa açıklamasından kaldırıldı. Kurumdaki “ilgili personel” alanı kaldırıldı.
 - İşlem kayıtlarında (kaydeden, yükleyen, geçmiş, kaynak notları) kişi adı yerine “Yönetici” yazıyor. Yönetici oturumunda yeni kayıtlar da “Yönetici” olarak işlenir.
 - Kişi adı yalnız Ek-10 denetim raporlarının imza satırlarında duruyor.
+
+## 21.11.2026 – Mobil tesis kartı, belgeyle güncelleme, yapay zekâ araçları, AYKO vaziyet planı (v61)
+
+- **Tesis bilgisi:** üstte durum, plan, alan ve kısım; geri kalanı “Ayrıntılar” altında.
+  - Mobilde haritayı örtmeyen alt panelde açılır; kapatma düğmesi, haritaya dokunma ve Esc ile kapanır.
+  - “Yol tarifi” düğmesi eklendi.
+- **Belgeyle güncelle** (kenar çubuğu ve park sayfası, düzenleme yetkisi gerekir):
+  - Girdi: dosya (PDF, Word, Excel, görsel, metin), klasör, metin veya sesli not.
+  - Claude belgeleri okuyup alıntılı değişiklik önerileri çıkarır; kullanıcı onaylar.
+  - Eski değerler park kaydındaki `onceki` listesine taşınır (“Önceki değerler” penceresi). Belge notları `belge_notlari`na eklenir.
+- **Sor yapay zekâsı:** sitenin hesap motorunu (`site_hesabi`) ve kayıt aramasını (`kayit_ara`) araç olarak çağırır. Tutarlar sitenin hesabından alınır; yapay zekâ anahtarı gerekir.
+- **Avrupa Yakası Kent Ormanı:** “kent ormanı vaziyet planı.kml” (2019) işlendi.
+  - 75 yapı; adlar plandaki yazılardan.
+  - Giriş kapıları, otoparklar, fauna yapıları ve bina çizimi olmayan 23 plan yazısı.
+  - Onay bilgisi dosyada yok: plan “onayı belirsiz”, tesis durumu “belirtilmemiş”.
+- **Türkköşe Vaziyet.NCZ (2022):** yalnız konaklamalı orman parkı talep sınırı içeriyor; tesis çizimi yok.
