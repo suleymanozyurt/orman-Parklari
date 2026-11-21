@@ -140,3 +140,14 @@
   - Giriş kapıları, otoparklar, fauna yapıları ve bina çizimi olmayan 23 plan yazısı.
   - Onay bilgisi dosyada yok: plan “onayı belirsiz”, tesis durumu “belirtilmemiş”.
 - **Türkköşe Vaziyet.NCZ (2022):** yalnız konaklamalı orman parkı talep sınırı içeriyor; tesis çizimi yok.
+
+## v64 – Park bilgi notu ve genel kontrol (21.11.2026)
+
+- **Bilgi notu:** Ekler menüsünde “Bilgi Notu” sayfası ve her parkın işlem çubuğunda “Bilgi notu” bağlantısı.
+  - Drive'daki örnek bilgi notu şablonu biçimi değiştirilmeden kullanılır; Saha Bilgileri tablosu ve bölümler park kayıtlarından dolar.
+  - Uydu görüntüsü park sınırıyla otomatik üretilir; meşcere, kadastro ve memleket haritası yerine “Belge arşivinden eklenecek” yer tutucusu konur.
+  - Word (.docx) indirme ve tarayıcıdan Yazdır / PDF. Kaydedilen notlar parkın “Önceki bilgi notları” listesinde tutulur.
+  - “Yapay zekâ ile yaz”: site verisini araçlarla okuyup bölümleri yazar (Sor penceresindeki API anahtarı gerekir).
+- **Amenajman bağlantısı:** 2024–2043 amenajman planı klasöründen (dört şeflik KMZ ve plan PDF'leri) üretilen kesişimler bilgi notuna eklendi: Genel Durum'da bölme payları, Saha Bilgileri'nde boş kalan Meşcere Tipi.
+  - Park kayıtlarındaki bölme numarası (örn. Kayabaşı 146) ile 2024–2043 planındaki bölmeler (51, 50) farklı. Kayıtlar eski plan numarasını gösteriyor olabilir [TEYİT GEREKLİ].
+- **Genel kontrol:** 17 park × tüm sayfalar tarandı; sayfa hatası, tanımsız/NaN değer ve bilinmeyen bağlantı hedefi yok.

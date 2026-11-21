@@ -334,3 +334,12 @@ body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .amenajman-controls label{display:grid;gap:3px;flex:1 1 145px;font-size:13px;color:var(--mute)}
 #hAmenajmanBilgi .sl{margin:7px 0}
 #hAmenajmanBilgi .hbel a + a{margin-left:6px}
+/* v62 – bilgi notu */
+.bn-b{border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px;background:var(--paper)}
+.bn-bh{display:flex;gap:8px;align-items:center;margin-bottom:6px}.bn-bh .fld{font-weight:600}
+.bn textarea.fld{width:100%;line-height:1.55;font-size:14.5px}
+@media print{
+  body.pr-bn .wrap>*:not(#bnOnizle){display:none !important}
+  body.pr-bn .ekalan{background:none;padding:0;overflow:visible;border-radius:0}
+  body.pr-bn .side,body.pr-bn .mbar,body.pr-bn .tabbar,body.pr-bn .sohbet-ac,body.pr-bn .app-credit{display:none !important}
+}
