@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{JSDOM}=require('jsdom');
-function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows','bilgi-notu','drive-aktar'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={driveKaydiHazirla,drivePanel,erisimPanel,erisimGunlugu,denAktif,denAnlikAl,denYerelKaydet,ekYaz,elDeger,TOKEN_URL,anahtarYenileFormu,kurulum,yazmaAnahtariniDenetle,yoneticiGiris,yetkiKontrol,kayitBaglantisi,oturumAc,gh,kaynakSurumu,gateGoster,gypAl,gypKaydet,BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,hTesisNoktalari,hUygula,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
+function app(){const dom=new JSDOM('<body><button id="origin">Başlat</button><main id="page"><div id="hside"></div><div id="henv"></div><div id="henvN"></div><div id="hSonuc"></div><div id="hfil"></div><input id="hPark"><input id="hQ"></main></body>',{url:'https://example.test/orman-Parklari/#/harita',runScripts:'outside-only'}),w=dom.window;for(const f of ['engine','geo','workflows','bilgi-notu','drive-aktar'])w.eval(fs.readFileSync('js/'+f+'.js','utf8'));w.K={};w.proj4=()=>({forward:x=>x});const src=fs.readFileSync('js/app.js','utf8').replace("document.addEventListener('DOMContentLoaded', basla);","window.TEST={yerelPaketAc,driveKaydiHazirla,drivePanel,erisimPanel,erisimGunlugu,denAktif,denAnlikAl,denYerelKaydet,ekYaz,elDeger,TOKEN_URL,anahtarYenileFormu,kurulum,yazmaAnahtariniDenetle,yoneticiGiris,yetkiKontrol,kayitBaglantisi,oturumAc,gh,kaynakSurumu,gateGoster,gypAl,gypKaydet,BETIK,takvimKontrol,sinirKaydiUygula,hKonum,hKonumDurdur,hGpsDurum,hParkSeciciKur,islemKayit,islemSecimi,gypKaynak,gypPopup,navMarkup,anaModul,modulSekmeleri,incelemeDogrula,kaynakPanel,yenile,senkronKur,kaynakUygula,planYillari,planAl,tikla,parkSec,sayfaCiz,yonlendir,hesapla,kabukKur,parkSecenekleriniYenile,kaydet,veriSHA,hPlanPanel,hDogrulamaPanel,belgeEksikleri,swKur,icerigeGec,S,SAYFA,AFTER,AKSIYON,hEnvCiz,hParkSec,hEsles,hTesisNoktalari,hUygula,gypHazirla,kmlOzellik,kmlSinir,kmlUret,csvHucre,modal,modalKapat};");w.eval(src);const a=w.TEST,p={kisa:'İmrahor',ad:'İmrahor',alan:25},g={f:[],kaynak:[],planlar:[{id:'plan',ad:'Plan',durum:'belirsiz'}]};a.S.veri={parks:[p],denetim:[]};a.S.pBy={[p.kisa]:p};a.S.park=p.kisa;a.S.hP=p.kisa;a.S.gyp={parklar:{[p.kisa]:g}};a.S.hF={q:'',tur:'',d:{M:1,P:1,Y:1,B:1},pk:{},kapali:{},arsiv:0};return{dom,w,a,p,g};}
 function fill(g,n){g.f=Array.from({length:n},(_,i)=>({id:'id'+String(i).padStart(4,'0'),ad:'M'+String(i).padStart(4,'0'),g:'N',c:[41,28+i/1e6],t:'Büfe',d:'M',p:'plan'}));}
 test('all 501 inventory records remain reachable including final record',()=>{const {dom,w,a,g}=app();fill(g,501);a.gypHazirla(g,'İmrahor');a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,60);a.S.hEnvPage=8;a.hEnvCiz();assert.equal(w.document.querySelectorAll('#henv tbody tr').length,21);assert.match(w.document.querySelector('#henv').textContent,/M0500/);assert.match(w.document.querySelector('#henv').textContent,/481–501 \/ 501/);dom.window.close();});
 test('changing search resets pagination and Turkish spelling folds accents',()=>{const {dom,w,a,g}=app();fill(g,501);g.f[500].ad='Yağmur Barınağı';a.hEnvCiz();a.S.hEnvPage=8;a.S.hF.q='yagmur barinagi';a.hEnvCiz();assert.equal(a.S.hEnvPage,0);assert.equal(w.document.querySelectorAll('#henv tbody tr').length,1);dom.window.close();});
@@ -678,5 +678,49 @@ test('mobile Sor dismisses with the close button, launcher, outside tap, and Esc
     launcher.click(); doc.querySelector('#page').click(); assert.equal(panel.hidden, true);
     launcher.click(); doc.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape', bubbles:true}));
     assert.equal(panel.hidden, true);
+  } finally { dom.window.close(); }
+});
+
+test('encrypted package preview keeps live records and prevents sync or repository writes', async () => {
+  const {dom,w,a} = preparedApp();
+  try {
+    let sync;
+    w.OPSync = {create:options => { sync = options; return {check() {}, invalidate() {}}; }};
+    a.senkronKur();
+    const original = a.S.veri;
+    a.S.owner = true;
+    a.S.rol = {yonetim:true, duzenle:true};
+    const pending = JSON.parse(a.S.enc);
+    pending.parks[0].kesin = 3900;
+    pending.parks[0].bilgi_notu_haritalar = {kadastro_map:{aciklama:'Önizleme paftası'}};
+    a.yerelPaketAc(pending, 'encrypted-test-packet');
+    assert.equal(a.S.pBy.Test.kesin, 3900);
+    assert.match(w.document.querySelector('#page').textContent, /bu sekmede önizleme/);
+    assert.equal(w.document.body.classList.contains('is-owner'), false);
+    assert.equal(sync.available(), false);
+    sync.apply({veri:original});
+    assert.equal(a.S.veri, pending);
+    w.fetch = async () => { throw new Error('Önizlemede ağ isteği olmamalı'); };
+    await assert.rejects(a.gh('/contents/data/veri.enc', {method:'PUT'}), /kayıt kapalı/);
+    await a.kaydet();
+    assert.equal(a.S.veri, pending);
+    a.AKSIYON.yerelPaketKapat();
+    assert.equal(a.S.veri, original);
+    assert.equal(a.S.pBy.Test.kesin, undefined);
+    assert.equal(w.document.body.classList.contains('is-owner'), true);
+    assert.doesNotMatch(w.document.querySelector('#page').textContent, /bu sekmede önizleme/);
+  } finally { dom.window.close(); }
+});
+
+test('encrypted package preview preserves unsaved edits and rejects invalid park lists', () => {
+  const {dom,a} = preparedApp();
+  try {
+    const original = a.S.veri;
+    a.S.dirty = 1;
+    assert.throws(() => a.yerelPaketAc({parks:[{kisa:'Örnek'}],muhasebe:[]}, 'encrypted'), /önce açık veri işlemini/i);
+    a.S.dirty = 0;
+    assert.throws(() => a.yerelPaketAc({parks:[{kisa:'Örnek'},{kisa:'Örnek'}],muhasebe:[]}, 'encrypted'), /park listesi/i);
+    assert.equal(a.S.veri, original);
+    assert.equal(a.S.yerelPaket, undefined);
   } finally { dom.window.close(); }
 });

@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '65', date: '21.11.2026' };
+  const BUILD = { version: '66', date: '22.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -137,13 +137,14 @@
     if (S.sync || !window.OPSync) return;
     const durum = (text) => { S.syncText = text; const el = $('#syncStatus'); if (el) el.textContent = text; };
     S.sync = OPSync.create({
-      available: () => !!S.veri && navigator.onLine && document.visibilityState !== 'hidden',
+      available: () => !!S.veri && !S.yerelPaket && navigator.onLine && document.visibilityState !== 'hidden',
       blocked: () => !!S.dirty || !!S.saving || !!S.gypSaving || !!S.refreshing || !!$('#modal.on') || !!document.activeElement?.closest('input,textarea,select,[contenteditable="true"]'),
       revision: kaynakSurumu,
       read: async (revision) => { const [text, oran] = await Promise.all([veriGetir(revision), oranGetir(revision)]); return { text, oran, ref: revision, veri: text === S.enc ? S.veri : await K.coz(text, S.pw), sha: await veriSHA(text) }; },
       pending: () => durum('Yeni veri var; düzenlemeniz bitince alınacak.'),
       error: () => durum('Senkronizasyon bekliyor; mevcut kayıtlar korunuyor.'),
       apply: (snapshot) => {
+        if (S.yerelPaket) return;
         const recordsChanged = snapshot.text !== S.enc, ratesChanged = JSON.stringify(snapshot.oran) !== JSON.stringify(S.oran);
         if (recordsChanged || ratesChanged) {
           const oldMeta = S.veri.meta || {}, nextMeta = snapshot.veri.meta || {};
@@ -278,6 +279,7 @@
   // ---------------- GitHub (yalnız yönetici) ----------------
   async function gh(path, opt) {
     opt = opt || {};
+    if (S.yerelPaket && opt.method && !['GET', 'HEAD'].includes(opt.method.toUpperCase())) throw new Error('Yerel önizleme sırasında sunucuya kayıt kapalı.');
     if (S.writeStatus?.ok === false && opt.method && !['GET', 'HEAD'].includes(opt.method)) throw new Error('Sunucuya kayıt bağlantısı kapalı. Yazma anahtarını yenileyin.');
     const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + path, Object.assign({}, opt, {
       headers: Object.assign({ Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + S.token, 'X-GitHub-Api-Version': '2022-11-28' }, opt.headers || {}) }));
@@ -318,8 +320,8 @@
   // ---- yetkiler: görüntüleme (herkes), veri düzenleme, muhasebe yükleme, yönetim ----
   const ROL = { duzenle: 'Veri düzenleme', muhasebe: 'Muhasebe yükleme ve kayıt', yonetim: 'Yönetim (kullanıcılar, parola, oranlar)' };
   const TUM_ROL = { duzenle: true, muhasebe: true, yonetim: true };
-  const yetki = (r) => !!(S.owner && S.rol && S.rol[r]);
-  function rolSinif() { document.body.classList.toggle('is-owner', !!S.owner); Object.keys(ROL).forEach((r) => document.body.classList.toggle('r-' + r, yetki(r))); }
+  const yetki = (r) => !!(!S.yerelPaket && S.owner && S.rol && S.rol[r]);
+  function rolSinif() { document.body.classList.toggle('is-owner', !!S.owner && !S.yerelPaket); Object.keys(ROL).forEach((r) => document.body.classList.toggle('r-' + r, yetki(r))); }
   // her işlemin gerektirdiği yetki (yetkisi olmayan kullanıcıda düğme çalışmaz)
   const GEREK = { parkDuzenle: 'duzenle', defterEkle: 'duzenle', defterSil: 'duzenle', ekKiraEkle: 'duzenle', ekKiraSil: 'duzenle', denDuzenle: 'duzenle', kurumDuzenle: 'duzenle',
     fDuzenle: 'duzenle', fSifirla: 'duzenle', haritaYukle: 'duzenle', hTesisEkle: 'duzenle', haritaSil: 'duzenle', gypSil: 'duzenle', planDuz: 'duzenle', islemDuzenle: 'duzenle', kaynakIncele: 'duzenle',
@@ -335,6 +337,7 @@
     return j && j.content ? j.content.sha : null;
   }
   async function kaydet() {
+    if (S.yerelPaket) { toast('Yerel önizleme sırasında sunucuya kayıt kapalı.', true); return; }
     if (!S.owner) { yoneticiGiris(); return; }
     if (S.writeStatus?.ok === false) { kayitBaglantisi(); return; }
     if (S.saving || S.gypSaving) return;
@@ -415,7 +418,7 @@
       '<div class="role ' + (S.owner ? 'own' : '') + '" style="margin-top:8px"><i></i>' + (S.owner ? esc(S.kim) + ' · ' + Object.keys(ROL).filter(yetki).map((r) => ({ duzenle: 'düzenleme', muhasebe: 'muhasebe', yonetim: 'yönetim' }[r])).join(', ') : 'Görüntüleme') + '</div><div id="syncStatus" role="status" style="margin-top:8px">' + esc(S.syncText || 'Otomatik senkronizasyon hazırlanıyor') + '</div>' + (S.lastRefresh ? '<div>Son yenileme <b>' + esc(S.lastRefresh) + '</b></div>' : '');
     const b = $('#bKaydet'); if (b) b.textContent = S.dirty ? 'Değişiklikleri kaydet (' + S.dirty + ')' : (S.writeStatus?.ok === false ? 'Kayıt bağlantısını düzelt' : 'Değişiklik yok');
     const adminTools=$('#adminTools');if(adminTools)adminTools.innerHTML=yetki('yonetim')?'<button class="sbtn" style="width:calc(100% - 24px);margin:10px 12px 0" data-a="girisGecmisi">Giriş geçmişi · bu cihaz</button>':'';
-    const connection = $('#sessionConnection'); if (connection) connection.innerHTML = S.owner && S.writeStatus?.ok === false ? '<button class="sbtn connection-warn" data-a="kayitBaglantisi">Yönetici açık · kayıt bağlantısı kapalı</button>' : '<span class="session-label">' + (S.owner ? (S.writeStatus?.ok ? 'Yönetici · kayıt bağlantısı açık' : 'Yönetici oturumu') : 'Görüntüleme modu') + '</span>';
+    const connection = $('#sessionConnection'); if (connection) connection.innerHTML = S.yerelPaket ? '<span class="session-label">Yerel önizleme</span>' : S.owner && S.writeStatus?.ok === false ? '<button class="sbtn connection-warn" data-a="kayitBaglantisi">Yönetici açık · kayıt bağlantısı kapalı</button>' : '<span class="session-label">' + (S.owner ? (S.writeStatus?.ok ? 'Yönetici · kayıt bağlantısı açık' : 'Yönetici oturumu') : 'Görüntüleme modu') + '</span>';
   }
   const gzSon = () => S.gzO[S.gzO.length - 1];
   function sonTufeAyi() { const t = S.tufe || {}; let best = null; Object.keys(t).forEach((y) => (t[y] || []).forEach((v, i) => { if (v != null) { const k = [+y, i + 1]; if (!best || k[0] * 12 + k[1] > best[0] * 12 + best[1]) best = k; } })); return best; }
@@ -426,6 +429,9 @@
     const t = ev.target.closest('[data-a]'); if (!t) return;
     const a = t.dataset.a;
     if (t.tagName === 'A' && t.getAttribute('href') === '#') ev.preventDefault();
+    if (S.yerelPaket && (GEREK[a] || ['giris','cikis','yedekIndir'].includes(a))) {
+      toast('Bu işlem için canlı verilere dönün.'); return;
+    }
     const keys = S.veri.parks.map((p) => p.kisa), i = keys.indexOf(S.park);
     switch (a) {
       case 'prev': parkSec(keys[(i - 1 + keys.length) % keys.length]); break;
@@ -454,6 +460,7 @@
     modalKapat(); sayfaCiz();
   }
   async function yenile(zorla) {
+    if (S.yerelPaket) { toast('Sunucu verisini yenilemek için önce yerel önizlemeyi kapatın.'); return false; }
     if (S.refreshing || S.saving || S.gypSaving) { toast('Devam eden işlem tamamlanınca yeniden deneyin.'); return false; }
     if (!navigator.onLine) { toast('Bağlantı yok; yeni veri alınamadı. Mevcut kayıtlar korunuyor.', true); return false; }
     if (!zorla && S.dirty && !confirm('Kaydedilmemiş değişiklikleriniz var. Sunucudaki son hâl yüklenirse bu değişiklikler kaybolur. Devam edilsin mi?')) return false;
@@ -568,7 +575,8 @@
     S.csv = null;
     document.body.dataset.page = S.page;
     const content = (SAYFA[S.page] || SAYFA.genel)();
-    $('#page').innerHTML = (S.owner && S.writeStatus?.ok === false ? '<div class="write-warning noprint" role="status"><span>Yönetici açık · değişiklikler henüz sunucuya kaydedilemez.</span><button class="btn sm" data-a="kayitBaglantisi">Bağlantıyı düzelt</button></div>' : '') + modulSekmeleri() + (['ekler', 'defter'].includes(S.page) ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
+    $('#page').innerHTML = (!S.yerelPaket && S.owner && S.writeStatus?.ok === false ? '<div class="write-warning noprint" role="status"><span>Yönetici açık · değişiklikler henüz sunucuya kaydedilemez.</span><button class="btn sm" data-a="kayitBaglantisi">Bağlantıyı düzelt</button></div>' : '') + modulSekmeleri() + (['ekler', 'defter'].includes(S.page) ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
+    if (S.yerelPaket) $('#page').insertAdjacentHTML('afterbegin', '<div class="write-warning noprint" role="status"><span>Şifreli paket · bu sekmede önizleme</span><button class="btn sm" data-a="yerelPaketKapat">Canlı verilere dön</button></div>');
     if (S.page === 'veriler') { $('#page').insertAdjacentHTML('beforeend', '<section class="panel"><h3>Cihazdaki çevrimdışı veriler</h3><p class="muted hnote">Veri dosyaları şifreli olarak bu cihazda saklanır. Harita altlığı ayrı önbellektedir; karo sayısı bir parkın bütün ölçeklerde kaydedildiği anlamına gelmez. Drive belgeleri ayrıca kaydedilmedikçe çevrimdışı açılamaz.</p><div id="offlineDurum" role="status">Kayıtlı kopyalar kontrol ediliyor…</div><div class="hbtns"><button class="btn sm" data-a="offlineDurum">Kopyaları kontrol et</button><button class="btn sm" data-a="offlineKaydet">Verileri çevrimdışı için kaydet</button></div></section>'); AKSIYON.offlineDurum(); }
     $('#page').setAttribute('tabindex', '-1');
     if (AFTER[S.page]) AFTER[S.page]();
@@ -1929,6 +1937,7 @@
     const next=JSON.parse(JSON.stringify(S.gyp)), ng=next.parklar[p.kisa]; ng.f = ng.f.filter((f) => f.s !== s); ng.kaynak = ng.kaynak.filter((x) => x.k !== s); ng.planlar = (ng.planlar || []).filter((x) => ng.f.some((f) => f.p === x.id) || x.k !== s);
     try { await gypKaydet(p, 'Harita: ' + p.kisa + ' plan katmanından “' + ky.ad + '” kaldırıldı',next); } catch (e) { toast('Kaydedilemedi: ' + e.message, true); } };
   async function gypKaydet(p, mesaj, next) {
+    if (S.yerelPaket) throw new Error('Yerel önizleme sırasında harita kaydedilemez.');
     if (!S.owner) { yoneticiGiris(); throw new Error('Kaydetmek için giriş gerekli'); }
     if (!S.gyp || S.gyp.hata || !/^[a-f0-9]{40}$/.test(S.gypSHA || '')) throw new Error('Harita kaynağı doğrulanmadan kayıt yapılamaz. Önce Verileri yenile ile haritayı yeniden açın.');
     if (S.gypSaving || S.saving || S.refreshing) throw new Error('Devam eden kayıt veya yenileme tamamlanınca yeniden deneyin.');
@@ -2483,7 +2492,8 @@
       '<p style="margin:0 0 8px">TÜFE ve gecikme zammı oranları her gün resmî kaynaklardan otomatik denetlenir (TÜİK veri servisi, Resmî Gazete). Kayıtlar şifreli tutulur; yalnız erişim parolasını bilen açabilir, yalnız yönetici değiştirebilir.</p>' +
       '<p style="margin:0">Kaynak belgeler: ' + esc(S.veri.meta.kaynak) + '.</p></div></section>';
     S.csv = { name: 'tufe', head: ['Yıl'].concat(AY), rows: yrs.map((y) => [y].concat((T[y] || []).map((v) => (v == null ? '' : r2(v * 10000) / 100)))) };
-    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, kullanıcılar, işlem geçmişi ve program ayarları.</p></div></div>' + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + drivePanel() + kulH + erisimPanel() + gecH + temaH;
+    const yerel = !S.yerelPaket ? '<section class="panel"><h3>Şifreli veri paketi</h3><p>Paketi bu sekmede açın ve park kayıtlarını inceleyin.</p><button class="btn sm" data-a="yerelPaketSec">Şifreli paketi aç</button></section>' : '';
+    return '<div class="pagehead"><div><h1>Veriler ve ayarlar</h1><p>Resmî oranlar, vade düzeltmeleri, ek kiralar, kullanıcılar, işlem geçmişi ve program ayarları.</p></div></div>' + yerel + banners() + tufeT + '<div class="two">' + gzT + info + '</div>' + vd + ekT + yon + drivePanel() + kulH + erisimPanel() + gecH + temaH;
   };
 
   let erisimG;
@@ -3040,6 +3050,61 @@
       '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button>');
     $('#yd_f').onchange = async (e) => { try { const j = JSON.parse(await e.target.files[0].text()); if (!j.parks || !j.muhasebe) throw new Error('Geçersiz yedek'); S.veri = j; modalKapat(); degisti('Yedek yüklendi'); } catch (er) { toast(er.message, true); } };
   };
+  function yerelPaketAc(veri, text) {
+    if (S.yerelPaket || S.dirty || S.saving || S.gypSaving || S.refreshing) throw new Error('Önce açık veri işlemini tamamlayın.');
+    if (!Array.isArray(veri?.parks) || !veri.parks.length ||
+        veri.parks.some(p => typeof p?.kisa !== 'string' || !p.kisa.trim()) ||
+        new Set(veri.parks.map(p => p.kisa)).size !== veri.parks.length) throw new Error('Park listesi geçersiz.');
+    const onceki = { veri:S.veri, text:S.enc, sha:S.sha, ref:S.dataRef, oran:S.oran, bn:S.bn, form:S.form, sohbet:S.sohbet, sohbetOnceki:S.sohbetOnceki };
+    kaynakUygula({ veri, text, oran:S.oran, ref:S.dataRef });
+    S.yerelPaket = onceki;
+    S.bn = null;
+    S.sohbet = [];
+    S.sohbetOnceki = null;
+    if (S.form) S.form = { ...S.form, duzenle:false };
+    yerelPaketCiz();
+  }
+  function yerelPaketCiz() {
+    S.sorR = null; S.fV = null; S.fW = null; S.wordP = null;
+    modalKapat(); rolSinif(); kabukDurum(); sayfaCiz();
+    sohbetCiz();
+  }
+  AKSIYON.yerelPaketSec = () => {
+    if (S.yerelPaket) return;
+    modal('Şifreli veri paketini önizle', '<p>Dosya mevcut erişim parolanızla bu sekmede açılır. Sekmeyi kapatınca canlı verilerle devam edebilirsiniz.</p><label for="yerelPaketDosya">Paket dosyası (.enc)</label><input class="fld" id="yerelPaketDosya" type="file" accept=".enc"><p id="yerelPaketDurum" role="status"></p>',
+      '<button class="btn pri" id="yerelPaketAc" disabled>Paketi önizle</button>');
+    const input = $('#yerelPaketDosya'), button = $('#yerelPaketAc'), status = $('#yerelPaketDurum');
+    input.onchange = () => { button.disabled = !input.files.length; };
+    button.onclick = async () => {
+      const file = input.files[0];
+      if (!file || button.disabled) return;
+      button.disabled = true;
+      status.textContent = 'Paket açılıyor…';
+      try {
+        const text = await file.text();
+        let veri;
+        try {
+          const packet = JSON.parse(text);
+          if (packet.v !== 1 || packet.alg !== 'AES-GCM' || packet.kdf !== 'PBKDF2-SHA256' || packet.it !== 310000 || packet.tip) throw new Error();
+          veri = await K.coz(packet, S.pw);
+        }
+        catch { throw new Error('Paket açılamadı. Dosyayı ve oturumunuzdaki erişim parolasını kontrol edin.'); }
+        if (!button.isConnected || !button.closest('.modal.on')) return;
+        yerelPaketAc(veri, text);
+      } catch (error) { status.textContent = error.message; }
+      finally { button.disabled = false; }
+    };
+  };
+  AKSIYON.yerelPaketKapat = () => {
+    const onceki = S.yerelPaket;
+    if (!onceki) return;
+    kaynakUygula(onceki);
+    S.yerelPaket = null;
+    S.bn = onceki.bn; S.sohbet = onceki.sohbet; S.sohbetOnceki = onceki.sohbetOnceki;
+    S.form = onceki.form;
+    S.sync?.invalidate(); S.sync?.check();
+    yerelPaketCiz();
+  };
   // ---- kullanıcı yönetimi ----
   AKSIYON.kulListe = async () => { try { const { list } = await dizinAc(); S.kulListe = list; sayfaCiz(); } catch (e) { toast('Kullanıcılar açılamadı: ' + e.message, true); } };
   AKSIYON.kulYenile = async () => { try { const n = await kulYenidenSar(); toast(n + ' hesap güncel erişim parolası ve anahtarla yeniden şifrelendi.'); sayfaCiz(); } catch (e) { toast('Yenilenemedi: ' + e.message, true); } };
@@ -3124,7 +3189,7 @@
     if (btn.length) h += '<div class="chiprow">' + btn.join('') + '</div>';
     return h + '</article>';
   }
-  const sorAnahtar = () => ls.get('op_ai_key') || '';
+  const sorAnahtar = () => S.yerelPaket ? '' : ls.get('op_ai_key') || '';
   function sorSonucHtml(r) {
     if (!r) return '';
     const turler = [...new Set(r.sonuclar.map((d) => d.tur))], F = S.sorTur && turler.includes(S.sorTur) ? S.sorTur : '';
@@ -3153,7 +3218,9 @@
     const box = $('#sorSonuc'); if (box) box.innerHTML = '<div class="empty"><span class="spin"></span> Kayıtlar taranıyor…</div>';
     try {
       const dz = await sorDizin(); S.sorR = SOR.sor(dz, q, S.sorR);
-      try { const g = JSON.parse(ls.get('op_sor_gecmis') || '[]').filter((x) => x !== q); g.unshift(q); ls.set('op_sor_gecmis', JSON.stringify(g.slice(0, 12))); } catch (e) {}
+      if (!S.yerelPaket) {
+        try { const g = JSON.parse(ls.get('op_sor_gecmis') || '[]').filter((x) => x !== q); g.unshift(q); ls.set('op_sor_gecmis', JSON.stringify(g.slice(0, 12))); } catch (e) {}
+      }
       if (S.page !== 'sor') return;
       const target = '#/sor?q=' + encodeURIComponent(q);
       if (location.hash !== target) history.replaceState(null, '', target);
@@ -3172,6 +3239,7 @@
   AKSIYON.sorTur = (t) => { S.sorTur = t.dataset.v; const b = $('#sorSonuc'); if (b) b.innerHTML = sorSonucHtml(S.sorR); };
   AKSIYON.sorMd = (t, ev) => { if (ev) ev.preventDefault(); S.tMd = t.dataset.v; S.tQ = ''; location.hash = '#/teblig'; };
   AKSIYON.sorAyar = () => {
+    if (S.yerelPaket) { toast('Yerel pakette Sor, bu cihazdaki hesapları kullanır.'); return; }
     const k = sorAnahtar();
     modal('Yapay zekâ ayarı', '<p style="margin:0 0 10px">“Yapay zekâ ile cevapla”, sorunuzu ve <b>yalnız bu soruyla ilgili bulunan kayıtlardan alıntıları</b> Anthropic’in Claude modeline (' + AI_MODEL + ') gönderir; model cevabı kaynak numaralarıyla yazar. Bu alıntılar kişisel ve kurumsal bilgi içerebilir ve cihazdan çıkar; kullanmak sizin tercihinizdir. Yerel arama ve doğrudan cevaplar anahtarsız çalışır.</p>' +
       '<div class="f"><label for="aiKey">Anthropic API anahtarı</label><input class="fld" id="aiKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="sk-ant-…" value="' + esc(k) + '"></div>' +
@@ -3237,10 +3305,10 @@
   }
   function bnDurum(k) {
     S.bn = S.bn || {}; if (S.bn[k]) return bnSonucDoldur(S.pBy[k], S.bn[k]);
-    let d = null; try { d = JSON.parse(ls.get(bnAnahtar(k)) || 'null'); } catch (e) {}
+    let d = null; if (!S.yerelPaket) { try { d = JSON.parse(ls.get(bnAnahtar(k)) || 'null'); } catch (e) {} }
     return (S.bn[k] = d && Array.isArray(d.bolumler) ? bnSonucDoldur(S.pBy[k], d) : { konu: 'Genel durum', oto: true, am: !!S._amOzet, bolumler: bnTaslak(S.pBy[k]) });
   }
-  const bnSakla = (k) => { try { ls.set(bnAnahtar(k), JSON.stringify(S.bn[k])); } catch (e) {} };
+  const bnSakla = (k) => { if (!S.yerelPaket) { try { ls.set(bnAnahtar(k), JSON.stringify(S.bn[k])); } catch (e) {} } };
   SAYFA.bilgi = function () {
     const p = S.pBy[S.park], d = bnDurum(p.kisa), gecmis = p.bilgi_notlari || [];
     return mpick() + '<div class="pagehead"><div><h1>Bilgi Notu · ' + esc(p.kisa) + '</h1><p>Makam için orman parkı bilgi notu. Şablon biçimi korunur; Saha Bilgileri ve bölümler park kayıtlarından doldurulur. Metni düzenleyip Word veya PDF olarak alın.</p></div></div>' +
@@ -3680,7 +3748,7 @@
     const send = $('#sohbetForm button[type="submit"]'); if (send) send.disabled = pending;
     const state = $('#sohbetDurum'); if (state) state.textContent = pending ? 'Kayıtlar inceleniyor…' : '';
   }
-  function sohbetSakla() { try { ss.set('op_sohbet', JSON.stringify(S.sohbet.slice(-40))); } catch (e) {} }
+  function sohbetSakla() { if (!S.yerelPaket) { try { ss.set('op_sohbet', JSON.stringify(S.sohbet.slice(-40))); } catch (e) {} } }
   function sohbetCevapHtml(r) {
     const kartlar = r.cevaplar.map((c) => sorKart(c)).join('');
     const ilgili = r.sonuclar.slice(0, r.cevaplar.length ? 3 : 6);
