@@ -113,3 +113,4 @@
   - Aynı tesisin nokta ve poligon kaydı bir kez sayılıyor.
 - **Arayüz:** seçim kutuları, onay kutuları ve açılır başlıklar tek tasarıma getirildi. Sor düğmesi mobilde yuvarlak simgeye dönüşüyor ve park listesi açıkken gizleniyor.
 - **Not:** Tayakadın 2. kısım paftasında “1. Revize GYP 10.07.2025 tarihinde onaylanmıştır” yazıyor; park kaydında 11.07.2025 var [TEYİT GEREKLİ].
+- v59: Kağıthane GYP kod etiketi noktaları ayrı katmana (GYPK) alındı; kır lokantasının 43 m² ek bölümü “parça” olarak işaretlendi ve Sor bunu ayrı tesis saymıyor (Kağıthane kır lokantası: 1, M23). Sor konum listesi, sayımın yapıldığı katmandan geliyor.
