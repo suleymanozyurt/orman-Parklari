@@ -331,3 +331,6 @@ body:has(.park-options:not([hidden])) .sohbet-ac{display:none}
 body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;line-height:28px;color:var(--ink2)}
 .akt td{vertical-align:top;font-size:13px}.akt small{line-height:1.4}
+.amenajman-controls label{display:grid;gap:3px;flex:1 1 145px;font-size:13px;color:var(--mute)}
+#hAmenajmanBilgi .sl{margin:7px 0}
+#hAmenajmanBilgi .hbel a + a{margin-left:6px}

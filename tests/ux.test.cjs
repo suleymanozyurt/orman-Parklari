@@ -452,6 +452,46 @@ test('mobile facility panel closes on map tap, park switch, and rerender without
   } finally { dom.window.close(); }
 });
 
+test('amenajman loads on demand, preserves park geometry, and withholds stale intersections', async () => {
+  const { dom, w, a, p, render } = await fieldMap();
+  try {
+    w.eval(fs.readFileSync('js/amenajman.js','utf8'));
+    w.JSZip = require('../vendor/jszip.min.js');
+    a.BETIK['vendor/jszip.min.js'] = Promise.resolve();
+    const boundary = JSON.stringify(p.harita.sinir);
+    const requests = [];
+    const office = {dosya:'istanbul',seflik:'İstanbul',sayilar:{bolme:1,bolmecik:1},plan:'https://drive.google.com/example'};
+    const index = {donem:'2024–2043',seflikler:{İstanbul:office},parklar:{Test:{sinir:JSON.parse(boundary),sinir_holes:[],alan_m2:100,kapsam_m2:100,cakisma_m2:0,bolmecik_cakisma_m2:0,bolmeler:[['İstanbul','38',100]],bolmecikler:[['İstanbul','38','1','Çfbc2',100]]}}};
+    const shape = {type:'Polygon',coordinates:[[[28,41],[28,41.01],[28.01,41.01],[28.01,41],[28,41]]]};
+    const dataset = {type:'FeatureCollection',kaynak:office,features:['bolme','bolmecik'].map(katman=>({type:'Feature',geometry:shape,properties:{katman,bolme:'38',bolmecik:'1',tip:'Çfbc2',nesne:'7'}}))};
+    const zip = new w.JSZip(); zip.file('harita.json',JSON.stringify(dataset));
+    const payload = await zip.generateAsync({type:'arraybuffer'});
+    w.K.cozBin = async () => payload;
+    w.fetch = async (url) => { requests.push(url); return {ok:true,text:async()=>JSON.stringify(index)}; };
+    const settle = async (check) => { for(let i=0;i<40&&!check();i++) await new Promise(r=>setTimeout(r,5)); assert.ok(check()); };
+    await render();
+    assert.deepEqual(requests,[]);
+    const doc = w.document, panel = doc.querySelector('#hAmenajman'), type = doc.querySelector('#hAmenajmanTur');
+    const info = doc.querySelector('#hAmenajmanBilgi'), status = doc.querySelector('#hAmenajmanDurum');
+    panel.open=true;
+    await settle(()=>info.textContent.includes('Çfbc2'));
+    assert.equal(requests.length,1);
+    type.value='bolmecik'; type.dispatchEvent(new w.Event('change'));
+    await settle(()=>status.textContent.includes('1 bölmecik'));
+    assert.equal(requests.length,2);
+    assert.equal(JSON.stringify(p.harita.sinir),boundary);
+    assert.equal(a.S._hG.getLayers().length,0);
+    assert.equal(a.S._hB.Test.pol._path.style.pointerEvents.toLowerCase(),'visiblestroke');
+    panel.open=false;
+    await settle(()=>!a.S._hAmenajmanLayer);
+    assert.equal(a.S._hB.Test.pol._path.style.pointerEvents,'');
+    const changed = {...p,harita:{...p.harita,sinir:[[[41,28],[41.02,28],[41,28.02],[41,28]]]}};
+    const stale = w.OPAmenajman.panel(index,changed,String);
+    assert.match(stale,/yeniden kesişim hesabı/);
+    assert.doesNotMatch(stale,/Çfbc2/);
+  } finally { dom.window.close(); }
+});
+
 test('point, line and polygon can be placed, saved, and read back on the map and in KML', async () => {
   const { dom, w, a, p, writes } = await fieldMap();
   try {
