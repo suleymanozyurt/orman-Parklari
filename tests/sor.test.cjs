@@ -94,3 +94,11 @@ test('nokta ve poligon aynı tesisi iki katmanda gösterse de bir kez sayılır;
   const h = SOR.sor(d2, 'haritada Tayakadın göster').cevaplar[0];
   assert.equal(h.link, '#/harita?p=Tayakad%C4%B1n');
 });
+test('yapay zekâ araçları sitenin hesap motorunu ve kayıt aramasını çalıştırır', () => {
+  assert.deepEqual(SOR.ARACLAR.map((a) => a.name), ['site_hesabi', 'kayit_ara']);
+  SOR.ARACLAR.forEach((a) => { assert.equal(a.strict, true); assert.equal(a.input_schema.additionalProperties, false); });
+  const t = SOR.aracCalistir(dz, 'site_hesabi', { soru: 'Tayakadın 2027 kira' });
+  assert.match(t, /Tayakadın · 2027/); assert.match(t, /3\.911\.499,09 TL/);
+  assert.match(SOR.aracCalistir(dz, 'kayit_ara', { sorgu: 'Tayakadın' }), /Tayakadın/);
+  assert.equal(SOR.aracCalistir(dz, 'yok', {}), 'Bilinmeyen araç.');
+});

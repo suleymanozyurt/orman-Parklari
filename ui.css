@@ -317,3 +317,16 @@ body:has(.park-options:not([hidden])) .sohbet-ac{display:none}
 .sor-yer{list-style:none;margin:10px 0 4px;padding:0;display:grid;gap:4px;max-height:280px;overflow:auto}
 .sor-yer a{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);text-decoration:none;font-size:13.5px}
 .sor-yer a:hover{border-color:#93B6B0;background:var(--soft)}.sor-yer small{font-size:11.5px;color:var(--mute)}
+/* v61 – tesis bilgisi: sade üst bölüm; mobilde alttan açılan panel */
+.hpop .hkisa{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 8px;font-size:13px}
+.hpop .hkisa dt{color:var(--mute)}.hpop .hkisa dd{margin:0;color:var(--ink);font-weight:500}
+.hpop .hdet{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+.hpop .hdet>summary{font-size:12.5px;color:var(--pine)}
+.hsheet{position:fixed;left:0;right:0;bottom:0;z-index:1200;max-height:46dvh;overflow:auto;background:var(--paper);border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
+.hsheet[hidden]{display:none}
+.hsheet .hpop{max-height:none;max-width:none;overflow:visible;padding-right:34px}
+.hsheet-tut{width:38px;height:4px;border-radius:4px;background:var(--line);margin:2px auto 8px}
+.hsheet-x{position:absolute;top:8px;right:10px;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--soft);color:var(--ink);cursor:pointer}
+body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
+.leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;line-height:28px;color:var(--ink2)}
+.akt td{vertical-align:top;font-size:13px}.akt small{line-height:1.4}
