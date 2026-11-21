@@ -330,3 +330,12 @@ body:has(.park-options:not([hidden])) .sohbet-ac{display:none}
 body.hsheet-acik .sohbet-ac,body.hsheet-acik .tabbar{display:none}
 .leaflet-container a.leaflet-popup-close-button{width:30px;height:30px;font-size:22px;line-height:28px;color:var(--ink2)}
 .akt td{vertical-align:top;font-size:13px}.akt small{line-height:1.4}
+/* v62 – bilgi notu */
+.bn-b{border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px;background:var(--paper)}
+.bn-bh{display:flex;gap:8px;align-items:center;margin-bottom:6px}.bn-bh .fld{font-weight:600}
+.bn textarea.fld{width:100%;line-height:1.55;font-size:14.5px}
+@media print{
+  body.pr-bn .wrap>*:not(#bnOnizle){display:none !important}
+  body.pr-bn .ekalan{background:none;padding:0;overflow:visible;border-radius:0}
+  body.pr-bn .side,body.pr-bn .mbar,body.pr-bn .tabbar,body.pr-bn .sohbet-ac,body.pr-bn .app-credit{display:none !important}
+}

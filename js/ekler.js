@@ -537,5 +537,27 @@
     return out;
   };
 
+  // ---------------------------------------------------------------- Orman parkı bilgi notu (şablon biçimi korunur)
+  // F: tablo alanları (bolge, isletme, seflik, il, ilce, koy, bolme, mescere, ada, alan, konu, PARK_BUYUK, ALT, KONUM_URL)
+  // bolumler: [{ baslik, paragraflar: [..] }]; gorsel: { 'word/media/image5.jpeg': Blob, ... }
+  const xmlEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  EK.bilgiNotu = async function (b64, F, bolumler, gorsel) {
+    await EK.js('vendor/jszip.min.js');
+    const zip = await root.JSZip.loadAsync(typeof b64 === 'string' ? ub64(b64) : b64);
+    let x = await zip.file('word/document.xml').async('string');
+    const a = x.indexOf('<!--BN-->'), b = x.indexOf('<!--/BN-->');
+    if (a < 0 || b < 0) throw new Error('Bilgi notu şablonu bozuk.');
+    const ic = x.slice(a + 9, b), bas = ic.slice(0, ic.indexOf('</w:p>') + 6), par = ic.slice(bas.length);
+    const govde = (bolumler || []).filter((k) => k && (k.baslik || (k.paragraflar || []).some((t) => String(t).trim()))).map((k) =>
+      (k.baslik ? bas.replace('{{BASLIK}}', xmlEsc(k.baslik)) : '') + (k.paragraflar || []).filter((t) => String(t).trim()).map((t) => par.replace('{{PARAGRAF}}', xmlEsc(String(t).trim()))).join('')).join('');
+    x = x.slice(0, a) + govde + x.slice(b + 10);
+    x = x.replace(/\{\{(\w+)\}\}/g, (m, k) => xmlEsc(F[k] != null ? F[k] : ''));
+    zip.file('word/document.xml', x);
+    const r = await zip.file('word/_rels/document.xml.rels').async('string');
+    zip.file('word/_rels/document.xml.rels', r.replace('{{KONUM_URL}}', xmlEsc(F.KONUM_URL || 'https://www.google.com/maps')));
+    Object.entries(gorsel || {}).forEach(([yol, blob]) => { if (blob && zip.file(yol)) zip.file(yol, blob); });
+    return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = EK; else root.EK = EK;
 })(typeof window !== 'undefined' ? window : globalThis);
