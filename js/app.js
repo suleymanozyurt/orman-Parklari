@@ -3153,12 +3153,22 @@
   // ---------- BİLGİ NOTU: şablon (Orman Parkı Bilgi Notu) değişmeden, seçili parkın kayıtlarıyla doldurulur; Word ve PDF ----------
   const bnAnahtar = (k) => 'op_bn_' + k;
   function bnMerkez(p) { const s = (p.harita && p.harita.sinir) || []; const P = s.flat(); if (!P.length) return null; return [P.reduce((a, q) => a + q[0], 0) / P.length, P.reduce((a, q) => a + q[1], 0) / P.length]; }
+  function bnAmenajman(p) {
+    const o = S._amOzet, row = o && o.parklar && Object.hasOwn(o.parklar, p.kisa) ? o.parklar[p.kisa] : null;
+    if (!row || !row.alan_m2 || !window.OPAmenajman || !OPAmenajman.ayniSinir(row, p.harita)) return '';
+    const g = {}; row.bolmeler.forEach(([sef, no, a]) => { (g[sef] = g[sef] || []).push([no, a]); });
+    const parca = Object.entries(g).map(([sef, l]) => sef + ' Şefliğinin ' + l.sort((x, y) => y[1] - x[1]).slice(0, 10).map(([no, a]) => no + ' (%' + (100 * a / row.alan_m2).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ')').join(', ') + (l.length > 10 ? ' ve ' + (l.length - 10) + ' bölme daha' : '') + ' numaralı bölmeleri');
+    return (o.donem || '2024–2043') + ' dönemi amenajman planı sayısal haritasına göre park sınırı ' + parca.join('; ') + ' ile kesişmektedir.';
+  }
+  function bnAmSatir(p) { const o = S._amOzet, row = o && o.parklar && Object.hasOwn(o.parklar, p.kisa) ? o.parklar[p.kisa] : null; return row && row.alan_m2 && window.OPAmenajman && OPAmenajman.ayniSinir(row, p.harita) ? row : null; }
+  function bnAmBolme(p) { const r = bnAmSatir(p); return r ? [...new Set(r.bolmeler.slice().sort((a, b) => b[2] - a[2]).map((x) => x[1]))].join(', ') + ' (2024–2043 planı)' : ''; }
+  function bnAmMescere(p) { const r = bnAmSatir(p); if (!r) return ''; const t = {}; r.bolmecikler.forEach((x) => { const k = x[3] && x[3] !== 'None' ? x[3] : null; if (k) t[k] = (t[k] || 0) + x[4]; }); const l = Object.entries(t).sort((a, b) => b[1] - a[1]); return l.length ? l.slice(0, 6).map((x) => x[0]).join(', ') + (l.length > 6 ? ' …' : '') + ' (2024–2043 planı)' : ''; }
   function bnTaslak(p) {
     const Y = E.year(S.rapor), pl = (() => { try { return parkTahakkuk(p, Y); } catch (e) { return null; } })(), ad = p.ad || p.kisa;
     const mah = p.mahalle ? p.mahalle + (/mah|köy/i.test(p.mahalle) ? '' : ' Mahallesi') : '';
     const yer = p.mevki ? [p.ilce ? p.ilce + ' ilçesi' : '', mah].filter(Boolean).join(' ') + ', ' + p.mevki + ' mevkiinde' : [p.ilce ? p.ilce + ' ilçesi' : '', mah ? mah + "'nde" : ''].filter(Boolean).join(' ');
     const B = [];
-    B.push({ baslik: 'Genel Durum', metin: [ad + (yer ? ', ' + yer : '') + (p.seflik ? ', ' + p.seflik + ' Orman İşletme Şefliği sınırlarında' : '') + ' bulunmaktadır.' + (p.bolme ? ' Park ' + p.bolme + ' numaralı bölmelerde yer almaktadır.' : ''),
+    B.push({ baslik: 'Genel Durum', metin: [ad + (yer ? ', ' + yer : '') + (p.seflik ? ', ' + p.seflik + ' Orman İşletme Şefliği sınırlarında' : '') + ' bulunmaktadır.' + (p.bolme ? ' Park kayıtlarında bölme numarası ' + p.bolme + ' olarak geçmektedir.' : ''), bnAmenajman(p),
       (p.alan != null && p.alan !== '' ? 'Parkın kayıtlı alanı ' + Number(p.alan).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' hektardır.' : '') + (p.statu ? ' Statüsü ' + p.statu + ' orman parkıdır.' : '')].filter(Boolean).join('\n\n') });
     if (p.durum === 'Kirada') {
       const ek = (S.veri.ek_kira || []).filter((x) => x.park === p.kisa);
@@ -3189,7 +3199,7 @@
   function bnDurum(k) {
     S.bn = S.bn || {}; if (S.bn[k]) return S.bn[k];
     let d = null; try { d = JSON.parse(ls.get(bnAnahtar(k)) || 'null'); } catch (e) {}
-    return (S.bn[k] = d && Array.isArray(d.bolumler) ? d : { konu: 'Genel durum', bolumler: bnTaslak(S.pBy[k]) });
+    return (S.bn[k] = d && Array.isArray(d.bolumler) ? d : { konu: 'Genel durum', oto: true, am: !!S._amOzet, bolumler: bnTaslak(S.pBy[k]) });
   }
   const bnSakla = (k) => { try { ls.set(bnAnahtar(k), JSON.stringify(S.bn[k])); } catch (e) {} };
   SAYFA.bilgi = function () {
@@ -3205,7 +3215,8 @@
   AFTER.bilgi = () => {
     const k = S.park, d = bnDurum(k);
     const kon = $('#bnKonu'); if (kon) kon.oninput = () => { d.konu = kon.value; bnSakla(k); };
-    document.querySelectorAll('[data-bn]').forEach((el) => { el.oninput = () => { const b = d.bolumler[+el.dataset.i]; if (!b) return; if (el.dataset.bn === 'b') b.baslik = el.value; else b.metin = el.value; bnSakla(k); }; });
+    if (!S._amOzet && typeof amenajmanAc === 'function') amenajmanAc('ozet').then((o) => { S._amOzet = o; if (d.oto && !d.am && S.page === 'bilgi' && S.park === k) { d.am = true; d.bolumler = bnTaslak(S.pBy[k]); sayfaCiz(); } }).catch(() => {});
+    document.querySelectorAll('[data-bn]').forEach((el) => { el.oninput = () => { const b = d.bolumler[+el.dataset.i]; if (!b) return; d.oto = false; if (el.dataset.bn === 'b') b.baslik = el.value; else b.metin = el.value; bnSakla(k); }; });
   };
   AKSIYON.bnYenile = () => { if (!confirm('Bölümler park kayıtlarından yeniden doldurulacak; elle yazdıklarınız silinir. Devam edilsin mi?')) return; const d = bnDurum(S.park); d.bolumler = bnTaslak(S.pBy[S.park]); bnSakla(S.park); sayfaCiz(); };
   AKSIYON.bnBolumEkle = () => { const d = bnDurum(S.park); d.bolumler.splice(Math.max(0, d.bolumler.length - 1), 0, { baslik: 'Yeni bölüm', metin: '' }); bnSakla(S.park); sayfaCiz(); };
@@ -3229,11 +3240,12 @@
     return new Promise((r) => c.toBlob(r, 'image/jpeg', 0.88));
   }
   async function bnUret() {
+    if (!S._amOzet) { try { S._amOzet = await amenajmanAc('ozet'); } catch (e) {} }
     const p = S.pBy[S.park], d = bnDurum(p.kisa), ku = S.veri.kurum || {}, ek = await ekPaket();
     if (!ek.docx || !ek.docx.BN) throw new Error('Bilgi notu şablonu veri paketinde yok.');
     const m = bnMerkez(p), alan = p.alan != null && p.alan !== '' ? Number(p.alan).toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ha' : '—';
     const F = { bolge: (ku.bolge || 'İstanbul Orman Bölge Müdürlüğü').replace(/\s*Orman Bölge Müdürlüğü$/i, ''), isletme: (ku.isletme || 'İstanbul Orman İşletme Müdürlüğü').replace(/\s*Orman İşletme Müdürlüğü$/i, ''), seflik: p.seflik || '—', il: p.il || ku.il || 'İstanbul', ilce: p.ilce || '—',
-      koy: [p.mahalle, p.mevki ? p.mevki + ' mevkii' : ''].filter(Boolean).join(' / ') || '—', bolme: p.bolme || '—', mescere: p.mescere || '—', ada: p.tapu || p.ada_parsel || '—', alan, konu: d.konu || '—',
+      koy: [p.mahalle, p.mevki ? p.mevki + ' mevkii' : ''].filter(Boolean).join(' / ') || '—', bolme: p.bolme || bnAmBolme(p) || '—', mescere: p.mescere || bnAmMescere(p) || '—', ada: p.tapu || p.ada_parsel || '—', alan, konu: d.konu || '—',
       PARK_BUYUK: (p.ad || p.kisa).toLocaleUpperCase('tr-TR'), ALT: (ku.isletme || 'İstanbul Orman İşletme Müdürlüğü') + ' | ' + p.kisa + ' Orman Parkı Bilgi Notu', KONUM_URL: m ? 'https://www.google.com/maps?q=' + m[0].toFixed(6) + ',' + m[1].toFixed(6) : 'https://www.google.com/maps' };
     const bolumler = d.bolumler.map((b) => ({ baslik: (b.baslik || '').replace(/:\s*$/, ''), paragraflar: String(b.metin || '').split(/\n\s*\n|\r\n\s*\r\n/).map((x) => x.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean) }));
     const [g3, g4, g5, g6] = await Promise.all([bnGorsel(p, 'MEŞCERE HARİTASI'), bnGorsel(p, 'ORMAN KADASTRO HARİTASI'), bnGorsel(p, 'UYDU GÖRÜNTÜSÜ', true), bnGorsel(p, 'MEMLEKET HARİTASI')]);
