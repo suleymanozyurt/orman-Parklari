@@ -83,3 +83,19 @@ test('a signed debt stays the baseline and only subsequent interest is added', (
  assert.equal(ozet.enEski,'2026-05-30');
  assert.equal(ozet.enEskiKira,'2026-06-30');
 });
+
+test('Madde 31 and 32 distinguish first year, documented up-front payment and installments across New Year', () => {
+  const park = {kisa:'Test', soz_bas:'2025-10-31', soz_bit:'2035-10-31', taban:'2025-10-31', durum:'Kirada',
+    ihale_b:200000, yil_esas:'Dönem başı', kural:'Yayımlanan (önceki ay)'};
+  const data = {muhasebe:[], ek_kira:[]}, ledger = {items:[]};
+  const rates = {'2026':Array(12).fill(.1)};
+  const plan = (p, year, book = ledger) => E.tahakkukPlan(data, book, p, rates, year, '2026-11-22');
+  assert.deepEqual(plan({...park, ihale_b:150000}, 2025).vadeler.map(v=>v.vade), ['2025-10-31']);
+  assert.deepEqual(plan(park, 2025).vadeler, []);
+  assert.deepEqual(plan({...park, odeme:'Peşin'}, 2026).vadeler.map(v=>v.vade), ['2026-10-31']);
+  const book = {items:[{park:'Test',tur:'Kira',grup:'2025 tahakkuku',vade:'2025-10-31',tutar:50000}]};
+  const installments = plan({...park, odeme:'4 taksit'}, 2026, book);
+  assert.deepEqual(installments.vadeler.map(v=>v.vade), ['2026-10-31','2027-01-31','2027-04-30','2027-07-31']);
+  assert.equal(E.r2(installments.vadeler.reduce((sum, v)=>sum + v.kira,0)), installments.kira);
+  assert.equal(installments.vadeler[1].kdv, 0);
+});

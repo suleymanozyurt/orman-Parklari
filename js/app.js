@@ -1,7 +1,7 @@
 /* Orman Parkları — uygulama (görüntüleyici + yönetici). Sayfalar: genel, park, alacaklar, hesap, denetim, ekler, parklar, zincir, muhasebe, veriler */
 (function () {
   'use strict';
-  const BUILD = { version: '71', date: '22.11.2026' };
+  const BUILD = { version: '72', date: '22.11.2026' };
   const CFG = { owner: 'suleymanozyurt', repo: 'orman-Parklari', branch: 'main', veri: 'data/veri.enc', oran: 'data/oranlar.json', teblig: 'data/teblig.enc', ekler: 'data/ekler.enc', yonetici: 'data/yonetici.enc', kullanicilar: 'data/kullanicilar.enc', harita: 'data/harita.enc' };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -146,15 +146,15 @@
       apply: (snapshot) => {
         if (S.yerelPaket) return;
         const recordsChanged = snapshot.text !== S.enc, ratesChanged = JSON.stringify(snapshot.oran) !== JSON.stringify(S.oran);
-        if (recordsChanged || ratesChanged) {
-          const oldMeta = S.veri.meta || {}, nextMeta = snapshot.veri.meta || {};
-          if (oldMeta.harita_surum !== nextMeta.harita_surum) { S.gyp = null; S.gypS = null; }
-          if (oldMeta.ekler_surum !== nextMeta.ekler_surum) S.ekB = null;
+        const revisionChanged = snapshot.ref !== S.dataRef;
+        if (recordsChanged || ratesChanged || revisionChanged) {
+          if (recordsChanged || revisionChanged) bagliVerileriTemizle();
           const scroll = window.scrollY;
           kaynakUygula(snapshot);
           if (S.hP && !S.pBy[S.hP]) S.hP = null;
           parkSecenekleriniYenile(); kabukDurum(); sayfaCiz(); window.scrollTo(0, scroll);
-          toast(recordsChanged ? 'Güncel kayıtlar otomatik alındı.' : 'Resmî oranlar güncellendi; hesaplar yeniden yapıldı.');
+          if (recordsChanged || ratesChanged)
+            toast(recordsChanged ? 'Güncel kayıtlar otomatik alındı.' : 'Resmî oranlar güncellendi; hesaplar yeniden yapıldı.');
         } else S.sha = snapshot.sha;
         S.dataRef = snapshot.ref;
         durum('Kaynakla eşleşti · ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
@@ -163,6 +163,7 @@
     const check = () => S.sync.check();
     if (window.BroadcastChannel) { S.syncChannel = new BroadcastChannel('op-veri-sync'); S.syncChannel.onmessage = (e) => { if (e.data && e.data.type === 'saved') check(); }; }
     setInterval(check, 120000);
+    window.addEventListener('pageshow', check);
     window.addEventListener('online', check);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
     durum('Otomatik senkronizasyon açık'); check();
@@ -401,7 +402,7 @@
       '<header class="mbar">' + LOGO(34) + '<b id="mTitle">Orman Parkları</b>' +
       '<button class="ib" id="mSearch" aria-label="Sor asistanı" aria-controls="sohbet" aria-expanded="false">' + svg(IC.search, 18, 2) + '</button><button class="ib" id="mMore" aria-label="İşlemler">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button></header>' +
-      '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore">' + svg(IC.menu, 22) + 'Daha</button></nav>' +
+      '<nav class="tabbar" aria-label="Alt menü">' + tab + '<button id="tMore" type="button" aria-controls="sohbet" aria-expanded="false">' + svg(IC.search, 22) + 'Sor</button></nav>' +
       '<aside class="side"><div class="side-scroll"><div class="brand">' + LOGO(40) + '<div><b>Orman Parkları<br>Yönetim Sistemi</b></div></div>' +
       '<nav class="nav" aria-label="Sayfalar">' + navHtml + '</nav>' +
       '<div class="sbox"><label class="ssearch">' + svg(IC.search, 15, 2) + '<input id="sQ" type="search" placeholder="Ara veya sor…" aria-label="Ara ya da sor"></label><div class="sres" id="sRes"></div></div>' +
@@ -415,7 +416,7 @@
       '<button class="sbtn pri own-only" id="bKaydet" data-a="kaydet">Değişiklikleri kaydet</button>' +
       '<button class="sbtn view-only" data-a="giris">Yönetici girişi</button><button class="sbtn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
       '<div id="adminTools"></div><div id="sessionConnection"></div><details class="side-data"><summary>Veri durumu · v' + BUILD.version + '</summary><div class="foot" id="sFoot"></div></details></div></aside>' +
-      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span>Orman Parkları Yönetim Sistemi</span></footer></div>';
+      '<div class="main"><div class="wrap" id="page"></div><footer class="app-credit noprint"><span>Hazırlayan: Süleyman Özyurt</span></footer></div>';
     $('#sSel').innerHTML = S.veri.parks.map((p) => '<option>' + esc(p.kisa) + '</option>').join('');
     $('#sSel').onchange = (e) => parkSec(e.target.value);
     A.addEventListener('click', (event) => {
@@ -425,8 +426,9 @@
     });
     $('#sQ').addEventListener('input', (e) => ara(e.target.value, $('#sRes')));
     $('#sQ').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.value.trim()) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; $('#sRes').classList.remove('on'); S.sorQ = null; location.hash = '#/sor?q=' + encodeURIComponent(v); } });
-    $('#mSearch').onclick = () => sohbetAcKapat();
-    sohbetKur(); $('#mMore').onclick = menuSheet; $('#tMore').onclick = menuSheet;
+    sohbetKur();
+    ['#mSearch', '#tMore'].forEach(id => { $(id).onclick = () => sohbetAcKapat(); });
+    $('#mMore').onclick = menuSheet;
     window.addEventListener('beforeunload', (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
     document.body.classList.toggle('is-owner', S.owner);
     kabukDurum();
@@ -483,6 +485,11 @@
     if (location.hash !== target) { location.hash = target; return; }
     modalKapat(); sayfaCiz();
   }
+  function bagliVerileriTemizle() {
+    S.gyp = null; S.gypS = null; S.ekB = null; S.kaynakKontrol = null;
+    S.sorDz = null; S.sorR = null; S.fV = null; S.fW = null; S.wordP = null;
+    if (S.tebligUrl) { URL.revokeObjectURL(S.tebligUrl); S.tebligUrl = null; }
+  }
   async function yenile(zorla) {
     if (S.yerelPaket) { toast('Sunucu verisini yenilemek için önce yerel önizlemeyi kapatın.'); return false; }
     if (S.refreshing || S.saving || S.gypSaving) { toast('Devam eden işlem tamamlanınca yeniden deneyin.'); return false; }
@@ -496,8 +503,7 @@
       if (S.dirty !== edit || S.enc !== previous || S.saving || S.gypSaving) { toast('Yenileme sırasında yeni işlem başladı; taslağınız korundu.', true); return false; }
       kaynakUygula({ text:vt, oran:or, veri:candidate, sha, ref }); S.dirty = 0;
       S.lastRefresh = new Date().toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      S.gyp = null; S.gypS = null; S.ekB = null; S.fV = null; S.fW = null; S.wordP = null;
-      if (S.tebligUrl) { URL.revokeObjectURL(S.tebligUrl); S.tebligUrl = null; }
+      bagliVerileriTemizle();
       kabukDurum(); sayfaCiz();
       toast('Sunucudaki sürüm alındı; hesaplar yenilendi. Resmî oran kontrol tarihleri Veriler ve Ayarlar’da.'); return true;
     } catch (e) { toast('Yeni veri alınamadı; mevcut kayıtlar korunuyor. ' + e.message, true); return false; }
@@ -536,15 +542,21 @@
   document.addEventListener('keydown', (e) => { const m = $('#modal'); if (e.key === 'Escape') modalKapat(); if (e.key !== 'Tab' || !m || !m.classList.contains('on')) return; const els = Array.from(m.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]')).filter((x) => !x.closest('[hidden]')); const first = els[0], last = els[els.length - 1]; if (!first) return; if (e.shiftKey && (document.activeElement === first || !m.contains(document.activeElement))) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } });
 
   function menuSheet() {
-    const late = S.oz.filter((o) => o.vgec > 0).map((o) => o.kisa);
-    modal('Menü', '<div class="menu">' + navMarkup(true) + '</div>' +
-      '<div class="f"><label>Seçili park</label><select class="fld" id="mPark">' + S.veri.parks.map((p) => '<option' + (p.kisa === S.park ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('') + '</select></div>' +
-      (late.length ? '<div class="chiprow">' + late.map((k) => '<button class="btn sm red" data-a="park" data-k="' + esc(k) + '" data-go="park">' + esc(k) + '</button>').join('') + '</div>' : '') +
-      '<div class="frow"><button class="btn" data-a="pdf">PDF kaydet</button><button class="btn" data-a="csv">CSV indir</button><button class="btn" data-a="paylas">Paylaş</button><button class="btn" data-a="yenile">Verileri yenile</button>' +
+    const q = S.park ? '?p=' + encodeURIComponent(S.park) : '';
+    modal('Menü', '<div class="menu">' +
+      '<a href="#/ekler' + q + '">' + svg(IC.file) + 'Mevzuat ve formlar</a>' +
+      '<a href="#/denetim' + q + '">' + svg(IC.check) + 'Denetim ve planlar</a>' +
+      '<a href="#/defter' + q + '">' + svg(IC.book) + 'Kayıt defteri</a>' +
+      '<a href="#/veriler">' + svg(IC.gear) + 'Veriler ve ayarlar</a>' +
+      '<button class="duz-only" data-a="belgeEkle">' + svg(IC.doc) + 'Belgeyle güncelle</button></div>' +
+      '<div class="f"><label for="mPark">Park dosyasına git</label><select class="fld" id="mPark"><option value="">Park seçin</option>' + S.veri.parks.map(p => '<option value="' + esc(p.kisa) + '">' + esc(p.kisa) + '</option>').join('') + '</select></div>' +
+      '<details class="mobile-more"><summary>Çıktı ve bağlantı</summary><div class="frow"><button class="btn" data-a="pdf">PDF kaydet</button><button class="btn" data-a="csv">CSV indir</button><button class="btn" data-a="paylas">Paylaş</button><button class="btn" data-a="yenile">Verileri yenile</button></div></details>' +
+      '<div class="frow mobile-session">' +
       '<button class="btn pri own-only" data-a="kaydet">' + (S.writeStatus?.ok === false ? 'Kayıt bağlantısını düzelt' : 'Değişiklikleri kaydet') + (S.dirty ? ' (' + S.dirty + ')' : '') + '</button>' +
       '<button class="btn view-only" data-a="giris">Yönetici girişi</button><button class="btn own-only" data-a="cikis">Yönetici çıkışı</button></div>' +
       '<p class="muted" style="font-size:13px;margin:0">Rapor tarihi ' + fd(S.rapor) + ' · Döküm son yevmiye 120: ' + fd(E.dokumSon(S.veri)['120']) + ', 127: ' + fd(E.dokumSon(S.veri)['127']) + ' · ' + (S.owner ? esc(S.kim) : 'Görüntüleme') + '</p>');
     $('#mPark').onchange = (e) => parkSec(e.target.value, 'park');
+    $('.menu').addEventListener('click', (e) => { if (e.target.closest('a[href]')) modalKapat(); });
   }
   function aramaSheet() {
     modal('Ara', '<input class="fld" id="mQ" type="search" placeholder="Park, işletmeci, VKN, yevmiye no" style="font-size:16px;padding:12px"><div class="sres on" id="mRes" style="border:1px solid var(--line)"></div>');
@@ -600,7 +612,7 @@
     S.csv = null;
     document.body.dataset.page = S.page;
     const content = (SAYFA[S.page] || SAYFA.genel)();
-    $('#page').innerHTML = (!S.yerelPaket && S.owner && S.writeStatus?.ok === false ? '<div class="write-warning noprint" role="status"><span>Yönetici açık · değişiklikler henüz sunucuya kaydedilemez.</span><button class="btn sm" data-a="kayitBaglantisi">Bağlantıyı düzelt</button></div>' : '') + modulSekmeleri() + (['ekler', 'defter'].includes(S.page) ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
+    $('#page').innerHTML = (!S.yerelPaket && S.owner && S.writeStatus?.ok === false ? '<div class="write-warning noprint" role="status"><span>Yönetici açık · değişiklikler henüz sunucuya kaydedilemez.</span><button class="btn sm" data-a="kayitBaglantisi">Bağlantıyı düzelt</button></div>' : '') + modulSekmeleri() + (S.page === 'defter' ? parkIslemBaglari(S.pBy[S.park]) : '') + content + (S.page === 'park' ? kaynakPanel(S.pBy[S.park]) : '');
     if (S.yerelPaket) $('#page').insertAdjacentHTML('afterbegin', '<div class="write-warning noprint" role="status"><span>Şifreli paket · bu sekmede önizleme</span><button class="btn sm" data-a="yerelPaketKapat">Canlı verilere dön</button></div>');
     if (S.page === 'veriler') { $('#page').insertAdjacentHTML('beforeend', '<section class="panel"><h3>Cihazdaki çevrimdışı veriler</h3><p class="muted hnote">Veri dosyaları şifreli olarak bu cihazda saklanır. Harita altlığı ayrı önbellektedir; karo sayısı bir parkın bütün ölçeklerde kaydedildiği anlamına gelmez. Drive belgeleri ayrıca kaydedilmedikçe çevrimdışı açılamaz.</p><div id="offlineDurum" role="status">Kayıtlı kopyalar kontrol ediliyor…</div><div class="hbtns"><button class="btn sm" data-a="offlineDurum">Kopyaları kontrol et</button><button class="btn sm" data-a="offlineKaydet">Verileri çevrimdışı için kaydet</button></div></section>'); AKSIYON.offlineDurum(); }
     $('#page').setAttribute('tabindex', '-1');
@@ -691,8 +703,8 @@
     if (hz.length || bk.length) todo.push({ k: '', red: false, tutar: hz.length + ' / ' + (hz.length + bk.length), alt: (y + 1) + ' kirası hesaplanan', go: 'tahakkuk',
       ne: (y + 1) + ' yılı kiraları: ' + (hz.length ? hz.map((t) => t.park).join(', ') + ' hesaplandı' : 'henüz hesaplanan yok') + (bk.length ? '; ' + bk.length + ' park yılbaşını ve resmî TÜFE verisini bekliyor.' : '.') });
     S.veri.parks.forEach((p) => { if (p.durum === 'Sona erdi') todo.push({ k: p.kisa, red: false, tutar: '', alt: '', ne: 'Sözleşme ' + fd(p.soz_bit) + '’de sona erdi: geri teslim tutanağı 15 gün içinde GM’ye (Md. 13/1), yeniden ihale.' }); });
-    const taskRow = (t, i) => '<li><span class="no" style="background:' + (t.red ? 'var(--red)' : 'var(--amb)') + '">' + (i + 1) + '</span><div><b><a href="#/' + (t.go || 'park') + (t.k ? '?p=' + encodeURIComponent(t.k) : '') + '">' + esc(t.k || 'Kira ve tahakkuk') + '</a></b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + esc(t.tutar) + '<small>' + esc(t.alt) + '</small></div></li>';
-    const todoH = '<section class="card"><div class="ch"><h2>Öncelikli işler</h2><span class="badge b-gray">' + todo.length + ' kayıt</span></div><ul class="todo">' + todo.slice(0,3).map(taskRow).join('') + (todo.length ? '' : '<li><p>Bekleyen iş yok.</p></li>') + '</ul>' + (todo.length > 3 ? '<details class="more-tasks"><summary>Diğer ' + (todo.length - 3) + ' işi göster</summary><ul class="todo">' + todo.slice(3).map((t,i) => taskRow(t,i+3)).join('') + '</ul></details>' : '') + '</section>';
+    const taskRow = (t) => '<li><div><b><a href="#/' + (t.go || 'park') + (t.k ? '?p=' + encodeURIComponent(t.k) : '') + '">' + esc(t.k || 'Kira ve tahakkuk') + '</a></b><p>' + esc(t.ne) + '</p></div><div class="amt n" style="color:' + (t.red ? 'var(--red)' : 'var(--ambt)') + '">' + esc(t.tutar) + '<small>' + esc(t.alt) + '</small></div></li>';
+    const todoH = '<section class="card"><div class="ch"><h2>Öncelikli işler</h2><span class="badge b-gray">' + todo.length + ' kayıt</span></div><ul class="todo">' + todo.slice(0,3).map(taskRow).join('') + (todo.length ? '' : '<li><p>Bekleyen iş yok.</p></li>') + '</ul>' + (todo.length > 3 ? '<details class="more-tasks"><summary>Diğer ' + (todo.length - 3) + ' işi göster</summary><ul class="todo">' + todo.slice(3).map(taskRow).join('') + '</ul></details>' : '') + '</section>';
     // 60 gün
     const son = E.addDays(R, 60), grp = {};
     al.filter((a) => a.acik > 0 && a.esas && a.esas >= R && a.esas <= son).forEach((a) => { const k = a.esas + '|' + a.park; grp[k] = grp[k] || { esas: a.esas, park: a.park, t: 0, ek: false }; grp[k].t += a.acik; if (a.grup === 'Ek tahakkuk') grp[k].ek = true; });
@@ -715,8 +727,9 @@
       '<a href="#/' + id + (['denetim','ekler'].includes(id) ? q : '') + '">' + svg(icon,20) + '<span><strong>' + baslik +
       '</strong><small>' + esc(alt) + '</small></span></a>').join('') + '</nav>';
     return '<div class="pagehead overview-heading"><div><h1>Genel Durum</h1><p>İstanbul Orman İşletme Müdürlüğü · ' + fd(R) +
-      '</p></div><button class="btn sm own-only" data-a="belgeEkle">Belgeyle güncelle</button></div>' + quick +
-      '<div class="split overview-work">' + todoH + '<details class="overview-detail overview-upcoming"><summary>Önümüzdeki 60 gün · ' + up.length + ' vade</summary>' + tlH + '</details></div>' + banners() +
+      '</p></div><button class="btn sm duz-only" data-a="belgeEkle">Belgeyle güncelle</button></div>' +
+      '<div class="overview-priority">' + todoH + '<details class="overview-detail overview-upcoming"><summary>Önümüzdeki 60 gün · ' + up.length + ' vade</summary>' + tlH + '</details></div>' + quick +
+      '<details class="overview-detail overview-data"><summary>Verilerin güncelliği</summary>' + banners() + '</details>' +
       '<details class="overview-detail overview-balances"><summary>Mali özet ve belgeli alacaklar</summary>' + kpis + hero + belgeliBorcPanel() + '</details>' +
       '<details class="overview-detail overview-calendar"><summary>' + y + ' ödeme takvimi · ' + D.length + ' park</summary>' + cal + '</details>';
 
@@ -1133,14 +1146,16 @@
     const gzr = S.gzO.slice().reverse();
     const A = (S.veri.arsiv && S.veri.arsiv.park) || [], mx = Math.max.apply(null, A.map((a) => a[1]).concat([1]));
     const ku = S.veri.kurum || {};
-    return mpick() + '<div class="pagehead"><div><h1>Tebliğ Ekleri</h1><p>Tebliğin 18 eki seçilen parkın bilgileriyle açılır; süre sınırları sözleşme tarihlerinden hesaplanır. Seçili park: <b>' + esc(p.kisa) + '</b></p></div></div>' +
-      '<div class="two"><section class="panel"><h3>Forma aktarılan değerler <small>' + esc(p.kisa) + '</small></h3>' + vals + '</section>' +
-      '<section class="panel"><h3>Süre sınırları <small>' + fd(S.rapor) + ' tarihine göre</small></h3>' + win.map((w) => '<div class="win"><div class="t"><span>' + esc(w.t) + '</span><span class="badge ' + w.c + '">' + esc(w.s) + '</span></div><div class="d n">' + esc(w.d) + '</div></div>').join('') + '</section></div>' +
-      '<section class="card"><div class="ch"><h2>Tebliğ ekleri</h2><span class="muted" style="font-size:13px">313 sayılı Tebliğ · sürecin aşamasına göre</span></div><div class="scroll"><table class="rt" style="min-width:1040px"><thead><tr><th>Ek</th><th>Form</th><th>Kim, ne zaman</th><th>Süre ve gönderim</th><th>Dayanak</th><th>' + esc(p.kisa) + ' için</th><th class="noprint"></th></tr></thead><tbody>' +
-      forms.map((f) => f.g ? '<tr class="grp"><td colspan="7">' + esc(f.g) + '<small>' + esc(f.gs) + '</small></td></tr>' :
-        '<tr>' + td('<span class="ek">' + f.e + '</span>', '', 'lead') + td('<b>' + esc(f.ad) + '</b>', 'Form', 'wide', ' style="white-space:normal"') + td(esc(f.kim), 'Kim, ne zaman', 'wide', ' style="white-space:normal;color:var(--ink2);font-size:13.5px"') +
-        td(esc(f.sure), 'Süre ve gönderim', 'wide', ' style="white-space:normal;color:var(--ink2);font-size:13.5px"') + td(esc(f.md), 'Dayanak', 'muted') + td(esc(f.pv || '—'), p.kisa + ' için', 'wide ' + (f.pc || ''), ' style="white-space:normal;font-size:13.5px"') +
-        td('<button class="btn sm pri" data-a="formAc" data-e="' + f.e + '">Doldur</button> <button class="btn sm" data-a="formBilgi" data-e="' + f.e + '">Bilgi</button>' + (f.e === 'Ek-10' ? ' <button class="btn sm" data-a="formAc" data-e="R10">İmzalı rapor</button>' : ''), '', 'noprint', ' style="white-space:nowrap"') + '</tr>').join('') + '</tbody></table></div></section>' +
+    const formList = forms.map(f => f.g
+      ? '<li class="forms-group">' + esc(f.g) + '</li>'
+      : '<li><div class="form-row"><a class="form-open" href="' + esc(formBaglanti(p.kisa, f.e, y)) + '"><span class="ek">' + esc(f.e) + '</span><strong>' + esc(f.ad) + '</strong></a>' +
+        (f.e === 'Ek-10' ? '<a class="btn sm" href="' + esc(formBaglanti(p.kisa, 'R10', y)) + '">İmzalı rapor</a>' : '') +
+        '<button type="button" class="btn sm" data-a="formBilgi" data-e="' + esc(f.e) + '" aria-label="' + esc(f.e + ' bilgisi') + '">Bilgi</button></div></li>').join('');
+    return '<div class="pagehead"><div><h1>Ekler ve formlar</h1><p>313 sayılı Orman Parkları Tebliği</p></div></div>' + mpick() +
+      '<section class="card"><ul class="forms-list">' + formList + '</ul></section>' +
+      '<details class="overview-detail"><summary>Park bilgileri ve süreler</summary><div class="two"><section class="panel"><h3>Forma aktarılan değerler</h3>' + vals + '</section>' +
+      '<section class="panel"><h3>Süre sınırları</h3>' + win.map(w => '<div class="win"><div class="t"><span>' + esc(w.t) + '</span><span class="badge ' + w.c + '">' + esc(w.s) + '</span></div><div class="d n">' + esc(w.d) + '</div></div>').join('') + '</section></div></details>' +
+      '<details class="overview-detail"><summary>Oranlar, dayanaklar ve arşiv</summary>' +
       '<div class="two" style="grid-template-columns:1.4fr 1fr"><section class="panel"><h3>Hesaplara esas hükümler <small>Tebliğ metninden</small></h3>' +
       MEV.map((m) => '<div class="mev"><b>' + m[0] + '</b><div><div style="font-weight:600">' + m[1] + '</div><p>' + m[2] + '</p></div></div>').join('') +
       '<div style="padding:12px 0 4px"><button class="btn" data-a="teblig" data-pg="1">Tebliğin tam metni (PDF)</button></div></section>' +
@@ -1151,7 +1166,7 @@
       '<section class="panel"><h3>Arşiv dizini <small>' + ((S.veri.arsiv && S.veri.arsiv.dosya) || 0) + ' PDF · ' + ((S.veri.arsiv && S.veri.arsiv.kayit) || 0) + ' kayıt</small></h3>' +
       A.map((a) => '<div class="arow"><span style="' + (a[0] === p.kisa ? 'font-weight:700;color:var(--pine)' : '') + '">' + esc(a[0]) + '</span><span class="tr"><i style="width:' + Math.round(a[1] / mx * 100) + '%;background:' + (a[0] === p.kisa ? '#2E7D4F' : '#A9C9B4') + '"></i></span><span class="n" style="text-align:right;color:var(--mute)">' + a[1] + '</span></div>').join('') +
       '<div style="padding:10px 0 4px"><button class="btn sm" data-a="arsivAc">' + esc(p.kisa) + ' arşiv kayıtları</button></div></section>' +
-      '<section class="panel"><h3>Kurum bilgileri <small>eklere aktarılır</small></h3>' + KURUMF.map((k) => '<div class="kv"><span>' + k[1] + '</span><span>' + esc(ku[k[0]] || '—') + '</span></div>').join('') + '<div class="own-only" style="padding:10px 0 4px"><button class="btn sm" data-a="kurumDuzenle">Düzenle</button></div></section></div></div>';
+      '<section class="panel"><h3>Kurum bilgileri <small>eklere aktarılır</small></h3>' + KURUMF.map((k) => '<div class="kv"><span>' + k[1] + '</span><span>' + esc(ku[k[0]] || '—') + '</span></div>').join('') + '<div class="own-only" style="padding:10px 0 4px"><button class="btn sm" data-a="kurumDuzenle">Düzenle</button></div></section></div></div></details>';
   };
   SAYFA.defter = function () {
     const p = S.pBy[S.park];
@@ -1554,7 +1569,7 @@
   SAYFA.harita = function () {
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
     if (q.has('p')) { const k = q.get('p'); S.hP = S.pBy[k] ? k : ''; if (S.hP) S.park = S.hP; S.hT = q.get('t') || null; }
-    else if (S.hP === undefined) S.hP = S.park || '';
+    else S.hP = '';
     if (q.has('amenajman') && S.hAmenajmanBaglanti !== location.hash) {
       S.hAmenajmanBaglanti = location.hash;
       S.hAmenajmanAcik = true;
@@ -1566,7 +1581,7 @@
       '<div id="hwrap" class="hwrap"><div class="htool">' +
       '<div class="hsel"><label for="hPark">Orman parkı seç</label><div class="hselr"><div class="park-picker" id="hPicker"><div class="park-picker-field"><input id="hPark" class="fld" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hParkL" placeholder="Park arayın veya listeden seçin" autocomplete="off" value="' + esc(S.hP || '') + '"><button type="button" class="park-picker-toggle" id="hParkOpen" aria-label="Bütün orman parklarını göster" aria-expanded="false" aria-controls="hParkL">⌄</button></div><div id="hParkL" class="park-options" role="listbox" aria-label="Orman parkları" hidden></div></div>' +
       '<select class="fld hpark-native" id="hParkNative" aria-label="Orman parkı seç"><option value="">Tüm parklar</option>' +
-      S.veri.parks.map(p => '<option' + (p.kisa === S.hP ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('') + '</select>' +
+      S.veri.parks.map(p => '<option value="' + esc(p.kisa) + '"' + (p.kisa === S.hP ? ' selected' : '') + '>' + esc(p.kisa) + '</option>').join('') + '</select>' +
       '<button class="btn sm" data-a="hTum">Tüm parklar</button></div></div>' +
       '<div class="hsel hq"><label for="hQ">Tesis ara</label><input id="hQ" class="fld" type="search" placeholder="Ad, plan kodu ya da tür" value="' + esc(F.q) + '"></div>' +
       '<button class="btn sm hfbtn" data-a="hFiltre" aria-expanded="' + (F.acik ? 'true' : 'false') + '" aria-controls="hfil">Filtreler</button></div>' +
@@ -1799,7 +1814,7 @@
   function hEnvCiz() {
     const el = $('#henv'); if (!el) return; const tumu = !S.hP, L0 = hOzellik().filter(hEsles), N = 60;
     const L1 = L0.slice().sort((a, b) => trS(a.p.kisa, b.p.kisa) || (arsivMi(a.g, a.f) - arsivMi(b.g, b.f)) || ((a.f.d === 'Y') - (b.f.d === 'Y')) || trS(a.f.t, b.f.t) || trS(a.f.ad || '', b.f.ad || ''));
-    const key = JSON.stringify([S.hP, S.hF.q, S.hF.tur, S.hF.d, S.hF.pk, S.hF.arsiv]);
+    const key = JSON.stringify([S.hP, S.hF.q, S.hF.tur, S.hF.g, S.hF.d, S.hF.pk, S.hF.arsiv]);
     if (S.hEnvKey !== key) { S.hEnvPage = 0; S.hEnvKey = key; }
     const pages = Math.max(1, Math.ceil(L1.length / N)), pg = Math.max(0, Math.min(S.hEnvPage || 0, pages - 1)); S.hEnvPage = pg;
     const n = $('#henvN'); if (n) n.textContent = L0.length + ' plan nesnesi';
@@ -3628,7 +3643,13 @@
         catch (e) { rec = null; d.textContent = 'Mikrofon başlatılamadı.'; }
       };
     }
-    $('#akOku').onclick = () => aktarOku();
+    const read = $('#akOku');
+    read.onclick = () => aktarOku();
+    for (const field of ['#akDosya', '#akKlasor']) {
+      $(field).addEventListener('change', () => {
+        if ($(field).files.length && !read.disabled) void aktarOku();
+      });
+    }
   };
   async function aktarPdf(f) {
     const pdf = await import('../vendor/pdf-5.6.205.min.mjs');
@@ -3722,7 +3743,7 @@
       const hedefPark = yerel.park || secili;
       const planKontrol = hedefPark ? planlar : [];
       if (planlar.length && !hedefPark) atlanan.push('Plan dosyaları (önce ait olduğu parkı seçin)');
-      if (!key || yerel.degisiklikler.length || planKontrol.length) {
+      if (!key || (!ocr.length && (yerel.degisiklikler.length || planKontrol.length))) {
         if (ocr.length) atlanan.push(...ocr.map(ad => ad + ' (taranmış belge veya görsel; OCR gerekli)'));
         if ($('#akCloud').checked && !key) atlanan.push('Haricî yapay zekâ anahtarı ayarlanmamış.');
         if (!hedefPark) throw Error(['Belgenin ait olduğu parkı seçin.', ...yerel.issues, ...atlanan].join(' '));
@@ -3733,7 +3754,9 @@
         return;
       }
       icerik.push(...docs.map(doc => ({type:'text',text:doc.name + '\n' + doc.text})));
-      for (const f of medya) icerik.push(...await aktarDosyaParca(f));
+      for (const f of medya) {
+        if (!docs.some(doc => doc.name.startsWith(f.name + ' · s. '))) icerik.push(...await aktarDosyaParca(f));
+      }
       if (!icerik.length) throw Error(['Okunabilir bir belge bulunamadı.', ...atlanan].join(' '));
       if (new TextEncoder().encode(JSON.stringify(icerik)).length > 27 * 1024 * 1024) throw Error('Çıkarılan metin işlem sınırını aşıyor. Dosyaları daha küçük gruplar hâlinde okutun.');
       const alanlar = aktarAlanlar(), parks = S.veri.parks;
@@ -3759,7 +3782,17 @@
       if (!tu || !tu.input || !Array.isArray(tu.input.degisiklikler)) throw new Error(son.stop_reason === 'max_tokens' ? 'Cevap uzunluk sınırında kesildi; daha az belgeyle deneyin.' : 'Belgelerden öneri çıkarılamadı.');
       if (!acik()) return;
       if (secili && tu.input.park !== secili) throw new Error('Belgelerdeki park, seçtiğiniz parkla eşleşmedi.');
-      dur(''); aktarGoster(tu.input, atlanan);
+      const degisiklikler = new Map(yerel.degisiklikler.map(d => [d.alan, d]));
+      for (const d of tu.input.degisiklikler) {
+        const yerelDeger = degisiklikler.get(d.alan);
+        if (!yerelDeger) degisiklikler.set(d.alan, d);
+        else if (String(yerelDeger.yeni) !== String(d.yeni)) {
+          atlanan.push(d.alan + ' (kaynak okumaları çelişiyor)');
+          degisiklikler.delete(d.alan);
+        }
+      }
+      dur('');
+      aktarGoster({ ...tu.input, degisiklikler: [...degisiklikler.values()] }, atlanan.concat(yerel.issues), planKontrol);
     } catch (e) {
       if (!acik()) return;
       const A = window.Anthropic; dur('');
@@ -3863,7 +3896,6 @@
   // Ortak yapay zekâ akışı (Sor sayfası ve sohbet kutusu). gecmis: önceki soru-cevap metinleri.
   async function aiAkis(r, m, gecmis, dizin = S.sorDz) {
     const key = sorAnahtar(); if (!key) return false;
-    if (S._aiStream) { try { S._aiStream.abort(); } catch (e) {} S._aiStream = null; }
     m.innerHTML = '<span class="spin"></span> Kayıtlar okunuyor…';
     let frame = null, stream;
     try {
@@ -4012,16 +4044,16 @@
       const kayit = { q, html, context: S.sohbetOnceki }; L.push(kayit);
       if (L.length > 40) { L.shift(); k.firstElementChild?.remove(); k.firstElementChild?.remove(); }
       sohbetSakla(); k.scrollTop = k.scrollHeight;
-      if (!dogrudan && sorAnahtar() && ls.get('op_ai_oto') !== '0' && !S.sohbetAiPending) {
+      if (!dogrudan && sorAnahtar() && ls.get('op_ai_oto') !== '0') {
+        dz = await sorDizin(true);
+        if (L !== S.sohbet) return;
         el.insertAdjacentHTML('beforeend', '<div class="sohbet-ai"><b class="sohbet-ai-b">Yapay zekâ</b><div class="sor-ai-m"></div></div>');
         const gecmis = L.slice(0, -1).map((x) => ({ q: x.q, a: x.aiText || '' }));
         const m = el.querySelector('.sohbet-ai .sor-ai-m');
-        S.sohbetAiPending = true;
-        void aiAkis(r, m, gecmis, dz).then((t) => {
-          if (t && L === S.sohbet && L.includes(kayit)) {
-            kayit.ai = true; kayit.aiText = t; kayit.aiHtml = m.innerHTML; sohbetSakla();
-          }
-        }).finally(() => { S.sohbetAiPending = false; });
+        const t = await aiAkis(r, m, gecmis, dz);
+        if (t && L === S.sohbet && L.includes(kayit)) {
+          kayit.ai = true; kayit.aiText = t; kayit.aiHtml = m.innerHTML; sohbetSakla();
+        }
       }
     } catch (e) { el.innerHTML = '<p class="red-t">Cevap hazırlanamadı: ' + esc(e.message) + '</p>'; }
     finally {
@@ -4043,7 +4075,7 @@
     const acik = ac == null ? p.hidden : ac, onceki = p.hidden;
     if (acik && onceki) S.sohbetAcici = document.activeElement;
     p.hidden = !acik; document.body.classList.toggle('sohbet-acik', acik);
-    [$('#sohbetAc'), $('#mSearch')].forEach(b => { if (b) b.setAttribute('aria-expanded', String(acik)); });
+    [$('#sohbetAc'), $('#mSearch'), $('#tMore')].forEach(b => { if (b) b.setAttribute('aria-expanded', String(acik)); });
     if (!acik) {
       const ayar = $('#sohbetMenu'); if (ayar) ayar.open = false;
       if (p.contains(document.activeElement)) document.activeElement.blur();
@@ -4089,7 +4121,7 @@
       if (e.target.closest('a[href^="#/"], [data-a="formAc"], [data-a="sorMd"]')) sohbetAcKapat(false);
     });
     document.addEventListener('click', (e) => {
-      if (!panel.hidden && !document.querySelector('#modal.on') && !e.target.closest?.('#sohbet, #sohbetAc, #mSearch')) sohbetAcKapat(false);
+      if (!panel.hidden && !document.querySelector('#modal.on') && !e.target.closest?.('#sohbet, #sohbetAc, #mSearch, #tMore')) sohbetAcKapat(false);
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !panel.hidden && !document.querySelector('#modal.on')) sohbetAcKapat(false, true);
@@ -4100,11 +4132,17 @@
 
   // =============== EK FORMLARI, TAHAKKUK, TEBLİĞ ===============
   async function ekPaket() {
-    if (!S.kaynakKontrol && S.pw) { try { S.kaynakKontrol = await K.coz(await veriGetir(S.dataRef, 'data/kaynak-kontrol.enc'), S.pw); } catch(e) { /* Ek-10, yardımcı kaynak kaydı olmadan da açılır. */ } }
     if (S.ekB) return S.ekB;
-    const enc = await veriGetir(S.dataRef, CFG.ekler);
-    S.ekB = await K.coz(enc, S.pw);
-    return S.ekB;
+    const ref = S.dataRef, password = S.pw;
+    const get = async path => K.coz(await veriGetir(ref, path), password);
+    const [packageData, control] = await Promise.all([
+      get(CFG.ekler),
+      S.kaynakKontrol ? Promise.resolve(S.kaynakKontrol) : get('data/kaynak-kontrol.enc').catch(() => null)
+    ]);
+    if (S.dataRef !== ref || S.pw !== password) return ekPaket();
+    if (!packageData || typeof packageData !== 'object') throw Error('Ek paketi geçersiz.');
+    S.kaynakKontrol = control;
+    return S.ekB = packageData;
   }
   const EKAD = { 'Ek-1': 'Orman Parkı Teklif Raporu', 'Ek-2': 'Orman Parkı Bilgi Formu', 'Ek-3': 'Kira Bedeli Tespit Tutanağı', 'Ek-4': 'Gelişim ve Yönetim Planı Teknik Şartnamesi',
     'Ek-5': 'Uygulama Projesi Onay Sayfası', 'Ek-6': 'Sınır Değişikliği Teklif Raporu', 'Ek-7': 'Statü Değişikliği Teklif Raporu', 'Ek-8': 'İptal Teklif Raporu',
@@ -4192,7 +4230,7 @@
   function ekCtx(p) {
     const tarih = denAktif()?.tarih || S.rapor, y = E.year(tarih);
     const r10 = {};
-    const m = S.ekB && S.ekB.rapor10[p.r10 || p.kisa];
+    const m = S.ekB && S.ekB.rapor10?.[p.r10 || p.kisa];
     if (m) m.cells.forEach((c) => { if (c.slot && c.t) r10[EK.norm(c.lab)] = c.t; });
     return { p, ku: S.veri.kurum || {}, plan: planAl(y)[p.kisa] || {}, rapor: tarih, odemeDonem: odemeMetni(p, tarih), r10, tf: S.form && S.form.ek === 'TF' ? tfCtx(p, S.form) : null };
   }
@@ -4271,9 +4309,12 @@
     }
     if (!target?.isConnected || S.page !== 'form') return;
     const f = S.form, p = S.pBy[S.park];
-    if (f.ek === 'R10' && !S.ekB.rapor10[p.r10 || p.kisa]) { S.form.ek = 'Ek-10'; sayfaCiz(); return; }
+    if (f.ek === 'R10' && !S.ekB.rapor10?.[p.r10 || p.kisa]) {
+      target.innerHTML = '<div class="alert amb">Bu park için imzalı Ek-10 kaydı bulunamadı. <a class="btn sm" href="' + esc(formBaglanti(p.kisa, 'Ek-10')) + '">Denetim formunu aç</a></div>';
+      return;
+    }
     if (['Ek-11', 'Ek-16', 'Ek-17'].includes(f.ek)) return wordGoster(f.ek, p);
-    const m = f.ek === 'R10' ? S.ekB.rapor10[p.r10 || p.kisa] : S.ekB.sheets[f.ek];
+    const m = f.ek === 'R10' ? S.ekB.rapor10[p.r10 || p.kisa] : S.ekB.sheets?.[f.ek];
     if (!m) { $('#ekAlan').innerHTML = '<div class="alert amb">Bu formun şablonu yüklenen ek paketinde yok. Sayfayı yenileyin.</div>'; return; }
     const cx = ekCtx(p), F = formAdlariniTemizle(f.ek, Object.assign(EK.alanlar(cx), f.ek === 'TF' ? EK.tfAlanlar(cx) : {})), el = formAdlariniTemizle(f.ek, elDeger(p.kisa, f.ek));
     const dr = denAktif();
@@ -4299,6 +4340,14 @@
   function sigdir(kutu, m) {
     const W = EK.genislik(m), k = kutu.querySelector('.eks-kagit'); if (!k) return;
     const av = kutu.clientWidth - 2;
+    if (av <= 0) return;
+    const size = av < W ? av / W : 1;
+    if (matchMedia('(max-width: 860px)').matches && size < .8) {
+      k.style.zoom = '.8';
+      kutu.setAttribute('tabindex', '0');
+      kutu.setAttribute('aria-label', 'Form önizleme, yatay kaydırılabilir');
+      return;
+    }
     k.style.zoom = av < W ? (av / W).toFixed(3) : '';
   }
   function sayfaBoyutu(m) {
@@ -4349,6 +4398,8 @@
       const button = $('[data-a="fDuzenle"]'); if (button) button.textContent = 'Form üzerinde düzenle';
       await wordGoster(S.form.ek, S.pBy[S.park]);
       if (!$('#ekAlan .dxk')) { toast('Belge önizlemesi hazırlanmadan yazdırılamaz.', true); return; }
+    } else if (!S.fV) {
+      toast('Form şablonu açıldığında çıktı alabilirsiniz.', true); return;
     }
     document.body.classList.add('pr-form'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('pr-form'), 500); }, 60);
   };
