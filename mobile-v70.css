@@ -117,3 +117,72 @@
 @media screen and (prefers-reduced-motion:reduce) {
   .overview-links a { transition: none; }
 }
+
+@media screen {
+  .overview-priority { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .52fr); gap: 12px; align-items: start; }
+  .overview-heading h1 { font-size: clamp(27px, 4vw, 38px); }
+  .overview-links { gap: 8px; }
+  .overview-links a { min-height: 64px; align-items: center; }
+  .overview-priority .todo li { gap: 10px; }
+  .overview-priority .todo p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .overview-data > .freshness { margin: 0 14px 14px; }
+  .forms-list { margin: 0; padding: 0; list-style: none; }
+  .forms-list > li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .forms-list > li:last-child { border-bottom: 0; }
+  .forms-list .forms-group { color: var(--mute); font-size: 14px; font-weight: 600; }
+  .form-row { display: flex; gap: 12px; align-items: center; }
+  .form-open { display: flex; flex: 1 1 auto; align-items: center; gap: 12px; min-height: 44px; color: var(--pine); text-decoration: none; }
+  .form-open:hover strong { text-decoration: underline; }
+  .form-open .ek { flex-shrink: 0; }
+  .form-row .btn { flex-shrink: 0; }
+}
+@media screen and (max-width: 860px) {
+  .mbar { min-height: 59px; padding: calc(7px + env(safe-area-inset-top,0px)) 16px 8px; }
+  .mbar b { font-size: 18px; }
+  .mbar #mSearch, .sohbet-ac { display: none; }
+  .tabbar a, .tabbar button { font-size: 14px; min-height: 56px; }
+  .tabbar a { white-space: nowrap; }
+  .tabbar button[aria-expanded="true"] { color: var(--pine); background: #eaf3ee; }
+  .wrap { padding-inline: 16px; }
+  .wrap .mpick { position: static; margin: 0 0 9px; padding: 0; border: 0; background: transparent; }
+  .pagehead p { font-size: 15px; }
+  .module-menu summary { font-size: 16px; }
+  .menu a, .menu button { min-height: 52px; font-size: 17px; }
+  .mobile-more { margin-block: 8px 12px; }
+  .mobile-more summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; }
+  .mobile-more summary::before { content: '›'; margin-right: 9px; }
+  .mobile-more[open] summary::before { transform: rotate(90deg); }
+  .mobile-session { margin-top: 8px; }
+  .overview-priority { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .overview-priority .todo li { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .overview-priority .todo p { font-size: 14px; }
+  .overview-links { grid-template-columns: minmax(0, 1fr); padding: 5px 12px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+  .overview-links a { flex-direction: row; align-items: center; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 10px 4px; min-height: 54px; }
+  .overview-links a:last-child { border: 0; }
+  .overview-links small { font-size: 14px; margin-top: 2px; }
+  .overview-detail > summary { font-size: 16px; }
+  .overview-heading { align-items: flex-start; }
+  .overview-heading h1 { font-size: 28px; }
+  .hselr > [data-a="hTum"] { display: none; }
+  .hmap-preferences { margin-block: 4px 6px; }
+  .hmap { height: clamp(340px, 52dvh, 540px); min-height: 340px; }
+  .hresult { margin-block: 6px; }
+  .hrow-link { min-height: 45px; font-size: 16px; }
+  .hsheet { bottom: calc(80px + env(safe-area-inset-bottom,0px)); }
+  .hfull-on .hsheet { bottom: calc(10px + env(safe-area-inset-bottom,0px)); }
+  .sohbet:not([hidden]) { position: fixed; inset: 0 0 auto; width: 100%; max-width: none; height: var(--sohbet-yukseklik,100dvh); max-height: none; border: 0; border-radius: 0; box-shadow: none; z-index: 1000; }
+  .sohbet-bas { padding-top: max(8px, env(safe-area-inset-top,0px)); }
+  .sohbet-bas b { font-size: 20px; }
+  .sohbet-scope { padding: 8px 14px; }
+  .sohbet-scope .chiprow { flex-wrap: nowrap; overflow-x: auto; }
+  .sohbet-scope .hchip { flex: 0 0 auto; }
+  .sohbet-akis { min-height: 0; overscroll-behavior: contain; }
+  .sb, .sb-a .sor-metin p, .sb-a .sor-kv, .sohbet-hos { font-size: 16px; }
+  .sohbet-acik { overflow: hidden; }
+  .sohbet-form { padding-bottom: max(13px, env(safe-area-inset-bottom,0px)); }
+  .sohbet.klavye-acik .sohbet-form { padding-bottom: 9px; }
+}
+@media screen and (max-width: 350px) {
+  .tabbar a, .tabbar button { font-size: 12px; }
+  .wrap { padding-inline: 12px; }
+}

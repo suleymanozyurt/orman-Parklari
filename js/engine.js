@@ -26,6 +26,8 @@
   E.fmtDate = (s) => { if (!s) return '—'; const [y, m, d] = P(s); return pad(d) + '.' + pad(m) + '.' + y; };
   E.year = (s) => P(s)[0];
   E.month = (s) => P(s)[1];
+  const validDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) &&
+    Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s;
 
   // ---------- gecikme zammı (6183 s.K. m.51; Tebliğ Md. 39/1) ----------
   // Kaynak: GİB, Tahsilat Genel Tebliği (Seri A/1), GZ hesabı 4/e, 30 günlük kesir ve 6.
@@ -294,7 +296,7 @@
   // Y takvim yılının yıllık kirası: Y yılının 31 Mart'ına kadar başlamış son dönemin bedeli (muhasebe uygulaması ve kira kontrolüyle aynı esas).
   E.kiraYili = function (p, tufe, ekKira, Y) {
     const z = E.zincir(p, tufe, ekKira);
-    const sinir = E.yilSiniri(p, Y);
+    const sinir = p.soz_bas && E.year(p.soz_bas) === Y ? iso(Y,12,31) : E.yilSiniri(p, Y);
     const G = z.filter((x) => x.bas <= sinir);
     if (!G.length) return null;
     const d = G[G.length - 1];
@@ -379,41 +381,66 @@
     out.muhKira = r2(kiraIt.filter((x) => !kistKira(x)).reduce((s, x) => s + x.tutar, 0));
     out.muhKist = r2(kiraIt.filter(kistKira).reduce((s, x) => s + x.tutar, 0));
     out.otoVar = veri.muhasebe.some((x) => x.oto === p.kisa + '|' + Y);
-    // örnek düzen
-    let ornek = null;
-    for (let y = Y - 1; y >= Y - 6 && !ornek; y--) {
-      const it = esl.items.filter((x) => x.park === p.kisa && x.grup === y + ' tahakkuku' && muh(x) && !kistKira(x));
-      if (it.some((x) => x.tur === 'Kira')) ornek = { yil: y, items: it };
+    const [, sm, sd] = P(p.soz_bas);
+    const firstYear = E.year(p.soz_bas) === Y;
+    const upFront = p.ihale_b <= 150000 || p.odeme === 'Peşin';
+    const expected = upFront ? 1 : firstYear ? 3 : p.odeme === '4 taksit' ? 4 : null;
+    const dates = values => [...new Set(values.filter(validDate))].sort();
+    const own = dates((p.taksit_vade || '').split(/[,;\s]+/).filter(s => /^\d\d-\d\d$/.test(s)).map(s => {
+      const [m, d] = s.split('-').map(Number);
+      return iso(Y, m, m === 2 && d === 29 ? Math.min(d, lastDay(Y, m)) : d);
+    }));
+    let template = null;
+    for (let y = Y - 1; y >= Y - 6 && !template && !firstYear; y--) {
+      const past = esl.items.filter(it => it.park === p.kisa && it.grup === y + ' tahakkuku' && muh(it) && !kistKira(it));
+      const original = dates(past.filter(x => x.tur === 'Kira').map(x => x.duz || x.vade));
+      const inYear = original.filter(v => E.year(v) === y);
+      const use = Y >= 2027 && inYear.length ? inYear : original;
+      if (!use.length || (expected ? use.length !== expected : ![1, 4].includes(use.length))) continue;
+      if (!expected && use.length === 1 && own.length === 4) continue;
+      template = { yil: y, items: past, vadeler: use.map(v => E.addMonths(v, (Y - y) * 12)) };
     }
-    let vadeler, kaynak;
-    const own = (p.taksit_vade || '').split(/[,;\s]+/).filter((s) => /^\d\d-\d\d$/.test(s));
-    if (ornek) {
-      const kv0 = Array.from(new Set(ornek.items.filter((x) => x.tur === 'Kira').map((x) => x.vade || x.duz).filter(Boolean))).sort();
-      // Önceki dönemden taşan vadeler (ör. dönem yılı yıl ortasında başlayan sözleşmeler) yeni yılın planına karışmasın.
-      const kv = kv0.filter((v) => E.year(v) === ornek.yil).length ? kv0.filter((v) => E.year(v) === ornek.yil) : kv0;
-      vadeler = kv.map((v) => E.addMonths(v, (Y - ornek.yil) * 12)); kaynak = ornek.yil + ' tahakkukunun ödeme günleri (ilgili yıla taşındı)';
-    } else if (own.length) { vadeler = own.map((s) => Y + '-' + s).sort(); kaynak = 'Muhasebe örneği yok; parkta tanımlı ödeme günleri'; }
-    else {
-      const [, sm, sd] = P(p.soz_bas);
-      if (p.ihale_b <= 150000) { vadeler = [iso(Y, sm, lastDay(Y, sm))]; kaynak = 'Md. 32/3: sözleşme ayının sonunda tek seferde peşin'; }
-      else { vadeler = [0, 3, 6, 9].map((k) => { const [yy, mm] = mk(Y, sm + k, 1); return iso(yy, mm, Math.min(sd, lastDay(yy, mm))); }).filter((v) => E.year(v) === Y).sort();
-        kaynak = 'Md. 32/3: sözleşme ayından başlayarak üçer aylık dört eşit taksit'; }
+    let vadeler = [], kaynak = 'Ödeme şekli ve vade belgesi gerekli';
+    if (template) {
+      vadeler = template.vadeler;
+      kaynak = template.yil + ' tahakkukunun ödeme günleri (ilgili yıla taşındı)';
+    } else if (own.length && (expected ? own.length === expected : [1, 4].includes(own.length))) {
+      vadeler = own;
+      kaynak = 'Parkta tanımlı ödeme günleri';
+    } else if (firstYear && upFront) {
+      vadeler = [p.soz_bas];
+      kaynak = 'Md. 31/1: sözleşme tarihinde peşin ödeme';
+    } else if (!firstYear && upFront) {
+      vadeler = [iso(Y, sm, lastDay(Y, sm))];
+      kaynak = 'Md. 32/3: sözleşme ayı sonuna kadar peşin ödeme';
+    } else if (!firstYear && (p.odeme === '4 taksit' || p.ihale_b > 150000)) {
+      vadeler = [0, 3, 6, 9].map(offset => {
+        const [year, month] = mk(Y, sm + offset, 1);
+        return iso(year, month, Math.min(sd, lastDay(year, month)));
+      });
+      out.vadeTeyit = true;
+      kaynak = 'Md. 32/3: üçer aylık dört eşit taksit · sözleşme vadesi teyit edilmeli';
     }
-    if (!vadeler.length) vadeler = [iso(Y, 1, 31)];
-    // Hesapla tutan güncel muhasebe vadeleri hem cetvelde hem fişte kullanılır.
+    // Kıst ve ek tahakkuk, yıllık sözleşme taksitlerinin sayısını belirlemez.
     const resmiVadeler = new Map();
-    for (const it of kiraIt) {
+    for (const it of items.filter(x => x.tur === 'Kira')) {
       const v = it.duz || it.vade;
-      if (!v || E.year(v) !== Y || !Number.isFinite(it.tutar) || it.tutar <= 0 || kistKira(it)) continue;
+      if (!validDate(v) || !Number.isFinite(it.tutar) || it.tutar <= 0 || kistKira(it)) continue;
+      if (E.year(v) !== Y && (Y >= 2027 || v < ky.bas || v >= E.addMonths(ky.bas,12))) continue;
       resmiVadeler.set(v, r2((resmiVadeler.get(v) || 0) + it.tutar));
     }
     const resmiToplam = r2([...resmiVadeler.values()].reduce((sum, amount) => sum + amount, 0));
-    const uyumlu = resmiToplam === kira && resmiVadeler.size >= 1 && resmiVadeler.size <= 4;
-    if (uyumlu || (resmiVadeler.size === 4 && resmiToplam === out.muhKira)) {
+    const legalCounts = firstYear ? [1, 3] : [1, 4];
+    const uyumlu = resmiToplam === kira && legalCounts.includes(resmiVadeler.size);
+    if (uyumlu || (resmiVadeler.size === 4 && !firstYear && resmiToplam === out.muhKira && expected !== 1)) {
+      out.vadeTeyit = false;
       vadeler = [...resmiVadeler.keys()].sort();
       kaynak = Y + ' muhasebe dökümündeki kira tahakkuk vadeleri' + (uyumlu ? '' : ' · tutarlar çalışma hesabından');
     }
-    const kTut = uyumlu ? vadeler.map(v => resmiVadeler.get(v)) : bol(kira, vadeler.length);
+    if (!vadeler.length) out.uyari.push(firstYear
+      ? 'Md. 31/1: ilk dönemin belgeli peşin veya üç taksit ödeme tarihleri gerekli.'
+      : 'Vade hesabı için sözleşmedeki ödeme düzeni gerekli.');
+    const kTut = uyumlu ? vadeler.map(v => resmiVadeler.get(v)) : vadeler.length ? bol(kira, vadeler.length) : [];
     const agac = r2(kira * 0.05), kdv = r2((kira + agac) * 0.2);
     out.vadeler = vadeler.map((v, i) => ({ vade: v, kira: kTut[i], agac: i === 0 ? agac : 0, kdv: i === 0 ? kdv : 0 }));
     out.agac = agac; out.kdv = kdv; out.toplam = r2(kira + agac + kdv); out.kaynak = kaynak;
@@ -423,8 +450,8 @@
     if (p.guv != null) { out.guv = r2(kira * p.guv); out.guvFark = onc != null ? r2(out.guv - onc * p.guv) : null; }
     if (p.dep != null) { out.dep = r2(kira * p.dep); out.depFark = onc != null ? r2(out.dep - onc * p.dep) : null; }
     // örnek hesap kodları
-    const hk = (tur) => { const x = ornek && ornek.items.find((i) => i.tur === tur); return x ? x.hesap : null; };
-    out.hesap = { kira: hk('Kira') || '120.99.01', kdv: hk('KDV') || hk('Vergi/fon') || '120.99.05', agac: hk('Ağaçlandırma') || hk('Vergi/fon') || '120.99.06' };
+    const hk = (tur) => items.find(i => i.tur === tur)?.hesap || template?.items.find(i => i.tur === tur)?.hesap;
+    out.hesap = { kira: hk('Kira') || '120.99.99.02', kdv: hk('KDV') || hk('Vergi/fon') || '120.99.05', agac: hk('Ağaçlandırma') || hk('Vergi/fon') || '120.99.06' };
     // tahakkuk zamanı: takvim yılı esasında yıl başı; 'Dönem başı' esasında dönemin başladığı gün
     const due = p.yil_esas === 'Dönem başı' ? ky.bas : iso(Y, 1, 1);
     const ds = E.dokumSon(veri);
