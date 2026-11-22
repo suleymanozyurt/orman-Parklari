@@ -414,8 +414,11 @@
       vadeler = [iso(Y, sm, lastDay(Y, sm))];
       kaynak = 'Md. 32/3: sözleşme ayı sonuna kadar peşin ödeme';
     } else if (!firstYear && (p.odeme === '4 taksit' || p.ihale_b > 150000)) {
-      const first = iso(Y, sm, Math.min(sd, lastDay(Y, sm)));
-      vadeler = [0, 3, 6, 9].map(offset => E.addMonths(first, offset));
+      vadeler = [0, 3, 6, 9].map(offset => {
+        const [year, month] = mk(Y, sm + offset, 1);
+        return iso(year, month, Math.min(sd, lastDay(year, month)));
+      });
+      out.vadeTeyit = true;
       kaynak = 'Md. 32/3: üçer aylık dört eşit taksit · sözleşme vadesi teyit edilmeli';
     }
     // Kıst ve ek tahakkuk, yıllık sözleşme taksitlerinin sayısını belirlemez.
@@ -430,6 +433,7 @@
     const legalCounts = firstYear ? [1, 3] : [1, 4];
     const uyumlu = resmiToplam === kira && legalCounts.includes(resmiVadeler.size);
     if (uyumlu || (resmiVadeler.size === 4 && !firstYear && resmiToplam === out.muhKira && expected !== 1)) {
+      out.vadeTeyit = false;
       vadeler = [...resmiVadeler.keys()].sort();
       kaynak = Y + ' muhasebe dökümündeki kira tahakkuk vadeleri' + (uyumlu ? '' : ' · tutarlar çalışma hesabından');
     }

@@ -2384,8 +2384,8 @@
       '<div class="f"><label for="hk_f">ya da KML / KMZ dosyası (WGS84)</label><input class="fld" id="hk_f" type="file" accept=".kml,.kmz"></div>' + fi('hk_k', 'Kaynak belge (ör. “II. Revize GYP sınır koordinatları, Bölge onayı 16.09.2026”)', '') + fi('hk_url','Kaynak belge bağlantısı (HTTPS, varsa)','') + fi('hk_onay','Belgedeki onay tarihi (varsa)','','date') + fi('hk_kapsam','Sınırın belge kapsamı','Teyit gerekli',null,['Teyit gerekli','Plan tasdik sınırı (onaylı plan kapsamı)','Onaylı hukuki park sınırı']) +
       '<div id="hkPlanFields" hidden>' + fi('hk_pd','Plan katmanının kapsamı','Onay ve güncel sürüm teyidi gerekli',null,['Onay ve güncel sürüm teyidi gerekli','Arşiv — önceki plan','Bilgi katmanı']) + '<label class="chk" style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin:4px 0 8px"><input type="checkbox" id="hk_r"> Önceki planları arşive al (işaretlenmezse ayrı katman eklenir)</label><p class="hnote">Onay tarihi yazılması güncelliği doğrulamaz. Eski planlar arşiv katmanı olarak yüklenebilir; mevcut tesislerle karışmaz.</p></div>' +
       '<div id="hk_on" class="muted" style="font-size:13.5px"></div>', '<button class="btn" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Vazgeç</button><button class="btn" id="hkDen">Önizle ve denetle</button><button class="btn pri" id="hkOk" disabled>Kaydet</button>');
-    let sonuc = null;
-    const invalidate = () => { sonuc = null; $('#hkOk').disabled = true; $('#hk_on').textContent = 'Değişiklikten sonra yeniden önizleyin.'; };
+    let sonuc = null, previewVersion = 0;
+    const invalidate = () => { previewVersion++; sonuc = null; $('#hkOk').disabled = true; $('#hk_on').textContent = 'Değişiklikten sonra yeniden önizleyin.'; };
     ['#hk_v', '#hk_f', '#hk_c', '#hk_t'].forEach((id) => { $(id).addEventListener('input', invalidate); $(id).addEventListener('change', invalidate); });
     $('#hk_t').addEventListener('change',()=>{$('#hkPlanFields').hidden=gv('hk_t')==='Sınır';});
     $('#hk_pd').addEventListener('change',()=>{const archive=gv('hk_pd')!=='Onay ve güncel sürüm teyidi gerekli';$('#hk_r').disabled=archive;if(archive)$('#hk_r').checked=false;});
@@ -2394,15 +2394,22 @@
       t.forEach((l, i) => { const a = l.split(/[\t;]+|\s{2,}|\s+(?=-?\d)/).map((x) => x.trim()).filter(Boolean); const nums = a.filter((x) => /^-?\d+([.,]\d+)?$/.test(x.replace(/\s/g, ''))).map((x) => +x.replace(',', '.'));
         if (nums.length < 2) return; const ad = a.find((x) => !/^-?\d+([.,]\d+)?$/.test(x)) || (nums.length >= 3 ? String(nums.shift()) : String(i + 1)); const n2 = nums.slice(-2); out.push([ad, n2[0], n2[1]]); }); return out; };
     const den = async () => {
+      const version = ++previewVersion;
+      const run = $('#hkDen');
+      const active = () => run.isConnected && version === previewVersion;
       sonuc = null; $('#hkOk').disabled = true;
       const crsAd = gv('hk_c'), tur = gv('hk_t'); let ham = oku(), kmlP = null;
       const f = $('#hk_f').files[0] || kaynakDosya;
       if (tur === PLAN_T && !f) { $('#hk_on').innerHTML = '<span class="red-t">Plan tesis katmanı için KML / KMZ dosyası seçin.</span>'; return; }
       if (f) { let txt; if (/\.kmz$/i.test(f.name)) { await betik('vendor/jszip.min.js'); const z = await JSZip.loadAsync(await f.arrayBuffer()); const kml = z.file('doc.kml') || z.file(/\.kml$/i)[0]; if (!kml) throw Error('KMZ içinde KML dosyası yok.'); txt = await kml.async('string'); } else txt = await f.text();
+        if (!active()) return;
         if (tur === PLAN_T || tur === 'Tesis') { const fs = kmlOzellik(txt, p), dis = fs.filter((x) => (x.g === 'N' ? [x.c] : x.c.concat((x.holes || []).flat())).some((q) => !IST(q[0], q[1]))).length, say = {};
           const boundaries = OPGeo.boundaries(p.harita);
           const outside = boundaries.length ? fs.filter(f => hKonumDisinda(p, f)).length : 0;
-          fs.forEach((x) => { say[x.d] = (say[x.d] || 0) + 1; }); sonuc = { plan: fs, dosya: f.name };
+          const sha = await veriSHA(txt);
+          if (!active()) return;
+          fs.forEach((x) => { say[x.d] = (say[x.d] || 0) + 1; });
+          sonuc = { plan: fs, dosya: f.name, sha };
           $('#hk_on').innerHTML = '<b>' + fs.length + '</b> çizim okundu (' + fs.filter((x) => x.g === 'A').length + ' alan, ' + fs.filter((x) => x.g === 'L').length + ' çizgi, ' + fs.filter((x) => x.g === 'N').length + ' nokta).<br>' + Object.keys(say).map((d) => esc((DUR[d] || DUR.B)[0]) + ': ' + say[d]).join(' · ') +
             '<br><span class="muted">Dosyada açıkça kayıtlı plan durumu korunur. Böyle bir kayıt yoksa klasör / katman adı değerlendirilir; belirlenemezse “durumu belirtilmemiş” kullanılır. Aktarım, belgenin onayını, güncelliğini veya tesisin sahada bulunduğunu doğrulamaz. Kaynak bilgiler bilgi kutusuna aktarılır.</span>' +
             (outside ? '<br><span class="amb-t">' + outside + ' çizim kayıtlı park sınırının dışında. Kaynak pafta ve park seçimini karşılaştırın.</span>' : '') +
@@ -2440,8 +2447,9 @@
       if (!sonuc) return; const sourceURL=gv('hk_url'); if(sourceURL&&!/^https:\/\//i.test(sourceURL)||sourceURL&&!OPGeo.safeURL(sourceURL)){ $('#hk_on').textContent='Geçerli HTTPS kaynak bağlantısı girin.';return;} const kayn = gv('hk_k'); if (!kayn) { $('#hk_on').innerHTML += '<br><span class="red-t">Kaynak belge yazın.</span>'; return; }
       if (sonuc.plan) { const pending=sonuc, onay=gv('hk_onay'), pd=gv('hk_pd'), durum=pd==='Arşiv — önceki plan'?'arsiv':pd==='Bilgi katmanı'?'bilgi':'belirsiz', arsiveAl=$('#hk_r').checked && durum==='belirsiz'; $('#hkOk').disabled=true;
         (async () => { try { const loaded=await gypAl(); if(loaded.hata)throw new Error('Kaynak harita alınamadı; mevcut kayıtlar korunuyor. Yenileyip yeniden deneyin.'); const next=JSON.parse(JSON.stringify(loaded)), g = next.parklar[p.kisa] || (next.parklar[p.kisa] = { kaynak: [], f: [], not: [] }); const k = 'U' + Date.now().toString(36);
+        if (g.kaynak.some(source => source.dosya_sha === pending.sha)) throw Error('Bu plan dosyası bu parkın haritasına daha önce işlendi.');
         if (arsiveAl) { gypHazirla(g, p.kisa); (g.planlar || []).forEach((pl) => { pl.durum = 'arsiv'; pl.not = (pl.not || '') + ' · Yeni plan yüklenince arşive alındı (' + bugun() + ').'; }); }
-        g.kaynak.push({ k, ad: pending.dosya, url: sourceURL, tarih: '', onay_tarihi: onay, yukleme_tarihi: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: '', yukleme_tarihi: bugun(), durum, k, onay, not: 'Programdan yüklendi (' + pending.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); pending.plan.forEach((x) => { g.f.push({...x,s:k,p:k}); });
+        g.kaynak.push({ k, ad: pending.dosya, dosya_sha: pending.sha, url: sourceURL, tarih: '', onay_tarihi: onay, yukleme_tarihi: bugun(), not: kayn + ' — ' + (S.kim || '') + ' tarafından programdan yüklendi' }); (g.planlar = g.planlar || []).push({ id: k, ad: kayn, tarih: '', yukleme_tarihi: bugun(), durum, k, onay, not: 'Programdan yüklendi (' + pending.dosya + '); onay kapsamı ve son geçerli sürüm belgeden teyit edilmeli.' }); pending.plan.forEach((x) => { g.f.push({...x,s:k,p:k}); });
         const tam=await gypKaydet(p, 'Harita: ' + p.kisa + ' plan tesis katmanı yüklendi (' + pending.dosya + ', ' + pending.plan.length + ' çizim; kaynak: ' + kayn + ')', next); modalKapat(); toast(tam?'Plan katmanı kaydedildi.':'Harita katmanı kaydedildi; park özetindeki değişiklikler henüz kaydedilemedi. Kayıt uyarısını çözün ve Değişiklikleri kaydet düğmesini kullanın.',!tam);
         } catch (e) { if($('#hk_on'))$('#hk_on').textContent='Kaydedilemedi: '+e.message;toast('Kaydedilemedi: ' + e.message, true); } finally { if($('#hkOk'))$('#hkOk').disabled=!sonuc; } })(); return; }
       if (sonuc.tesis) {
@@ -4290,7 +4298,7 @@
   };
   function tfSecim(p, f) {
     const Y = tfYil(f), ctx = tfCtx(p, f), pl = ctx.plan || {}, n = ctx.taksit, vd = pl.vadeler || [];
-    const durum = pl.kira != null ? '<span class="badge b-ok">Hesap hazır</span> ' + Y + ' yıllık kira ' + tl(pl.kira) + ' TL · ' + vd.length + ' vade'
+    const durum = pl.kira != null ? '<span class="badge b-ok">Hesap hazır</span> ' + Y + ' yıllık kira ' + tl(pl.kira) + ' TL' + (vd.length ? ' · ' + vd.length + ' vade' + (pl.vadeTeyit ? ' (teyit gerekli)' : '') : ' · Vade belgesi gerekli')
       : '<span class="badge b-amb">' + esc(pl.durum || 'Hesap bekleniyor') + '</span> ' + (pl.kod === 'yilbasi' || pl.kod === 'tufe' ? 'Aralık ' + (Y - 1) + ' TÜFE’si resmî kaynaktan alınınca fiş kendiliğinden dolar.' : 'Park kaydındaki eksik giderilince fiş dolar.');
     return '<div class="ftool frow2"><label>Yıl <select id="fTfY" class="fld">' + planYillari().map((x) => '<option' + (x === Y ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>' +
       '<label>Fiş <select id="fTfN" class="fld"><option value="0"' + (n === 0 ? ' selected' : '') + '>' + (vd.length > 1 ? 'Yıllık özet' : 'Yıllık / peşin') + '</option>' + (vd.length > 1 ? vd.slice(0, 4).map((_, i) => i + 1) : []).map((i) => '<option value="' + i + '"' + (i === n ? ' selected' : '') + (vd.length && i > vd.length ? ' disabled' : '') + '>' + i + '. taksit' + (vd[i - 1] ? ' · ' + fd(vd[i - 1].vade) : '') + '</option>').join('') + '</select></label>' +
@@ -4458,7 +4466,8 @@
 
   // ---------- KİRA VE TAHAKKUK ----------
   const tFisi = (park, year, payment = 0) => 'data-a="formAc" data-e="TF" data-k="' + esc(park) + '" data-y="' + year + '" data-n="' + payment + '"';
-  const tIslenebilir = (p) => ['bekliyor', 'kapsam'].includes(p.kod) && p.zaman <= S.rapor;
+  const tIslenebilir = (p) => ['bekliyor', 'kapsam'].includes(p.kod) && p.zaman <= S.rapor &&
+    p.vadeler?.length > 0 && !p.vadeTeyit;
   const tKapsam = (Y) => S.veri.parks.map(p => planAl(Y)[p.kisa]);
   SAYFA.tahakkuk = function () {
     const y0 = E.year(S.rapor), years = planYillari(); if (!years.includes(S.tY)) S.tY = y0; planAl(S.tY);
@@ -4473,7 +4482,7 @@
       td(t.tufeAy ? AY[t.tufeAy[1] - 1] + ' ' + t.tufeAy[0] + '<br><span class="n">' + (t.tufe != null ? E.pct(t.tufe) : 'açıklanmadı') + '</span>' : (t.donem === 1 ? 'İhale bedeli' : '—'), 'TÜFE') +
       td(t.kira != null ? '<b>' + tl(t.kira) + '</b>' : (t.kod === 'tufe' ? '<span class="amb-t">Veri bekleniyor</span>' : '—'), 'Yıllık kira', 'n r') +
       td(t.kira != null ? tl(t.agac) + '<br><span class="muted">' + tl(t.kdv) + '</span>' : '—', 'Ağaç. / KDV', 'n r') +
-      td((t.vadeler || []).map((v, i) => '<button type="button" class="hrow-link n" ' + tFisi(t.park, Y, t.vadeler.length > 1 ? i + 1 : 0) + ' aria-label="' + esc(t.park + ' · ' + fd(v.vade) + ' fişi') + '">' + fd(v.vade).slice(0, 5) + ' · ' + tl(v.kira) + '</button>').join('<br>') || '—', 'Taksitler', 'n', ' style="white-space:nowrap"') +
+      td((t.vadeler || []).map((v, i) => '<button type="button" class="hrow-link n" ' + tFisi(t.park, Y, t.vadeler.length > 1 ? i + 1 : 0) + ' aria-label="' + esc(t.park + ' · ' + fd(v.vade) + ' fişi') + '">' + fd(v.vade) + ' · ' + tl(v.kira) + '</button>').join('<br>') || '—', 'Taksitler', 'n', ' style="white-space:nowrap"') +
       td(t.muhasebede ? tl(t.muhKira) + (t.kod === 'fark' ? '<br><span class="red-t">fark ' + tl(t.fark) + '</span>' : '') + (t.muhKist ? '<br><span class="muted" style="font-size:12px">+ kıst/dönem arası ' + tl(t.muhKist) + '</span>' : '') : '—', 'Muhasebe', 'n r') +
       td('<span class="badge ' + (durumC[t.kod] || 'b-gray') + '">' + esc(t.durum) + '</span>', 'Durum') +
       td('<button class="btn sm" data-a="tAyr" data-k="' + esc(t.park) + '">Hesap</button> <button class="btn sm" data-a="formAc" data-e="TF" data-k="' + esc(t.park) + '" data-y="' + Y + '">Fiş</button>' + (tIslenebilir(t) ? ' <button class="btn sm pri own-only" data-a="tEt" data-k="' + esc(t.park) + '">Tahakkuk et</button>' : '') +
