@@ -1,5 +1,5 @@
 {
- "guncelleme": "2026-11-26T22:30:19+03:00",
+ "guncelleme": "2026-11-27T20:24:15+03:00",
  "tufe": {
   "seri": "TÜFE (2025=100 bağlantılı) on iki aylık ortalamalara göre değişim oranı",
   "kaynak": "TÜİK Tüketici Fiyat Endeksi bültenleri",
@@ -204,20 +204,20 @@
     null
    ]
   },
-  "son_kontrol": "2026-11-26 22:30",
+  "son_kontrol": "2026-11-27 20:24",
   "kayit": {
    "2026-10": {
     "alindi": "2026-11-03 17:59",
     "kaynak": "TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre)"
    }
   },
-  "son_deneme": "2026-11-26 22:30",
-  "son_basarili_kontrol": "2026-11-26 22:30"
+  "son_deneme": "2026-11-27 20:24",
+  "son_basarili_kontrol": "2026-11-27 20:24"
  },
  "gz": {
   "kaynak": "6183 s.K. m.51 — Cumhurbaşkanı Kararları (Resmî Gazete)",
   "son_kontrol": "2026-11-26 22:30",
-  "durum": "Resmî Gazete: 7 günlük tarama tamamlandı; yeni oran varsa yürürlük tablosuna işlendi.",
+  "durum": "Tarama eksik: 7/7 günlük fihriste erişildi; 1 karar okunamadı. Son kayıtlı oranlar korunuyor.",
   "oranlar": [
    [
     "2010-10-19",
@@ -256,17 +256,22 @@
     0.037
    ]
   ],
-  "son_deneme": "2026-11-26 22:30",
+  "son_deneme": "2026-11-27 20:24",
   "tarama": {
    "istenen": 7,
    "ok": 7,
    "eksik": [],
-   "karar_eksik": []
+   "karar_eksik": [
+    "https://www.resmigazete.gov.tr/eskiler/2026/11/20261127-15.pdf"
+   ]
   },
   "son_basarili_kontrol": "2026-11-26 22:30"
  },
  "gz_kdv": 0.2,
  "son_calisma_kaydi": [
+  "RG 2026-11-27 karar bulundu: –– 6183 Sayılı Amme Alacaklarının Tahsil Usulü Hakkında Kanunun 51 inci Maddesinin Birinci Fıkrasında Yer Alan Gecikme Zammı Oranının, Her Ay İçin Ayrı Ayrı Uygulanmak Üzere %3,2 Olarak Belirlenmesi Hakkında Karar (Karar Sayısı: 12028) https://www.resmigazete.gov.tr/eskiler/2026/11/20261127-15.pdf",
+  "karar metni (ilk 300): 27 Kasım 2026 CUMA Resmî Gazete Sayı : 33443 CUMHURBAŞKANI KARARI Karar Sayısı: 12028 26 Kasım 2026 Recep Tayyip ERDOĞAN CUMHURBAŞKANI ",
+  "Kararın yürürlük tarihi otomatik doğrulanamadı; teyit gerekli",
   "TÜFE (portal): TÜİK Veri Portalı (DF_TUFE_SDMX_TT10, on iki aylık ortalamalara göre) — 22 bilinen ayla doğrulandı"
  ]
 }
